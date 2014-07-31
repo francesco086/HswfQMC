@@ -3,6 +3,27 @@
 while :
 do
 	case $1 in
+		cleanall)
+			echo "Clean all old datas and orbitals and reticolo files!"
+			echo "Are you sure? [y/n] "
+			read ANSW
+			if [ "$ANSW" = "y" ]
+			then
+				rm -v -f -r estimatori posizioni ottimizzazione DFT
+				rm -v -f output.d
+				rm -v -f nohup.out
+				rm -v -f reticolo/*.d
+				rm -r -v -f orbitals/*
+				rm -r -v -f reticolo/*
+				mkdir -v estimatori
+				mkdir -v posizioni
+				mkdir -v estimatori/gradiente
+				mkdir -v ottimizzazione
+			else
+				echo "Aborted"
+			fi
+			exit
+			;;
 		clean)
 			echo "Clean all old datas!"
 			echo "Are you sure? [y/n] "

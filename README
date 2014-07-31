@@ -7,6 +7,6 @@ Hydrogen Shadow Wave Function Quantum Monte Carlo
 
 IMPORTANT:
 
-1) Even though the input files and the folders other "source" do not contain the code itself are essential for running the code.
-Please make sure to have a clean repository before committing/pushing. The bash script "command.sh" contains the command "clean" to do so.
-So, please run "sh command.sh clean" before committing/pushing.
+1) Even though the input files and the folders other than "source" do not contain the code itself, they are essential for running the code.
+Please make sure to have a clean folder before committing/pushing. The bash script "command.sh" contains the command "cleanall" to do so.
+So, please run "sh command.sh cleanall" before committing/pushing.
