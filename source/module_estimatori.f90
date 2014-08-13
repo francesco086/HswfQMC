@@ -358,6 +358,24 @@ MODULE estimatori
 					lsdee=lsdee+(SDe_up_old(j,i)*der2_up*ISDe_up_old(i,j)+SDe_dw_old(j,i)*der2_dw*ISDe_dw_old(i,j))
 				END DO
 			END DO
+		CASE ('bat')
+			DO i = 1, H_N_part, 1
+				i_SD=i+H_N_part
+				DO j = 1, H_N_part, 1
+					j_SD=j+H_N_part
+					der1_up(1:3)=-(rij_ep_old(1:3,j,i)*C_atm/rij_ep_old(0,j,i))*DEXP(-C_atm*rij_ep_old(0,j,i))  & 
+					             -(rij_ep_old(1:3,j,i_SD)*C_atm/rij_ep_old(0,j,i_SD))*DEXP(-C_atm*rij_ep_old(0,j,i_SD))
+					der1_dw(1:3)=-(rij_ep_old(1:3,j_SD,i_SD)*C_atm/rij_ep_old(0,j_SD,i_SD))*DEXP(-C_atm*rij_ep_old(0,j_SD,i_SD))  &
+					             -(rij_ep_old(1:3,j_SD,i)*C_atm/rij_ep_old(0,j_SD,i))*DEXP(-C_atm*rij_ep_old(0,j_SD,i))
+					der2_up=(-2.d0*C_atm/rij_ep_old(0,j,i)+C_atm*C_atm)*DEXP(-C_atm*rij_ep_old(0,j,i))  &
+					             +(-2.d0*C_atm/rij_ep_old(0,j,i_SD)+C_atm*C_atm)*DEXP(-C_atm*rij_ep_old(0,j,i_SD))
+					der2_dw=(-2.d0*C_atm/rij_ep_old(0,j_SD,i_SD)+C_atm*C_atm)*DEXP(-C_atm*rij_ep_old(0,j_SD,i_SD))  &
+					             +(-2.d0*C_atm/rij_ep_old(0,j_SD,i)+C_atm*C_atm)*DEXP(-C_atm*rij_ep_old(0,j_SD,i))
+					gsdee_up(1:3,j)=gsdee_up(1:3,j)+der1_up*ISDe_up_old(i,j)
+					gsdee_dw(1:3,j)=gsdee_dw(1:3,j)+der1_dw*ISDe_dw_old(i,j)
+					lsdee=lsdee+(der2_up*ISDe_up_old(i,j)+der2_dw*ISDe_dw_old(i,j))
+				END DO
+			END DO
 		CASE ('atp')
 			frfs1(1:3)=PI/L(1:3)
 			DO i = 1, H_N_part, 1
@@ -1081,61 +1099,15 @@ MODULE estimatori
 	SUBROUTINE derivata_SDe_atm(O)
 		USE walkers
 		IMPLICIT NONE
-		INTEGER :: i, j, i_sd, j_sd
+		INTEGER :: i, j
 		REAL (KIND=8) :: O      !O(1) - Gsesp
-		INTEGER :: pvt(1:H_N_part), info, perm
-		REAL (KIND=8) :: SD(1:H_N_part,1:H_N_part), ISD(1:H_N_part,1:H_N_part), detSD
 		O=0.d0
-		
-		!!up
-		!DO j = 1, H_N_part, 1
-		!	DO i = 1, H_N_part, 1
-		!		SD(i,j)=-rij_ep_old(0,i,j)*DEXP(-C_atm*rij_ep_old(0,i,j))
-		!		ISD(i,j)=SD(i,j)
-		!	END DO
-		!END DO
-		!!Calcolo il determinante di SD_new
-		!CALL DGETRF( H_N_part, H_N_part, ISD, H_N_part, pvt, info )
-		!IF (info/=0) STOP 'ERRORE NELLA DECOMPOSIZIONE LU SDe_atm_up'
-		!perm=0
-		!detSD=1.d0
-		!DO  i = 1, H_N_part, 1
-		!	IF (pvt(i) /= i) perm=perm+1
-		!END DO
-		!IF (MOD(perm,2) == 1 ) detSD=-detSD
-		!DO  i = 1, H_N_part, 1
-		!	detSD=detSD*ISD(i,i)
-		!END DO
-		!O=O+detSD/REAL(detSDe_up_old,8)
 		
 		DO j = 1, H_N_part, 1
 			DO i = 1, H_N_part, 1
 				O=O-rij_ep_old(0,i,j)*SDe_up_old(i,j)*ISDe_up_old(j,i)
 			END DO
 		END DO
-		
-		!!dw
-		!DO j = H_N_part+1, N_part, 1
-		!	j_sd=j-H_N_part
-		!	DO i = H_N_part+1, N_part, 1
-		!		i_sd=i-H_N_part
-		!		SD(i_sd,j_sd)=-rij_ep_old(0,i,j)*DEXP(-C_atm*rij_ep_old(0,i,j))
-		!		ISD(i_sd,j_sd)=SD(i_sd,j_sd)
-		!	END DO
-		!END DO
-		!!Calcolo il determinante di SD_new
-		!CALL DGETRF( H_N_part, H_N_part, ISD, H_N_part, pvt, info )
-		!IF (info/=0) STOP 'ERRORE NELLA DECOMPOSIZIONE LU SDe_atm_dw'
-		!perm=0
-		!detSD=1.d0
-		!DO  i = 1, H_N_part, 1
-		!	IF (pvt(i) /= i) perm=perm+1
-		!END DO
-		!IF (MOD(perm,2) == 1 ) detSD=-detSD
-		!DO  i = 1, H_N_part, 1
-		!	detSD=detSD*ISD(i,i)
-		!END DO
-		!O=O+detSD/REAL(detSDe_dw_old,8)
 		
 		DO j = 1, H_N_part, 1
 			DO i = 1, H_N_part, 1
@@ -1144,6 +1116,31 @@ MODULE estimatori
 		END DO
 		
 	END SUBROUTINE derivata_SDe_atm
+	
+!-----------------------------------------------------------------------
+
+	SUBROUTINE derivata_SDe_bat(O)
+		USE walkers
+		IMPLICIT NONE
+		INTEGER :: i, j
+		REAL (KIND=8) :: O      !O(1) - Gsesp
+		O=0.d0
+	
+		DO j = 1, H_N_part, 1
+			DO i = 1, H_N_part, 1
+				O=O-(rij_ep_old(0,i,j)*DEXP(-C_atm*rij_ep_old(0,i,j)) +  &
+				  rij_ep_old(0,i,j+H_N_part)*DEXP(-C_atm*rij_ep_old(0,i,j+H_N_part)))*ISDe_up_old(j,i)
+			END DO
+		END DO
+	
+		DO j = H_N_part+1, N_part, 1
+			DO i = H_N_part+1, N_part, 1
+				O=O-(rij_ep_old(0,i,j)*DEXP(-C_atm*rij_ep_old(0,i,j)) + &
+				  rij_ep_old(0,i,j-H_N_part)*DEXP(-C_atm*rij_ep_old(0,i,j-H_N_part)) )*ISDe_dw_old(j,i)
+			END DO
+		END DO
+	
+	END SUBROUTINE derivata_SDe_bat
 !-----------------------------------------------------------------------
 
 	SUBROUTINE derivata_SDe_atp(O)

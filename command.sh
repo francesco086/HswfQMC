@@ -3,6 +3,13 @@
 while :
 do
 	case $1 in
+		build)
+			echo "Build the executable file"
+			cd source
+			make
+			cd ..
+			exit
+			;;
 		cleanall)
 			echo "Clean all old datas and orbitals and reticolo files!"
 			echo "Are you sure? [y/n] "

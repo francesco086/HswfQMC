@@ -1,13 +1,13 @@
 &dati_ottimizzazione
-opt_SDe=.FALSE.
+opt_SDe=.TRUE.
 opt_A_Jee=.TRUE.
 opt_F_Jee=.TRUE.
 opt_A_Jep=.TRUE.
 opt_F_Jep=.TRUE.
 opt_Jse=.TRUE.
-opt_Kse=.FALSE.
+opt_Kse=.TRUE.
 opt_Jsesp=.TRUE.
-opt_SDse=.TRUE.
+opt_SDse=.FALSE.
 opt_c_eff_hartree=.FALSE.
 opt_rp=.FALSE.
 /

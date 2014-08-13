@@ -960,6 +960,9 @@ MODULE variational_calculations
 			CASE ('atm')
 				CALL derivata_SDe_atm(O(cont,i_mc))
 				cont=cont+1
+			CASE ('bat')
+				CALL derivata_SDe_bat(O(cont,i_mc))
+				cont=cont+1
 			CASE ('atp')
 				CALL derivata_SDe_atp(O(cont,i_mc))
 				cont=cont+1

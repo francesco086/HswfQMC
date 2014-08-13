@@ -1,8 +1,8 @@
 &dati_simulazione_mc
-N_mc=-50000              !numero di passi MC, se negativo non viene diviso fra processori
-N_blank=5000            !numero di passi MC da fare a vuoto (per ogni processore)
+N_mc=-10000              !numero di passi MC, se negativo non viene diviso fra processori
+N_blank=1000            !numero di passi MC da fare a vuoto (per ogni processore)
 N_1ppt=-150                 !con un numero negativo: N_1ppt=-(N_1ppt/100.)*N_part ###(ottimale -150)
-flag_TABC=T               !Twist Averaged Boundary Conditions
+flag_TABC=F               !Twist Averaged Boundary Conditions
 N_TABC=2000              !numero di passi dopo cui viene eseguito un twist. Se N_TABC<0, ci saranno -N_TABC twist per ogni processo
 N_mc_relax_TABC=100
 step_e=0.5
@@ -22,7 +22,7 @@ flag_E_pot=T       !calcolo l'energia potenziale?
 flag_somme_ewald=T
 alpha_ewald=-1.0d0
 num_k_ewald=515
-flag_gr=T             !calcolo le varie g(r)?
+flag_gr=F             !calcolo le varie g(r)?
 N_hist=250
 flag_posizioni=F
 flag_normalizza_pos=T

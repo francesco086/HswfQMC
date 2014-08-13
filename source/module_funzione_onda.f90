@@ -651,6 +651,11 @@ MODULE funzione_onda
 					C_atm=nuovi_parametri(cont)
 					cont=cont+1
 				END IF
+			ELSE IF (SDe_kind=='bat') THEN
+				IF ( opt_SDe ) THEN
+					C_atm=nuovi_parametri(cont)
+					cont=cont+1
+				END IF
 			END IF
 		END IF
 		IF ( SDse_kind/='no_' ) THEN
@@ -713,6 +718,10 @@ MODULE funzione_onda
 				PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 				IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
 				  'SDe: ', SDe_kind,'  -  C_atm=', C_atm
+	  		CASE ('bat')
+	  			PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
+	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
+	  			  'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 			CASE ('atp')
 				PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 				IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
@@ -1437,7 +1446,7 @@ MODULE funzione_onda
 		COMPLEX (KIND=8) :: SD(1:N,1:N), ISD(1:N,1:N), detSD
 		
 		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_SD_pw ]'
+		  [ module_funzione_onda.f90 > valuta_SD_atm ]'
 		
 		norm=1.d0 !/DSQRT(PI)
 		IF (num==-1) THEN
@@ -1467,12 +1476,101 @@ MODULE funzione_onda
 			CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD)
 		ELSE
 			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_SD_pw ]'
+			  [ module_funzione_onda.f90 > valuta_SD_atm ]'
 		END IF
 				
 		IF (verbose_mode) PRINT * , 'funzione_onda: detSD(gss)=', detSD
 				
 	END SUBROUTINE valuta_SD_atm
+	!-----------------------------------------------------------------------
+
+		SUBROUTINE valuta_SD_bat(num,updw,rij,N,SD,detSD,ISD,pvt,ISD_old,detSD_old)
+			USE generic_tools
+			IMPLICIT NONE
+			REAL (KIND=8), PARAMETER :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
+			CHARACTER (LEN=2) :: updw
+			INTEGER, INTENT(IN) :: N, num
+			REAL (KIND=8), INTENT(IN) :: rij(1:N+N,1:N+N)
+			COMPLEX (KIND=8), INTENT(IN) :: ISD_old(1:N,1:N), detSD_old
+			INTEGER :: i, j, info, perm
+			INTEGER, INTENT(OUT) :: pvt(1:N)
+			REAL (KIND=8) :: norm
+			COMPLEX (KIND=8) :: SD(1:N,1:N), ISD(1:N,1:N), detSD
+		
+			IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
+			  [ module_funzione_onda.f90 > valuta_SD_bat ]'
+		
+			norm=1.d0 !/DSQRT(PI)
+			
+			SELECT CASE(updw)
+			CASE('up')
+				IF (num==-1) THEN
+					!Calcolo i termini matriciali di SD_new
+					DO j = 1, N, 1
+						DO i = 1, N, 1
+							SD(i,j)=(1.d0,0.d0)*norm*( DEXP(-C_atm*rij(i,j)) + DEXP(-C_atm*rij(i,j+N)) )
+							ISD(i,j)=SD(i,j)
+						END DO
+					END DO
+					!Calcolo il determinante di SD_new
+					CALL ZGETRF( N, N, ISD, N, pvt, info )
+					IF (info/=0) STOP 'ERRORE NELLA DECOMPOSIZIONE LU'
+					perm=0
+					detSD=(1.d0,0.d0)
+					DO  i = 1, N, 1
+						IF (pvt(i) /= i) perm=perm+1
+					END DO
+					IF (MOD(perm,2) == 1 ) detSD=-detSD
+					DO  i = 1, N, 1
+						detSD=detSD*ISD(i,i)
+					END DO
+				ELSE IF ((num>0) .AND. (num<=N)) THEN
+					DO i = 1, N, 1
+						SD(num,i)=(1.d0,0.d0)*norm*( DEXP(-C_atm*rij(num,i)) + DEXP(-C_atm*rij(num,i+N)) )
+					END DO
+					CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD)
+				ELSE
+					STOP 'num non accettabile &
+					  [ module_funzione_onda.f90 > valuta_SD_bat ]'
+				END IF
+			CASE('dw')
+				IF (num==-1) THEN
+					!Calcolo i termini matriciali di SD_new
+					DO j = 1, N, 1
+						DO i = 1, N, 1
+							SD(i,j)=(1.d0,0.d0)*norm*( DEXP(-C_atm*rij(i+N,j+N)) + DEXP(-C_atm*rij(i+N,j)) )
+							ISD(i,j)=SD(i,j)
+						END DO
+					END DO
+					!Calcolo il determinante di SD_new
+					CALL ZGETRF( N, N, ISD, N, pvt, info )
+					IF (info/=0) STOP 'ERRORE NELLA DECOMPOSIZIONE LU'
+					perm=0
+					detSD=(1.d0,0.d0)
+					DO  i = 1, N, 1
+						IF (pvt(i) /= i) perm=perm+1
+					END DO
+					IF (MOD(perm,2) == 1 ) detSD=-detSD
+					DO  i = 1, N, 1
+						detSD=detSD*ISD(i,i)
+					END DO
+				ELSE IF ((num>0) .AND. (num<=N)) THEN
+					DO i = 1, N, 1
+						SD(num,i)=(1.d0,0.d0)*norm*( DEXP(-C_atm*rij(num+N,i+N)) + DEXP(-C_atm*rij(num+N,i)) )
+					END DO
+					CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD)
+				ELSE
+					STOP 'num non accettabile &
+					  [ module_funzione_onda.f90 > valuta_SD_bat ]'
+				END IF
+				CASE DEFAULT
+					STOP 'serve specificare up o dw [ module_funzione_onda.f90 > valuta_SD_bat ]'
+			END SELECT
+				
+			IF (verbose_mode) PRINT * , 'funzione_onda: detSD(gss)=', detSD
+				
+		END SUBROUTINE valuta_SD_bat	
+	
 !-----------------------------------------------------------------------
 
 	SUBROUTINE valuta_SD_gem(num,rij,N,SD,detSD,ISD,pvt,ISD_old,detSD_old)

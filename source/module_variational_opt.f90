@@ -192,6 +192,8 @@ MODULE variational_opt
 					END IF
 				CASE ('atm')
 					num_par_var=num_par_var+1
+				CASE ('bat')
+					num_par_var=num_par_var+1
 				CASE ('atp')
 					num_par_var=num_par_var+1
 				END SELECT
@@ -512,6 +514,9 @@ MODULE variational_opt
 						END DO
 					END IF
 				CASE ('atm')
+					parametri_var(cont)=C_atm
+					cont=cont+1
+				CASE ('bat')
 					parametri_var(cont)=C_atm
 					cont=cont+1
 				CASE ('atp')

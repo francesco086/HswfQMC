@@ -403,6 +403,21 @@ MODULE calcola_accettazione
 				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E DOWN. INFO=', info
 				STOP
 			END IF
+		CASE ('bat')
+			CALL valuta_SD_bat(-1,'up',rij_ep_old(0,:,:),H_N_part, &
+			  SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,SDe_up_new,detSDe_up_new)
+			CALL valuta_SD_bat(-1,'dw',rij_ep_old(0,:,:),H_N_part, &
+			  SDe_dw_old,detSDe_dw_old,ISDe_dw_old,pvte_dw_old,SDe_dw_new,detSDe_dw_new)
+			CALL ZGETRI( H_N_part, ISDe_up_old, H_N_part, pvte_up_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E UP. INFO=', info
+				STOP
+			END IF
+			CALL ZGETRI( H_N_part, ISDe_dw_old, H_N_part, pvte_dw_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E DOWN. INFO=', info
+				STOP
+			END IF
 		CASE ('atp')
 			CALL attiva_pc()
 			CALL valuta_SD_atm(-1,rijpc_ep_old(0,1:H_N_part,1:H_N_part),H_N_part, &
@@ -1188,6 +1203,11 @@ MODULE calcola_accettazione
 					  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,SDe_up_old,detSDe_up_old)
 					CALL valuta_SD_atm(num,rij_ep_new(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
 					  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+	  			CASE ('bat')
+	  				CALL valuta_SD_bat(num,'up',rij_ep_new(0,:,:),H_N_part, &
+	  				  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,SDe_up_old,detSDe_up_old)
+	  				CALL valuta_SD_bat(num,'dw',rij_ep_new(0,:,:),H_N_part, &
+	  				  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
 				CASE ('atp')
 					CALL calcola_nuove_distanze_pc(tipo,num,'e_p_')
 					CALL valuta_SD_atm(num,rijpc_ep_new(0,1:H_N_part,1:H_N_part),H_N_part, &
@@ -1526,6 +1546,19 @@ MODULE calcola_accettazione
 						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
 					ELSE IF ((num>H_N_part) .AND. (num<=N_part)) THEN
 						CALL valuta_SD_atm(num-H_N_part,rij_ep_new(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
+						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+					END IF
+				CASE ('bat')
+					IF (num==-1) THEN
+						CALL valuta_SD_bat(num,'up',rij_ep_new(0,:,:),H_N_part, &
+						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+						CALL valuta_SD_bat(num,'dw',rij_ep_new(0,:,:),H_N_part, &
+						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+					ELSE IF ((num>0) .AND. (num<=H_N_part)) THEN
+						CALL valuta_SD_bat(num,'up',rij_ep_new(0,:,:),H_N_part, &
+						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+					ELSE IF ((num>H_N_part) .AND. (num<=N_part)) THEN
+						CALL valuta_SD_bat(num-H_N_part,'dw',rij_ep_new(0,:,:),H_N_part, &
 						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
 					END IF
 				CASE ('atp')

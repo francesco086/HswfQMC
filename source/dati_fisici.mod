@@ -1,0 +1,178 @@
+GFORTRAN module version '6' created from module_dati.f90 on Wed Aug 13 13:49:47 2014
+MD5:049ff86ed5f7d1d6a056b6c72c8b630a -- If you edit this, you'll get what you deserve.
+
+(() () () () () () () () () () () () () () () () () () () () () () ()
+() () () ())
+
+()
+
+()
+
+()
+
+()
+
+()
+
+(2 'basiscubic' 'lattice' 'basiscubic' 1 ((PROCEDURE UNKNOWN-INTENT
+MODULE-PROC DECL UNKNOWN 0 0 DIMENSION FUNCTION ALWAYS_EXPLICIT) (REAL 8
+0 0 REAL ()) 3 0 (4 5) (2 0 EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ())
+0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3') (CONSTANT (INTEGER 4
+0 0 INTEGER ()) 0 '1') (OP (INTEGER 4 0 0 INTEGER ()) 0 DIVIDE (OP (
+INTEGER 4 0 0 INTEGER ()) 0 TIMES (OP (INTEGER 4 0 0 INTEGER ()) 0 POWER
+(VARIABLE (INTEGER 4 0 0 INTEGER ()) 0 4 ()) (CONSTANT (INTEGER 4 0 0
+INTEGER ()) 0 '3')) (FUNCTION (INTEGER 4 0 0 INTEGER ()) 0 6 (('' (
+VARIABLE (REAL 8 0 0 REAL ()) 2 5 ((ARRAY (FULL 0))))) ('' ()) ('' ())) ''
+0 'size')) (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3'))) 2 () () () 0 0)
+7 'bestcubic' 'lattice' 'bestcubic' 1 ((PROCEDURE UNKNOWN-INTENT
+MODULE-PROC DECL UNKNOWN 0 0 DIMENSION FUNCTION ALWAYS_EXPLICIT) (REAL 8
+0 0 REAL ()) 8 0 (9) (2 0 EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ())
+0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3') (CONSTANT (INTEGER 4
+0 0 INTEGER ()) 0 '1') (VARIABLE (INTEGER 4 0 0 INTEGER ()) 0 9 ())) 7 ()
+() () 0 0)
+10 'bodycenteredcubic' 'lattice' 'bodycenteredcubic' 1 ((PROCEDURE
+UNKNOWN-INTENT MODULE-PROC DECL UNKNOWN 0 0 DIMENSION FUNCTION
+ALWAYS_EXPLICIT) (REAL 8 0 0 REAL ()) 11 0 (12) (2 0 EXPLICIT (CONSTANT
+(INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0
+'3') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (OP (INTEGER 4 0 0
+INTEGER ()) 0 TIMES (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '2') (OP (
+INTEGER 4 0 0 INTEGER ()) 0 POWER (VARIABLE (INTEGER 4 0 0 INTEGER ()) 0
+12 ()) (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')))) 10 () () () 0 0)
+13 'chiudi_dati_fisici' 'dati_fisici' 'chiudi_dati_fisici' 1 ((
+PROCEDURE UNKNOWN-INTENT MODULE-PROC DECL UNKNOWN 0 0 SUBROUTINE) (
+UNKNOWN 0 0 0 UNKNOWN ()) 0 0 () () 0 () () () 0 0)
+14 'crystal_cell' 'dati_fisici' 'crystal_cell' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN EXPLICIT-SAVE 0 0 PROTECTED
+IN_NAMELIST) (CHARACTER 1 0 0 CHARACTER ((CONSTANT (INTEGER 4 0 0
+INTEGER ()) 0 '5'))) 0 0 () () 0 () () () 0 0)
+15 'dati_fisici' 'dati_fisici' 'dati_fisici' 1 ((MODULE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN UNKNOWN 0 0) (UNKNOWN 0 0 0 UNKNOWN ()) 0 0 () () 0
+() () () 0 0)
+16 'facecenteredcubic' 'lattice' 'facecenteredcubic' 1 ((PROCEDURE
+UNKNOWN-INTENT MODULE-PROC DECL UNKNOWN 0 0 DIMENSION FUNCTION
+ALWAYS_EXPLICIT) (REAL 8 0 0 REAL ()) 17 0 (18) (2 0 EXPLICIT (CONSTANT
+(INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0
+'3') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (OP (INTEGER 4 0 0
+INTEGER ()) 0 TIMES (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '4') (OP (
+INTEGER 4 0 0 INTEGER ()) 0 POWER (VARIABLE (INTEGER 4 0 0 INTEGER ()) 0
+18 ()) (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')))) 16 () () () 0 0)
+19 'flag_2d' 'dati_fisici' 'flag_2d' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN EXPLICIT-SAVE 0 0 PROTECTED) (LOGICAL 4 0 0 LOGICAL
+()) 0 0 () () 0 () () () 0 0)
+20 'flag_molecular' 'dati_fisici' 'flag_molecular' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN EXPLICIT-SAVE 0 0 PROTECTED
+IN_NAMELIST) (LOGICAL 4 0 0 LOGICAL ()) 0 0 () () 0 () () () 0 0)
+21 'graphene_layer' 'lattice' 'graphene_layer' 1 ((PROCEDURE
+UNKNOWN-INTENT MODULE-PROC DECL UNKNOWN 0 0 DIMENSION FUNCTION
+IMPLICIT_PURE ALWAYS_EXPLICIT) (REAL 8 0 0 REAL ()) 22 0 (23) (2 0
+EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER
+4 0 0 INTEGER ()) 0 '3') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (
+OP (INTEGER 4 0 0 INTEGER ()) 0 TIMES (CONSTANT (INTEGER 4 0 0 INTEGER ())
+0 '4') (OP (INTEGER 4 0 0 INTEGER ()) 0 PARENTHESES (OP (INTEGER 4 0 0
+INTEGER ()) 0 POWER (VARIABLE (INTEGER 4 0 0 INTEGER ()) 0 23 ()) (
+CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '2'))))) 21 () () () 0 0)
+24 'h_l' 'dati_fisici' 'h_l' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN EXPLICIT-SAVE 0 0 DIMENSION PROTECTED) (REAL 8 0 0 REAL ()) 0 0
+() (1 0 EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (
+INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () () () 0 0)
+25 'h_n_part' 'dati_fisici' 'h_n_part' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN EXPLICIT-SAVE 0 0 PROTECTED) (INTEGER 4 0 0 INTEGER
+()) 0 0 () () 0 () () () 0 0)
+26 'hbar' 'dati_fisici' 'hbar' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN EXPLICIT-SAVE 0 0 PROTECTED) (REAL 8 0 0 REAL ()) 0 0 () () 0 ()
+() () 0 0)
+27 'hexagonalclosepacking' 'lattice' 'hexagonalclosepacking' 1 ((
+PROCEDURE UNKNOWN-INTENT MODULE-PROC DECL UNKNOWN 0 0 DIMENSION FUNCTION
+ALWAYS_EXPLICIT) (REAL 8 0 0 REAL ()) 28 0 (29) (2 0 EXPLICIT (CONSTANT
+(INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0
+'3') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (OP (INTEGER 4 0 0
+INTEGER ()) 0 TIMES (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '8') (OP (
+INTEGER 4 0 0 INTEGER ()) 0 POWER (VARIABLE (INTEGER 4 0 0 INTEGER ()) 0
+29 ()) (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3')))) 27 () () () 0 0)
+30 'iniz_dati_fisici' 'dati_fisici' 'iniz_dati_fisici' 1 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN EXPLICIT-SAVE 0 0 PROTECTED) (
+LOGICAL 4 0 0 LOGICAL ()) 0 0 () () 0 () () () 0 0)
+31 'inizializza_dati_fisici' 'dati_fisici' 'inizializza_dati_fisici' 1 (
+(PROCEDURE UNKNOWN-INTENT MODULE-PROC DECL UNKNOWN 0 0 SUBROUTINE
+ALWAYS_EXPLICIT) (UNKNOWN 0 0 0 UNKNOWN ()) 32 0 (33) () 0 () () () 0 0)
+34 'k_coulomb' 'dati_fisici' 'k_coulomb' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN EXPLICIT-SAVE 0 0 PROTECTED) (REAL 8 0 0 REAL ()) 0
+0 () () 0 () () () 0 0)
+35 'l' 'dati_fisici' 'l' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN EXPLICIT-SAVE 0 0 DIMENSION PROTECTED) (REAL 8 0 0 REAL ()) 0 0
+() (1 0 EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') (CONSTANT (
+INTEGER 4 0 0 INTEGER ()) 0 '3')) 0 () () () 0 0)
+36 'l_cov_bond' 'dati_fisici' 'l_cov_bond' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN EXPLICIT-SAVE 0 0 PROTECTED) (REAL 8 0 0 REAL ()) 0
+0 () () 0 () () () 0 0)
+37 'lattice' 'lattice' 'lattice' 1 ((MODULE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN UNKNOWN 0 0) (UNKNOWN 0 0 0 UNKNOWN ()) 0 0 () () 0 () () () 0 0)
+38 'mass_e' 'dati_fisici' 'mass_e' 1 ((PARAMETER UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0) (REAL 8 0 0 REAL ()) 0 0 () (
+CONSTANT (REAL 8 0 0 REAL ()) 0 '0.23f3cfb84410de@-2') () 0 () () () 0 0)
+39 'mass_p' 'dati_fisici' 'mass_p' 1 ((PARAMETER UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN IMPLICIT-SAVE 0 0) (REAL 8 0 0 REAL ()) 0 0 () (
+CONSTANT (REAL 8 0 0 REAL ()) 0 '0.101dcdedacebda@1') () 0 () () () 0 0)
+40 'n_cell_side' 'dati_fisici' 'n_cell_side' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN EXPLICIT-SAVE 0 0 PROTECTED IN_NAMELIST) (INTEGER 4
+0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+41 'n_part' 'dati_fisici' 'n_part' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN EXPLICIT-SAVE 0 0 PROTECTED) (INTEGER 4 0 0 INTEGER
+()) 0 0 () () 0 () () () 0 0)
+42 'r_crystal' 'dati_fisici' 'r_crystal' 1 ((VARIABLE UNKNOWN-INTENT
+UNKNOWN-PROC UNKNOWN EXPLICIT-SAVE 0 0 ALLOCATABLE DIMENSION PROTECTED)
+(REAL 8 0 0 REAL ()) 0 0 () (2 0 DEFERRED () () () ()) 0 () () () 0 0)
+43 'r_s' 'dati_fisici' 'r_s' 1 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN EXPLICIT-SAVE 0 0 PROTECTED IN_NAMELIST) (REAL 8 0 0 REAL ()) 0
+0 () () 0 () () () 0 0)
+44 'selected_int_kind' '(intrinsic)' 'selected_int_kind' 1 ((PROCEDURE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 FUNCTION) (UNKNOWN 0 0 0
+UNKNOWN ()) 0 0 () () 44 () () () 0 0)
+45 'selected_real_kind' '(intrinsic)' 'selected_real_kind' 1 ((
+PROCEDURE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 FUNCTION) (
+UNKNOWN 0 0 0 UNKNOWN ()) 0 0 () () 45 () () () 0 0)
+46 'simplecubic' 'lattice' 'simplecubic' 1 ((PROCEDURE UNKNOWN-INTENT
+MODULE-PROC DECL UNKNOWN 0 0 DIMENSION FUNCTION ALWAYS_EXPLICIT) (REAL 8
+0 0 REAL ()) 47 0 (48) (2 0 EXPLICIT (CONSTANT (INTEGER 4 0 0 INTEGER ())
+0 '1') (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '3') (CONSTANT (INTEGER 4
+0 0 INTEGER ()) 0 '1') (OP (INTEGER 4 0 0 INTEGER ()) 0 POWER (VARIABLE
+(INTEGER 4 0 0 INTEGER ()) 0 48 ()) (CONSTANT (INTEGER 4 0 0 INTEGER ())
+0 '3'))) 46 () () () 0 0)
+49 'strecthing_cov_bond' 'dati_fisici' 'strecthing_cov_bond' 1 ((
+VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN EXPLICIT-SAVE 0 0 PROTECTED
+IN_NAMELIST) (REAL 8 0 0 REAL ()) 0 0 () () 0 () () () 0 0)
+9 'npart' '' 'npart' 8 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN 0 0 DUMMY) (INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+23 'nside' '' 'nside' 22 ((VARIABLE IN UNKNOWN-PROC UNKNOWN UNKNOWN 0 0
+DUMMY) (INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+29 'nside' '' 'nside' 28 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN 0 0 DUMMY) (INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+4 'nside' '' 'nside' 3 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN 0 0 DUMMY) (INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+6 'size' '(intrinsic)' 'size' 3 ((PROCEDURE UNKNOWN-INTENT UNKNOWN-PROC
+UNKNOWN UNKNOWN 0 0 FUNCTION) (REAL 4 0 0 REAL ()) 0 0 () () 6 () () ()
+0 0)
+5 'basis' '' 'basis' 3 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN 0 0 DIMENSION DUMMY) (REAL 8 0 0 REAL ()) 0 0 () (2 0
+ASSUMED_SHAPE (CONSTANT (INTEGER 4 0 0 INTEGER ()) 0 '1') () (CONSTANT (
+INTEGER 4 0 0 INTEGER ()) 0 '1') ()) 0 () () () 0 0)
+12 'nside' '' 'nside' 11 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN 0 0 DUMMY) (INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+18 'nside' '' 'nside' 17 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN 0 0 DUMMY) (INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+48 'nside' '' 'nside' 47 ((VARIABLE UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN
+UNKNOWN 0 0 DUMMY) (INTEGER 4 0 0 INTEGER ()) 0 0 () () 0 () () () 0 0)
+33 'file_reticolo_opt' '' 'file_reticolo_opt' 32 ((VARIABLE
+UNKNOWN-INTENT UNKNOWN-PROC UNKNOWN UNKNOWN 0 0 OPTIONAL DUMMY) (
+CHARACTER 1 0 0 CHARACTER (())) 0 0 () () 0 () () () 0 0)
+)
+
+('basiscubic' 0 2 'bestcubic' 0 7 'bodycenteredcubic' 0 10
+'chiudi_dati_fisici' 0 13 'crystal_cell' 0 14 'dati_fisici' 0 15
+'facecenteredcubic' 0 16 'flag_2d' 0 19 'flag_molecular' 0 20
+'graphene_layer' 0 21 'h_l' 0 24 'h_n_part' 0 25 'hbar' 0 26
+'hexagonalclosepacking' 0 27 'iniz_dati_fisici' 0 30
+'inizializza_dati_fisici' 0 31 'k_coulomb' 0 34 'l' 0 35 'l_cov_bond' 0
+36 'lattice' 0 37 'mass_e' 0 38 'mass_p' 0 39 'n_cell_side' 0 40 'n_part'
+0 41 'r_crystal' 0 42 'r_s' 0 43 'selected_int_kind' 0 44
+'selected_real_kind' 0 45 'simplecubic' 0 46 'strecthing_cov_bond' 0 49)
