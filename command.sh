@@ -22,6 +22,7 @@ do
 				rm -v -f reticolo/*.d
 				rm -r -v -f orbitals/*
 				rm -r -v -f reticolo/*
+				rm HswfQMC_*
 				mkdir -v estimatori
 				mkdir -v posizioni
 				mkdir -v estimatori/gradiente

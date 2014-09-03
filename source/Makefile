@@ -51,6 +51,11 @@ ifeq ($(COMPUTER),mogon)
     LIBS=-lmylapack -lmyblas
     LDFLAGS=-L/home/calcavec/lapack-3.4.2/
 endif
+ifeq ($(COMPUTER),Majorana)
+	EXEC=$(EXEC1)_majorana
+	FC=mpif90
+	LIBS=-lblas -llapack
+endif
 
 # elenco degli oggetti da creare (c'è sempre l'oggetto del programma principale e gli oggetti
 # dei vari moduli)
