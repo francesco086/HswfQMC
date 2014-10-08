@@ -8,7 +8,7 @@ ifeq ($(DEBUG),true)
 	EXEC1=$(EXEC2)_debug
 else
 	FFLAGS=-O3
-	EXEC1=$(EXEC2)
+	EXEC1=$(EXEC2)_exe
 endif
 ifeq ($(QUICK_COMPILE),true)
 	FFLAGS=-O0
@@ -26,33 +26,33 @@ ifeq ($(COMPUTER),macbook)
    FC=mpif90-openmpi-gcc49
 endif
 ifeq ($(COMPUTER),hall)
-        EXEC=$(EXEC1)_hall
+        EXEC=$(EXEC1)
         LIBS=-lblas -llapack
         FC=mpif90
 endif
 ifeq ($(COMPUTER),langevin)
-	EXEC=$(EXEC1)_langevin
+	EXEC=$(EXEC1)
 	LIBS=-lblas -llapack
 	FC=mpif90
 endif
 ifeq ($(COMPUTER),roothan)
-	EXEC=$(EXEC1)_roothan
+	EXEC=$(EXEC1)
 	LIBS=-lblas -llapack
 	FC=mpif90
 endif
 ifeq ($(COMPUTER),lc2)
-	EXEC=$(EXEC1)_lc2
+	EXEC=$(EXEC1)
 	LIBS=-lblas -llapack
 	FC=mpif90
 endif
 ifeq ($(COMPUTER),mogon)
-	EXEC=$(EXEC1)_mogon
+	EXEC=$(EXEC1)
 	FC=mpif90
     LIBS=-lmylapack -lmyblas
     LDFLAGS=-L/home/calcavec/lapack-3.4.2/
 endif
 ifeq ($(COMPUTER),majorana)
-	EXEC=$(EXEC1)_majorana
+	EXEC=$(EXEC1)
 	FC=mpif90
 	LIBS=-lblas -llapack
 endif
@@ -64,7 +64,7 @@ OBJECTS=main.o module_dft.o module_dati.o module_hartree.o module_stati_eccitati
 
 # crea tutti gli oggetti e li linka correttamente con le librerie; scrivere "make"
 all: $(OBJECTS)
-	$(FC) $(FFLAGS) $(LDFLAGS) -o ./$(EXEC) $(OBJECTS) $(LIBS); cp HswfQMC* ../
+	$(FC) $(FFLAGS) $(LDFLAGS) -o ./$(EXEC) $(OBJECTS) $(LIBS)
 
 # rimuove tutti gli oggetti e moduli creati lasciando solo i sorgenti; "make clean"
 clean:

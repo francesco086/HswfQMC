@@ -7,6 +7,11 @@ Hydrogen Shadow Wave Function Quantum Monte Carlo
 
 IMPORTANT:
 
-1) Even though the input files and the folders other than "source" do not contain the code itself, they are essential for running the code.
-Please make sure to have a clean folder before committing/pushing. The bash script "command.sh" contains the command "cleanall" to do so.
-So, please run "sh command.sh cleanall" before committing/pushing.
+1) You can set your PATH variable so that it will find the HswfQMC executable and pilot-HswfQMC.sh script by typing (in the current folder) "sh pilot-HswfQMC.sh setpath".
+Don't use this command more times or you will keep append this path to the variable PATH.
+After running this command, from now on you can use the script pilot-HswfQMC.sh from anywhere, just by typing "pilot-HswfQMC.sh <command>".
+If you do not follow this instruction (setpath) the usage of the pilot script might crash/not work.
+Type "pilot-HswfQMC.sh help" to see which are the implemented commands.
+
+2) Please make sure to have a clean folder before committing/pushing.
+So, please run "pilot-HswfQMC.sh precommit" before committing/pushing.
