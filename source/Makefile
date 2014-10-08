@@ -1,7 +1,7 @@
 DEBUG=false
 QUICK_COMPILE=false
 EXEC2=HswfQMC
-COMPUTER=$(COMPUTER_MACHINE)
+COMPUTER:=$(shell hostname)
 
 ifeq ($(DEBUG),true)
   	FFLAGS=-O0 -g -fbounds-check
@@ -51,7 +51,7 @@ ifeq ($(COMPUTER),mogon)
     LIBS=-lmylapack -lmyblas
     LDFLAGS=-L/home/calcavec/lapack-3.4.2/
 endif
-ifeq ($(COMPUTER),Majorana)
+ifeq ($(COMPUTER),majorana)
 	EXEC=$(EXEC1)_majorana
 	FC=mpif90
 	LIBS=-lblas -llapack
