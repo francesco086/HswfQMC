@@ -13,6 +13,7 @@ do
 		help)
 			echo "These are the options you have:
 								"
+			echo "install_lapack - Download and compile the lapack library (recommended) "
 			echo "build - Compile the source code in order to have the HswfQMC_exe executable"
 			echo "recompile - Recompile the code from scratch"
 			
@@ -20,7 +21,6 @@ do
 			echo "clean - Clean all old datas from previous simulations"
 			echo "wash - Clean all old datas from previous simulations but the optimized wf and lattice positions"
 
-			echo "precommit - Clean the HswfQMC/ folder before commiting"
 			echo "commit - commit and push on github"
 			
 			exit
@@ -66,22 +66,6 @@ do
 			fi
 			exit
 			;;
-		precommit)
-			echo "Clean compiled files?"
-                        echo "Are you sure? [y/n] "
-                        read ANSW
-                        if [ "$ANSW" = "y" ]
-                        then
-                                cd $pilot_PATH
-                                \rm HswfQMC*
-                                cd source/
-                                make clean
-                                cd $CURRENT_PATH
-                        else
-                                echo "Aborted"
-                        fi
-                        exit
-                        ;;
 		commit)
 			echo "Commit and push on github."
 			echo "Are you sure? [y/n] "
@@ -143,6 +127,32 @@ do
 			echo "" >> ~/.bashrc
 			echo "#add path for HswfQMC" >> ~/.bashrc 
 			echo "PATH=${CURRENT_PATH}:\$PATH" >> ~/.bashrc
+			exit
+			;;
+		install_lapack)
+			echo "Download and compile the lapack library"
+			LAPACK_FOLDER="lapack_lib"
+			cd ${pilot_PATH}
+			echo "Which fortran compiler do you use? "
+                        read FF
+			echo "How many cores does your computer have? [if you are not sure type 1] "
+                        read NUM_CPU
+			svn co https://icl.cs.utk.edu/svn/lapack-dev/lapack/trunk
+			mv trunk ${LAPACK_FOLDER}
+			cd ${LAPACK_FOLDER}
+			sed -i.bak "s/FORTRAN  = gfortran/FORTRAN = ${FF}/" make.inc.example
+			sed -i.bak "s/OPTS     = -O2 -frecursiv/OPTS     = -O3 -march=native -frecursiv/" make.inc.example
+			\rm make.inc.example.bak
+			mv make.inc.example make.inc
+			make -j${NUM_CPU} blaslib
+			mv librefblas.a librefmyblas.a
+			make -j${NUM_CPU} lapacklib
+			mv liblapack.a libmylapack.a
+			cd $CURRENT_PATH
+			echo ""
+			echo "Lapack library compiled! In order to use it, insert in the Makefile:"
+			echo "LIBS=-lmylapack -lmyblas"
+			echo "LDFLAGS=-L${pilot_PATH}/${LAPACK_FOLDER}"
 			exit
 			;;
 		*)

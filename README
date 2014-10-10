@@ -13,5 +13,3 @@ After running this command, from now on you can use the script pilot-HswfQMC.sh 
 If you do not follow this instruction (setpath) the usage of the pilot script might crash/not work.
 Type "pilot-HswfQMC.sh help" to see which are the implemented commands.
 
-2) Please make sure to have a clean folder before committing/pushing.
-So, please run "pilot-HswfQMC.sh precommit" before committing/pushing.
