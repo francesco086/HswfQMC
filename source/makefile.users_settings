@@ -1,0 +1,7 @@
+ifeq ($(IDENTIFIER),kenzo@majorana)
+        EXEC=$(EXEC1)
+        LIBS=-lmyHswfQMClapack -lmyHswfQMCblas
+        LDFLAGS=-L/home/kenzo/Codes/HswfQMC/lapack_lib
+        FC=mpif90
+endif
+

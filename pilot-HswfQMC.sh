@@ -7,36 +7,40 @@ CURRENT_PATH=$(pwd)
 pilot_PATH=$(which pilot-HswfQMC.sh | sed -e "s/\/pilot-HswfQMC.sh//")
 #echo "Path to the pilot executable: "${pilot_PATH}
 
+LAPACK_FOLDER="lapack_lib"
+
 while :
 do
 	case $1 in
 		help)
 			echo "These are the options you have:
 								"
+			echo "      --- Build and set the HswfQMC code ---"
+			echo "setpath - set the PATH shell variable in order to be able to use the pilot script and the HswfQMC_exe executalbe"
 			echo "install_lapack - Download and compile the lapack library (recommended) "
-			echo "build - Compile the source code in order to have the HswfQMC_exe executable"
+			echo "setmakefile - Set the Makefile automatically"
+			echo "build - Compile (make) the HswfQMC source code in order to have the HswfQMC_exe executable"
 			echo "recompile - Recompile the code from scratch"
 			
+			echo ""
+			echo "      --- Use HswfQMC ---"
 			echo "setdir - Make the current folder a working folder (with all necessary input files and folders)"
 			echo "clean - Clean all old datas from previous simulations"
 			echo "wash - Clean all old datas from previous simulations but the optimized wf and lattice positions"
-
+			
+			echo ""
+			echo "      --- For developers only --- "
 			echo "commit - commit and push on github"
 			
 			exit
 			;;
 		setdir)
-			if [ "$HswfQMC_PATH" == "" ]
-			then
-				echo "You first have to compile the code. Run \"pilot-HswfQMC.sh build\""
-			else
-				echo "Make the current folder a working folder (with all necessary input files and folders)"
-				mkdir estimatori ottimizzazione ottimizzazione/gradiente posizioni reticolo
-				cp ${HswfQMC_PATH}/input_templates/* .
-				PATHRANDOM="${HswfQMC_PATH}/random_seed"
-				sed -i.sedbak "s|RANDOM_SEED_FOLDER|${PATHRANDOM}|" dati_mc.d
-				rm *.sedbak
-			fi
+			echo "Make the current folder a working folder (with all necessary input files and folders)"
+			mkdir estimatori ottimizzazione ottimizzazione/gradiente posizioni reticolo
+			cp ${pilot_PATH}/input_templates/* .
+			PATHRANDOM="${pilot_PATH}/random_seed"
+			sed -i.sedbak "s|RANDOM_SEED_FOLDER|${PATHRANDOM}|" dati_mc.d
+			rm *.sedbak
 			exit
 			;;	
 		build)
@@ -123,15 +127,22 @@ do
 			exit
 			;;
 		setpath)
+			echo "Set the PATH variable in order to be able to use pilot-HswfQMC"
 			chmod u+x pilot-HswfQMC.sh
-			echo "" >> ~/.bashrc
-			echo "#add path for HswfQMC" >> ~/.bashrc 
-			echo "PATH=${CURRENT_PATH}:\$PATH" >> ~/.bashrc
+			COUNT_SETPATH=$(grep ~/.bashrc -e "PATH=${CURRENT_PATH}:\$PATH" | wc -l)
+			echo $COUNT_SETPATH
+			if [ $COUNT_SETPATH == 0 ]
+			then
+				echo "" >> ~/.bashrc
+				echo "#add path for HswfQMC" >> ~/.bashrc 
+				echo "PATH=${CURRENT_PATH}:\$PATH" >> ~/.bashrc
+			else
+				echo "The variable PATH was already correctly set"
+			fi
 			exit
 			;;
 		install_lapack)
 			echo "Download and compile the lapack library"
-			LAPACK_FOLDER="lapack_lib"
 			cd ${pilot_PATH}
 			echo "Which fortran compiler do you use? "
                         read FF
@@ -145,14 +156,74 @@ do
 			\rm make.inc.example.bak
 			mv make.inc.example make.inc
 			make -j${NUM_CPU} blaslib
-			mv librefblas.a librefmyblas.a
+			mv librefblas.a libmyHswfQMCblas.a
 			make -j${NUM_CPU} lapacklib
-			mv liblapack.a libmylapack.a
+			mv liblapack.a libmyHswfQMClapack.a
 			cd $CURRENT_PATH
 			echo ""
 			echo "Lapack library compiled! In order to use it, insert in the Makefile:"
-			echo "LIBS=-lmylapack -lmyblas"
+			echo "LIBS=-lmyHswfQMClapack -lmyHswfQMCblas"
 			echo "LDFLAGS=-L${pilot_PATH}/${LAPACK_FOLDER}"
+			exit
+			;;
+		setmakefile)
+			echo "Set automatically the Makefile in source/"
+			COMPUTER=$(hostname)              #hostname
+			USERNAME=$(whoami)                #username
+			IDENTIFIER="${USERNAME}@${COMPUTER}"
+			cd ${pilot_PATH}
+			ALREADYSET=$(grep source/makefile.users_settings -e "ifeq (\$(IDENTIFIER),${IDENTIFIER})" | wc -l)
+			if [ ${ALREADYSET} \> "0" ]
+			then
+				echo "Your profile was already saved in 'source/makefile.users_settings'. Do you want to delete it, and set it again? [y/n]"
+				read ANSW
+				if [ "${ANSW}" = 'y' ]
+				then
+					sed -i -e "/ifeq (\$(IDENTIFIER),${IDENTIFIER})/,+5d" source/makefile.users_settings   #might not work for Os X
+					FLAG=true
+				else
+					FLAG=false
+				fi
+			else
+				FLAG=true
+			fi
+			if [ ${FLAG} == true ]
+			then
+				echo "Your profile is going to be set."
+				echo "ifeq (\$(IDENTIFIER),${IDENTIFIER})" >> source/makefile.users_settings
+				echo "        EXEC=\$(EXEC1)" >> source/makefile.users_settings
+				echo "Did you use pilotHswfQMC install_lapack? [y/n]"
+				read ANSW
+				if [ "${ANSW}" = "y" ]
+				then
+					echo "        LIBS=-lmyHswfQMClapack -lmyHswfQMCblas" >> source/makefile.users_settings
+					echo "        LDFLAGS=-L${pilot_PATH}/${LAPACK_FOLDER}" >> source/makefile.users_settings
+				else
+					echo "Provide the followings:"
+					echo "LIBS=[press enter for default: -llapack -lblas]"
+					read ANSWLIBS
+					if [ "${ANSWLIBS}" = "" ]
+					then
+						echo "        LIBS=-llapack -lblas" >> source/makefile.users_settings
+					else
+						echo "        LIBS=${ANSWLIBS}" >> source/makefile.users_settings
+					fi
+					echo echo "LDFLAGS=[press enter for default: -empty-]"
+                                        read ANSWLDFLAGS
+					echo "        LDFLAGS=${ANSWLDFLAGS}" >> source/makefile.users_settings
+				fi
+				echo "Which MPI-FORTRAN compiler are you using?[press enter for default: mpif90]"
+				read ANSWFC
+				if [ "$ANSWFC" = "" ]
+                                then
+                                        echo "        FC=mpif90" >> source/makefile.users_settings
+                                else
+                                        echo "        FC=${ANSWFC}" >> source/makefile.users_settings
+                                fi
+				echo "endif" >> source/makefile.users_settings
+				echo "" >> source/makefile.users_settings
+			fi
+			cd ${CURRENT_PATH}
 			exit
 			;;
 		*)

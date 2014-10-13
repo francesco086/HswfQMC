@@ -1,61 +1,65 @@
+#compile for debugging (useful for finding arrays overflow)
 DEBUG=false
+#compile without optimization or debugging flags, for quick compiling
 QUICK_COMPILE=false
+#standard executable name
 EXEC2=HswfQMC
-COMPUTER:=$(shell hostname)
 
+COMPUTER:=$(shell hostname)
+USERNAME:=$(shell whoami)
+IDENTIFIER:=$(USERNAME)@$(COMPUTER)
+
+#set the flags for the compiler 
+FFLAGS=-O3
+#standard: append _exe to the executable name
+EXEC1=$(EXEC2)_exe
+
+#debug compiling mode
 ifeq ($(DEBUG),true)
   	FFLAGS=-O0 -g -fbounds-check
 	EXEC1=$(EXEC2)_debug
-else
-	FFLAGS=-O3
-	EXEC1=$(EXEC2)_exe
 endif
+
+#quick compile compiling mode
 ifeq ($(QUICK_COMPILE),true)
 	FFLAGS=-O0
 	EXEC1=$(EXEC2)_qc
 endif
 
-ifeq ($(COMPUTER),macbook)
-	EXEC=$(EXEC1)_macbook
-	# elenco librerie dinamiche (quelle che aggiungi tu a mano per l'eseguibile in questione
-	# che non centrano con quelle di sistema statiche)
-   LIBS=-lrefblas -llapack
-	# questo è per includere il percorso locale dove hai le tue lapack o quantaltro compilato
-	# correttamente; se c'è una versione di sistema delle lapack non serve esplicitarlo
-   LDFLAGS=-L/Users/kenzo/lib/lapack-3.5.0/
-   FC=mpif90-openmpi-gcc49
+
+
+#set the libraries and machine-depending variables
+
+#stored settings for users generated with pilotHswfQMC setmakefile
+include makefile.users_settings
+
+#by hand
+ifeq ($(IDENTIFIER),username@hostname)    #insert your username and hostname
+	EXEC=             #Name of the executable. Standard is: EXEC=$(EXEC1)
+	LIBS=             #necessary library, BLAS AND LAPACK. Therefore usually: LIBS=-llapack -lblas
+	LDFLAGS=          #path to the libraries, if needed. With system libraries is empty.
+	FC=               #fortran compiler. Normally: FC=gfortran
 endif
-ifeq ($(COMPUTER),hall)
-        EXEC=$(EXEC1)
-        LIBS=-lblas -llapack
-        FC=mpif90
-endif
-ifeq ($(COMPUTER),langevin)
-	EXEC=$(EXEC1)
-	LIBS=-lblas -llapack
-	FC=mpif90
-endif
-ifeq ($(COMPUTER),roothan)
-	EXEC=$(EXEC1)
-	LIBS=-lblas -llapack
-	FC=mpif90
-endif
-ifeq ($(COMPUTER),lc2)
-	EXEC=$(EXEC1)
-	LIBS=-lblas -llapack
-	FC=mpif90
-endif
-ifeq ($(COMPUTER),mogon)
-	EXEC=$(EXEC1)
-	FC=mpif90
-    LIBS=-lmylapack -lmyblas
-    LDFLAGS=-L/home/calcavec/lapack-3.4.2/
-endif
-ifeq ($(COMPUTER),majorana)
-	EXEC=$(EXEC1)
-	FC=mpif90
-	LIBS=-lblas -llapack
-endif
+
+
+#OLD SETTINGS
+#ifeq ($(COMPUTER),macbook)
+#	EXEC=$(EXEC1)_macbook
+#	# elenco librerie dinamiche (quelle che aggiungi tu a mano per l'eseguibile in questione
+#	# che non centrano con quelle di sistema statiche)
+#   LIBS=-lrefblas -llapack
+#	# questo è per includere il percorso locale dove hai le tue lapack o quantaltro compilato
+#	# correttamente; se c'è una versione di sistema delle lapack non serve esplicitarlo
+#   LDFLAGS=-L/Users/kenzo/lib/lapack-3.5.0/
+#   FC=mpif90-openmpi-gcc49
+#endif
+#ifeq ($(COMPUTER),login01.mogon)
+#	EXEC=$(EXEC1)
+#	FC=mpif90
+#    	LIBS=-lmylapack -lmyblas
+#    	LDFLAGS=-L/home/calcavec/lapack-3.4.2/
+#endif
+
 
 # elenco degli oggetti da creare (c'è sempre l'oggetto del programma principale e gli oggetti
 # dei vari moduli)
@@ -70,6 +74,8 @@ all: $(OBJECTS)
 clean:
 	rm -f *\.mod *\.o *~ HswfQMC*
 
+print:
+	echo $(IDENTIFIER)
 
 # crea singolarmente i vari oggetti (se per caso vuoi crearne solo alcuni a mano); "make nome"
 # attenzione a inserire tutti i moduli da cui ogni modulo può dipendere
@@ -117,9 +123,3 @@ module_dft.o: module_dft.f90
 	$(FC) $(FFLAGS) -c module_dft.f90 
 
 
-# se invece vuoi fare tutto a mano basta che fai.:
-# gfortran (-flags) -c mod1.f90
-# gfortran (-flags) -c mod2.f90
-# gfortran (-flags) -c mod3.f90
-# gfortran (-flags) -c main.f90
-# gfortran (-flags) -o exe mod1.o mod2.o mod3.o main.o
