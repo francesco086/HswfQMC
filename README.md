@@ -1,9 +1,4 @@
-# HswfQMC
-=======
-
-# Hydrogen Shadow Wave Function Quantum Monte Carlo
-
-=======
+#Hydrogen Shadow Wave Function Quantum Monte Carlo
 
 ##INSTALL:
 
