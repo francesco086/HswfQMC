@@ -1,40 +1,40 @@
 &dati_simulazione_mc
-N_mc=-10000              !numero di passi MC, se negativo non viene diviso fra processori
-N_blank=2000            !numero di passi MC da fare a vuoto (per ogni processore)
-N_1ppt=-150                 !con un numero negativo: N_1ppt=-(N_1ppt/100.)*N_part ###(ottimale -150)
-flag_TABC=F               !Twist Averaged Boundary Conditions
-N_TABC=2000              !numero di passi dopo cui viene eseguito un twist. Se N_TABC<0, ci saranno -N_TABC twist per ogni processo
-N_mc_relax_TABC=100
-step_e=0.5
-step_se=0.1
-step_p=0.075
-acceptance_rate=50     !in percentuale
-flag_continua=F        !continuare da dove si era rimasti con la simulazione precedente?
-howtomove='1ppt'        !'allp'=tutti i walkers vengono mossi insieme    '1ppt'=ogni walker viene mosso singolarmente
-propmove='gaus'         !'flat'=mossa viene proposta con distribuzione piatta   'gaus'=distribuzione gaussiana e^(-8*(x-x_0)^2/step^2)
-trimer_steps=F     !ancora non compatibile con il kernel della forma GD
-flag_elettroni=T
-flag_protoni=F
-flag_shadow=F
-flag_E_tot=T           !calcolo l'energia totale?
-flag_E_kin=T       !calcolo l'energia cinetica?
-flag_E_pot=T       !calcolo l'energia potenziale?
-flag_somme_ewald=T
-alpha_ewald=-1.0d0
-num_k_ewald=515
-flag_gr=T             !calcolo le varie g(r)?
-N_hist=250
-flag_posizioni=T
-flag_normalizza_pos=T
-N_AV=-6400              !-10000 
-flag_MPI=T
-what_to_do='simpcal'
-stampa_dati_funzione_onda=T
-path_dati_funzione_onda='dati_funzione_onda.d'           !'dati_funzione_onda.d'      'ottimizzazione/OPT_wf.d'
-accuracy_energy_opt=0.001d0     !accuratezza per l'energia quando ottimizzo la funzione d'onda
-flag_disk=T       !flag che segnala se i dati vanno salvati sul disco per calcolare la media o no
-flag_output=T      !per salvare tutto l'output nel file output.d
-quick_error=0		!numero di blocchi per valutare l'errore. Se =0 l'errore viene valutato accuratamente, con la blocking technique
-flag_random_file=T          !inizializzare il random generator usando un file specifico?
-random_seed_path='RANDOM_SEED_FOLDER/randomseed1.d'     !file da usare come input per il random seed
+N_mc=-10000                                      !Number of sampled points (or steps). If N_mc > 0 then it specifies the number for each processor
+N_blank=2000                                     !Number of warming steps
+N_1ppt=-150                                      !Number of performed single-particle moves between two consecutive sampled points (or steps). If N_1ppt < 0, then N_1ppt=-N*N_1ppt/100 (Np is the number of particles)
+flag_TABC=F                                      !Twist Averaged Boundary Conditions (T=true or F=false)
+N_TABC=2000                                      !After how many sampled points a twist is performed. If N_TABC < 0, there will be -N_TABC twist/processor
+N_mc_relax_TABC=100                              !Number of relaxing steps after a twist
+step_e=0.5                                       !Initial step length for the electrons
+step_se=0.1                                      !Initial step length for the electronic shadows
+step_p=0.075                                     !(NOT IMPLEMENTED YET) Initial step length for the protons 
+acceptance_rate=50                               !Target acceptance rate. The step lengths will be automaticall adjusted accordingly
+flag_continua=F                                  !Resume a previous simulation (T or F)
+howtomove='1ppt'                                 !Walking method: 'allp'=all together    '1ppt'=single-particle moves
+propmove='gaus'                                  !Transition pdf: 'flat'=flat distribution   'gaus'=gaussian e^(-8*(x-x_0)^2/step^2)
+trimer_steps=F                                   !(NOT WORKING) Propose Trimers (electron-shadow1-shadow2) moves. Important if the Kernel is very tight 
+flag_elettroni=T                                 !Integrate over the electronic coordinates (T or F)
+flag_protoni=F                                   !(NOT IMPLEMENTED YET) Integrate over the protonic coordinates
+flag_shadow=F                                    !Integrate over the electronic-shadow coordinates
+flag_E_tot=T                                     !Compute the totale energy
+flag_E_kin=T                                     !Compute the kinetic energy (Pandharipande-Bethe and Jackson-Feenber)
+flag_E_pot=T                                     !Compute the potential energy
+flag_somme_ewald=T                               !Use the Ewald summation
+alpha_ewald=-1.0d0                               !alpha parameters used in the Ewald summation. If it's equal to -1.d0, then it is set automatically
+num_k_ewald=515                                  !Number of k vectors used in the Ewald summation
+flag_gr=T                                        !Compute the pair correlation functions
+N_hist=250                                       !Number of points in the grid used for the pair correlation functions
+flag_posizioni=T                                 !Save into files located in positions/*.pos the final positions of the walkers (necessary for resuming the calculation later on) 
+flag_normalizza_pos=T                            !Normalize the position coordinates so that they stay in the range [0,1]
+N_AV=-6400                                       !Number of data averaged before being written into file. If N_AV < 0, then data are packed into -N_AV elements (a good value is -6400)
+flag_MPI=T                                       !Use MPI
+what_to_do='simpcal'                             !Which task has to be performed: 'simpcal'=VMC calculation   'stocrec'=stochastic reconfiguration minimization (others are deprecated)
+stampa_dati_funzione_onda=T                      !Print informations about the wave function during minimization
+path_dati_funzione_onda='dati_funzione_onda.d'   !Path that specifies the file containing the informations about the trial wave function to be used
+accuracy_energy_opt=0.001d0                      !(DEPRECATED)
+flag_disk=T                                      !Save all the data on files for computing the mean and variance. If not, everything is made only using the RAM
+flag_output=T                                    !Save all the outputs on the output.d file
+quick_error=0		                         !Number of blocks used to estimate the error with the blocking technique. If quick_error=0 then the optimal value is determined automatically
+flag_random_file=T                               !Use a file with true random numbers to initialize the pseudo-random number generator
+random_seed_path='RANDOM_SEED_FOLDER/randomseed1.d'    !Path to the file used to initialized the pseudo-random number generator
 /

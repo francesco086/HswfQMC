@@ -1,17 +1,14 @@
 &dati_fisici
-r_s=2.61d0                  !solido 1.31, liquido2 2.61, liquidH 1.251, per avere L=1 con N=16 0.246186255460674
-crystal_cell='hcp__'          !sono permessi 'bcc' o 'fcc' o 'hcp' o 'hcp_w' o 'mhcpo' o 'sc_' o 'mol' o 'dat' o 'datex' o 'grp__'
-file_reticolo='reticolo/init.pos'  !file che specifica le posizioni degli atomi
-flag_molecular=T            !implementata solo per hcp e mhcpo
-strecthing_cov_bond=1.
-N_cell_side=1           !se crystal_cell='dat' allora bisogna scrivere qua il numero di particelle
+r_s=2.61d0                           !Density in r_s=a/a_0 units
+crystal_cell='hcp__'                 !Crystal cell that specifies the initial protonic positions: 'bcc', 'fcc', 'hcp', 'hcp_w', 'mhcpo', 'sc_', 'mol', 'dat', 'datex', 'grp__'
+file_reticolo='reticolo/init.pos'    !Path to the file containing the protonic initial position, for the cases 'dat__' and 'datex'
+flag_molecular=T                     !Molecule in the crystal cell (implemented only for 'hcp__' and 'mhcpo')
+strecthing_cov_bond=1.               !Distance between H atoms in the H2 molecule, in 0.74 Angstrom units (the equilibrium distance)
+N_cell_side=1                        !Number of replica of the crystal cell on each direction (x,y,z). In the cases 'dat__' and 'datex', then N_cell_side specifies the number of atoms
 /
 
-! Le distanze sono espresse in unitá di a_0, il raggio di Bohr
-! quindi per esprimerle in Angstrom bisogna moltiplicare per 0.53
-! Le energie sono espresse in Rydberg per atomo (per averle in Hartree bisogna dividere per 2)
-!LiquidH2 T=300K  P~1GPa
-!LiquidH T=1000K
-!
-!'datex' sono dati con posizioni non normalizzate, quindi devono avere un L giusto (la prima riga riporta L)
-!'dat' sono posizioni normalizzate
+!Distances are in a_0 units, where a_0 is the Bohr radius
+!In order to express them in Angstrom, multiply for 0.53
+!Energies are in Rydberg units per atom (multiply for 2 in order to have them in Hartree units)
+!'.datex' files contain non-normalized positions, and the first line contains the L(1:3) (i.e. the x,y,z lengths of the simulation box)
+!'.dat' files contain normalized positions

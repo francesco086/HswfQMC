@@ -11,3 +11,5 @@ opt_SDse=.FALSE.
 opt_c_eff_hartree=.FALSE.
 opt_rp=.FALSE.
 /
+
+!It specifies which part of the wave function is optimized with Stochastic Reconfiguration

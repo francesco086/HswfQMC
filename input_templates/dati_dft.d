@@ -1,3 +1,4 @@
+!DEPRECATED
 &dati_dft
 pw_exe="/home/kenzo/espresso-5.0.2/bin/pw.x"
 pseudopot_dir="/home/kenzo/espresso-5.0.2/pseudo"

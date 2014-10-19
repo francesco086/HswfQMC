@@ -1,20 +1,20 @@
 &dati_funzione_onda
-SDe_kind='bat'        !'pw_'=plane wave   'lda'=orbitali da LDA   'prf'=proton field (hartree)  'fre'=free con hartree  'atm/atp'=exp(-r*C_atm)   'bat'=bi-atomic   'no_'=no SD
-Jee_kind='yup'        !'yuk'=Yukawa  'yup'=Yukawa con Periodic Coordinate     'no_'=no Jee
-Jep_kind='yup'        !'yuk'=Yukawa  'yup'=Yukawa con Periodic Coordinate  'atm'=exp(-F*r)   'atp'=atm with PC  'no_'=no Jep
-Jpp_kind='no_'        !'no_'=no Jpp
-SDse_kind='no_'       !'pw_'=plane wave   'pw2'=plane wave squared    'lda'=orbitali da LDA   'no_'=no SD    'gem'=geminal of gaussians    'gss'=gaussians centered on the protons    'atm'=exp(-r)   'atp'=atm con PC
-Jse_kind='no_'        !'pot'=potenziale effettivo riscalato (richiede flag_traccia_coppie in dati_fisici)   'bou'=bounding B*(r-D)^2  'ppb'=potenziale riscalato piú bounding 'yuk'=Yukawa  'no_'=no Jse
-Kse_kind='no_'        !'gsd'=gaussian determinant   'gdc'=gsd con ctf  'gss'=gaussiana   'gsc'=gaussiana con ctf  'no_'=no Kernel   'gsp'=gaussiana con PC    'atm'=exp    'atc'=exp con ctf
-Jsesp_kind='no_'      !'pot'=potenziale riscalato    'yuk'=Yukawa   'gss'=gaussian    'gsd'=gaussian determinant   'no_'=no Jsesp
-split_Aee=T
-split_Aep=T
-split_Asese=T
-split_Asesp=T
-split_Fee=T
-split_Fep=T
-split_Fsese=T
-split_Fsesp=T
+SDe_kind='bat'        !Electronic Slater Determinant: 'pw_'=simple plane waves, 'lda'=DFT orbitals (to be specifies), 'prf'=diagonalized nuclear field Hamiltonian (dnfH), 'fre'=dnfH without interactions, 'atm'/'atp'=exp(-r*C_atm) with or without PC, 'bat'=bi-atomic, 'no_'=no SD
+Jee_kind='yup'        !Electron-Electron Jastrow: 'yuk'/'yup'=Yukawa with or without PC, 'no_'=no Jee
+Jep_kind='yup'        !Electronic-Proton Jastrow: 'yuk'/'yup'=Yukawa, 'atm'/'atp'=exp(-F*r), 'no_'=no Jep
+Jpp_kind='no_'        !Proton-Proton Jastrow: 'no_'=no Jpp
+SDse_kind='no_'       !eShadow Slater Determinant: 'pw_'=simple plane waves, 'pw2'=plane waves squared(for sign problem), 'lda'=DFT orbitals, 'no_'=no SD, 'gem'=geminal of gaussians, 'gss'=gaussians centered on the protons, 'atm'/'atp'=exp(-r)
+Jse_kind='no_'        !eShadow-eShadow Jastro: 'yuk'/'yup'=Yukawa, 'pot'=effective potential (DEPRECATED), 'no_'=no Jse
+Kse_kind='no_'        !eShadow Kernel: 'gss'/'gsp'=gaussian, 'gsc'=gaussian with cut-off 'gsd'/'gdp'=gaussian determinant, 'gdc'=gsd with cut-off, 'no_'=no Kernel, 'atm'/'atp'=exp(-C_ATM*(r-se)), 'atc'=atm with ctf
+Jsesp_kind='no_'      !eShadow-pShadow (at the moment =Proton) Jastrow: 'yuk'/'yup'=Yukawa, 'gss'=gaussian, 'gsd'=gaussian determinant (for sign problem), 'no_'=no Jsesp
+split_Aee=T           !Spin split for the Aee Yukawa parameters
+split_Aep=T           !Spin split for Aep
+split_Asese=T         !Spin split for Asese
+split_Asesp=T         !Spin split for Asesp
+split_Fee=T           !Spin split for Fee
+split_Fep=T           !Spin split for Fep
+split_Fsese=T         !Spin split for Fsese
+split_Fsesp=T         !Spin split for Fsesp
 AEE_YUK=  1.2819801758793221     ,
 AEE_UD_YUK=  2.2098611377210831     ,
 FEE_YUK=  1.1178362429152959     ,
@@ -32,19 +32,19 @@ ASESP_YUK= -0.45378310533588501     ,
 ASESP_UD_YUK= -0.45833583582447029     ,
 FSESP_YUK=  3.8627648124100249     ,
 FSESP_UD_YUK= 3.8228039597443910     ,
-GSWF=1.
-C_ATM=1.2d0
-N_ritraccia_coppie=1000           !con un numero <0 non vengono ricalcolate 
-N_mc_relax_traccia_coppie=10
-A_POT_se=1.                      !per il jastrow pot se-se
-D_POT_se=1.
-Gsesp=1.                         !per il Jsesp gaussiano
-c_se=1.    !1.1d0                !per il jastrow fra le shadow-e, Jse
-B_se=-1.4d0
-D_se=-0.7d0                          !per il bounding nel Jse
-C_sesp=1.                      !per il jastrow per shadow-e e shadow-p
-lda_path='orbitals'       !'../lda_orbitals/r_s=1.31/BCC-54/ctf=10/'       !path per trovare i file necessari per usare orbitali LDA o Hartree. 'genera_on_the_fly' li fa generare
-kf_coeff_hartree=1.d0   !se =0.d0 si usa il file vecchio
-flag_usa_coeff_hartree=.FALSE.
+GSWF=1.                           !For SDse='gss'/'gsd'
+C_ATM=1.2d0                       !For SDse='atm'
+N_ritraccia_coppie=1000           !(DEPRECATED) if < 0 the molecular pairs are not tracked
+N_mc_relax_traccia_coppie=10      !(DEPRECATED)
+A_POT_se=1.                       !(DEPRECATED) For Jse='pot'
+D_POT_se=1.                       !(DEPRECATED)
+Gsesp=1.                          !For Jsesp='gss'/'gsd'
+c_se=1.    !1.1d0                 !(DEPRECATED) for the Jse
+B_se=-1.4d0                       !(DEPRECATED)
+D_se=-0.7d0                       !(DEPRECATED) For the bounding in the Jse
+C_sesp=1.                         !(DEPRECATED)
+lda_path='orbitals'               !Path to the file (or files, with TABC) that specifies the DFT orbitals generated with Quantum Espresso
+kf_coeff_hartree=1.d0             !(DEPRECATED)
+flag_usa_coeff_hartree=.FALSE.    !(DEPRECATED)
 /
 
