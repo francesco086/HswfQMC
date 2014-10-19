@@ -32,8 +32,8 @@ do
 			echo ""
 			echo "      --- Use HswfQMC ---"
 			echo "set_dir - Make the current folder a working folder (with all necessary input files and folders)"
-			echo "clean - Clean all old datas from previous simulations"
-			echo "wash - Clean all old datas from previous simulations but the optimized wf and lattice positions"
+			echo "clean - Clean all old data from previous simulations"
+			echo "wash - Clean all old data from previous simulations but the optimized wf and lattice positions"
 			
 			echo ""
 			echo "      --- For developers only --- "
@@ -148,9 +148,17 @@ do
 			if [ $COUNT_SETPATH == 0 ]
 			then
 				PATH=${CURRENT_PATH}:\$PATH
-				echo "" >> ~/.${FILE_TO_SET}
-				echo "#add path for HswfQMC" >> ~/.${FILE_TO_SET} 
-				echo "export PATH=${CURRENT_PATH}:\$PATH" >> ~/.${FILE_TO_SET}
+				echo "
+#add path for HswfQMC
+export PATH=/Users/kenzo/Applications/HswfQMC:$PATH
+#introduce autocompletation feature to pilot-HswfQMC
+_pilot-HswfQMC.sh()
+{
+    local cur=\${COMP_WORDS[COMP_CWORD]}
+    COMPREPLY=( \$(compgen -W \"set_path install_lapack set_makefile build recompile set_dir clean wash commit\" -- \$cur) )
+}
+complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh
+				" >> ~/.${FILE_TO_SET}
 			else
 				echo "-The variable PATH was already correctly set"
 			fi
