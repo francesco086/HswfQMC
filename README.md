@@ -20,7 +20,7 @@ Follow these simple steps:
 
   After running this command you can use the script `pilot-HswfQMC` (in the following we will refer to it simply as `pilot`) as an executable from anywhere. To give it a try and see which options you have, go to your home directory (`cd`) and run
   
-  `pilots-HswfQMC help`
+  `pilot-HswfQMC help`
 
 * Install the Lapack library. We reccomend to use `pilot` in order to have the latest, fully optimized version of the Lapack library. Run
 
