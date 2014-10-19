@@ -24,19 +24,19 @@ Follow these simple steps:
 
 * Install the Lapack library. We reccomend to use `pilot` in order to have the latest, fully optimized version of the Lapack library. Run
 
-  `pilot-HswfQMC install_lapack``
+  `pilot-HswfQMC.sh install_lapack``
 
   and follow the instructions. If you prefer using the system library or your own version, you can skip this step.
   
 * Set the Makefile. The Makefile is located in source/Makefile. We reccomend to set it with `pilot` by running
   
- `pilots-HswfQMC setmakefile``
+ `pilots-HswfQMC.sh setmakefile``
 
   If you prefer to set it by hand you can simply edit it by yourself.
 
 * Compile the HswfQMC code. This can be done with `pilot` by running:
 
-  `pilot-HswfQMC build``
+  `pilot-HswfQMC.sh build``
 
   If you prefer to do it manually, just run make inside the source/ folder.
 
