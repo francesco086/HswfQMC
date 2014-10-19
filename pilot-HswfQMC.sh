@@ -23,15 +23,15 @@ do
 			echo "These are the options you have:
 								"
 			echo "      --- Build and set the HswfQMC code ---"
-			echo "setpath - set the PATH shell variable in order to be able to use the pilot script and the HswfQMC_exe executalbe"
+			echo "set_path - set the PATH shell variable in order to be able to use the pilot script and the HswfQMC_exe executalbe"
 			echo "install_lapack - Download and compile the lapack library (recommended) "
-			echo "setmakefile - Set the Makefile automatically"
+			echo "set_makefile - Set the Makefile automatically"
 			echo "build - Compile (make) the HswfQMC source code in order to have the HswfQMC_exe executable"
 			echo "recompile - Recompile the code from scratch"
 			
 			echo ""
 			echo "      --- Use HswfQMC ---"
-			echo "setdir - Make the current folder a working folder (with all necessary input files and folders)"
+			echo "set_dir - Make the current folder a working folder (with all necessary input files and folders)"
 			echo "clean - Clean all old datas from previous simulations"
 			echo "wash - Clean all old datas from previous simulations but the optimized wf and lattice positions"
 			
@@ -41,7 +41,7 @@ do
 			
 			exit
 			;;
-		setdir)
+		set_dir)
 			echo "Make the current folder a working folder (with all necessary input files and folders)"
 			mkdir estimatori ottimizzazione ottimizzazione/gradiente posizioni reticolo
 			cp ${pilot_PATH}/input_templates/* .
@@ -133,7 +133,7 @@ do
 			fi
 			exit
 			;;
-		setpath)
+		set_path)
 			echo "Set the PATH variable in order to be able to use pilot-HswfQMC"
 			if [ "${OS_NAME}" = "Darwin" ]
 			then
@@ -182,7 +182,7 @@ do
 			echo "LDFLAGS=-L${pilot_PATH}/${LAPACK_FOLDER}"
 			exit
 			;;
-		setmakefile)
+		set_makefile)
 			echo "Set automatically the Makefile in source/"
 			COMPUTER=$(hostname)              #hostname
 			USERNAME=$(whoami)                #username
