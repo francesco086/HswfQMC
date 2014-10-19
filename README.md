@@ -14,7 +14,7 @@ Follow these simple steps:
 
 * Set the PATH. To do so, execute the command (from the root folder of HswfQMC)
 
-  `sh pilot-HswfQMC.sh setpath`
+  `sh pilot-HswfQMC.sh set_path`
   
   `source ~/.bashrc` (or `source ~/.bash_profile` if you are using a Mac)
 
@@ -30,7 +30,7 @@ Follow these simple steps:
   
 * Set the Makefile. The Makefile is located in source/Makefile. We reccomend to set it with `pilot` by running
   
- `pilots-HswfQMC.sh setmakefile``
+ `pilots-HswfQMC.sh set_makefile``
 
   If you prefer to set it by hand you can simply edit it by yourself.
 
@@ -45,7 +45,7 @@ Follow these simple steps:
 
 `cd`to the folder where you want to run your simulation and execute
 
-  `pilot-HswfQMC.sh setdir`
+  `pilot-HswfQMC.sh set_dir`
 
 Then set the input files "dati_*.d" and finally start the simulation by
 
