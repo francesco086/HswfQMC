@@ -167,7 +167,7 @@ do
 			mv trunk ${LAPACK_FOLDER}
 			cd ${LAPACK_FOLDER}
 			sed -i.bak "s/FORTRAN  = gfortran/FORTRAN = ${FF}/" make.inc.example
-			sed -i.bak "s/OPTS     = -O2 -frecursiv/OPTS     = -O0 -march=native -frecursiv/" make.inc.example
+			sed -i.bak "s/OPTS     = -O2 -frecursiv/OPTS     = -O3 -march=native -frecursiv/" make.inc.example
 			sed -i.bak "s/LOADER   = gfortran/LOADER   = ${FF}/" make.inc.example
 			\rm make.inc.example.bak
 			mv make.inc.example make.inc
