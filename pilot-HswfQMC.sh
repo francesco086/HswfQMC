@@ -1,11 +1,18 @@
 #!/bin/bash
 
+HswfQMC_NAME="HswfQMC"
+
 HswfQMC_PATH=$(which HswfQMC_exe  | sed -e "s/\/HswfQMC_exe//")
 #echo "Path to the executable: "${HswfQMC_PATH}
+
 CURRENT_PATH=$(pwd)
 #echo "Current path: "${CURRENT_PATH}
+
 pilot_PATH=$(which pilot-HswfQMC.sh | sed -e "s/\/pilot-HswfQMC.sh//")
 #echo "Path to the pilot executable: "${pilot_PATH}
+
+OS_NAME=$(uname)
+#echo "The Operating System is : "${OS_NAME}
 
 LAPACK_FOLDER="lapack_lib"
 
@@ -128,16 +135,24 @@ do
 			;;
 		setpath)
 			echo "Set the PATH variable in order to be able to use pilot-HswfQMC"
+			if [ "${OS_NAME}" = "Darwin" ]
+			then
+				echo "-Recognized an OS X system. Modify .bash_profile instead of .bashrc"
+				FILE_TO_SET="bash_profile"
+			else
+				echo "-Standard platform"
+				FILE_TO_SET="bashrc"
+			fi
 			chmod u+x pilot-HswfQMC.sh
-			COUNT_SETPATH=$(grep ~/.bashrc -e "PATH=${CURRENT_PATH}:\$PATH" | wc -l)
-			echo $COUNT_SETPATH
+			COUNT_SETPATH=$(grep ~/.${FILE_TO_SET} -e "PATH=${CURRENT_PATH}:\$PATH" | wc -l)
 			if [ $COUNT_SETPATH == 0 ]
 			then
-				echo "" >> ~/.bashrc
-				echo "#add path for HswfQMC" >> ~/.bashrc 
-				echo "PATH=${CURRENT_PATH}:\$PATH" >> ~/.bashrc
+				PATH=${CURRENT_PATH}:\$PATH
+				echo "" >> ~/.${FILE_TO_SET}
+				echo "#add path for HswfQMC" >> ~/.${FILE_TO_SET} 
+				echo "PATH=${CURRENT_PATH}:\$PATH" >> ~/.${FILE_TO_SET}
 			else
-				echo "The variable PATH was already correctly set"
+				echo "-The variable PATH was already correctly set"
 			fi
 			exit
 			;;
@@ -152,17 +167,18 @@ do
 			mv trunk ${LAPACK_FOLDER}
 			cd ${LAPACK_FOLDER}
 			sed -i.bak "s/FORTRAN  = gfortran/FORTRAN = ${FF}/" make.inc.example
-			sed -i.bak "s/OPTS     = -O2 -frecursiv/OPTS     = -O3 -march=native -frecursiv/" make.inc.example
+			sed -i.bak "s/OPTS     = -O2 -frecursiv/OPTS     = -O0 -march=native -frecursiv/" make.inc.example
+			sed -i.bak "s/LOADER   = gfortran/LOADER   = ${FF}/" make.inc.example
 			\rm make.inc.example.bak
 			mv make.inc.example make.inc
 			make -j${NUM_CPU} blaslib
-			mv librefblas.a libmyHswfQMCblas.a
 			make -j${NUM_CPU} lapacklib
-			mv liblapack.a libmyHswfQMClapack.a
+			mv librefblas.a libblas${HswfQMC_NAME}.a
+			mv liblapack.a liblapack${HswfQMC_NAME}.a
 			cd $CURRENT_PATH
 			echo ""
 			echo "Lapack library compiled! In order to use it, insert in the Makefile:"
-			echo "LIBS=-lmyHswfQMClapack -lmyHswfQMCblas"
+			echo "LIBS=-llapack${HswfQMC_NAME} -lblas${HswfQMC_NAME}"
 			echo "LDFLAGS=-L${pilot_PATH}/${LAPACK_FOLDER}"
 			exit
 			;;
@@ -196,7 +212,7 @@ do
 				read ANSW
 				if [ "${ANSW}" = "y" ]
 				then
-					echo "        LIBS=-lmyHswfQMClapack -lmyHswfQMCblas" >> source/makefile.users_settings
+					echo "        LIBS=-llapack${HswfQMC_NAME} -lblas${HswfQMC_NAME}" >> source/makefile.users_settings
 					echo "        LDFLAGS=-L${pilot_PATH}/${LAPACK_FOLDER}" >> source/makefile.users_settings
 				else
 					echo "Provide the followings:"
