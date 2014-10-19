@@ -150,7 +150,7 @@ do
 				PATH=${CURRENT_PATH}:\$PATH
 				echo "" >> ~/.${FILE_TO_SET}
 				echo "#add path for HswfQMC" >> ~/.${FILE_TO_SET} 
-				echo "PATH=${CURRENT_PATH}:\$PATH" >> ~/.${FILE_TO_SET}
+				echo "export PATH=${CURRENT_PATH}:\$PATH" >> ~/.${FILE_TO_SET}
 			else
 				echo "-The variable PATH was already correctly set"
 			fi
