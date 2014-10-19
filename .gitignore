@@ -1,5 +1,6 @@
 .DS_Store
 source/*.o
+source/*.mod
 HswfQMC*
 source/HswfQMC*
 lapack_lib

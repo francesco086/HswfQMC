@@ -185,8 +185,8 @@ complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh
 			sed -i.bak "s/LOADER   = gfortran/LOADER   = ${FF}/" make.inc.example
 			\rm make.inc.example.bak
 			mv make.inc.example make.inc
-			make -j${NUM_CPU} blaslib
-			make -j${NUM_CPU} lapacklib
+			make -j blaslib
+			make -j lapacklib
 			mv librefblas.a libblas${HswfQMC_NAME}.a
 			mv liblapack.a liblapack${HswfQMC_NAME}.a
 			cd $CURRENT_PATH

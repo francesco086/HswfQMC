@@ -1,7 +1,7 @@
 #compile for debugging (useful for finding arrays overflow)
 DEBUG=false
 #compile without optimization or debugging flags, for quick compiling
-QUICK_COMPILE=false
+QUICK_COMPILE=true
 #standard executable name
 EXEC2=HswfQMC
 
@@ -68,14 +68,12 @@ OBJECTS=main.o module_dft.o module_dati_fisici.o module_dati_mc.o module_dnfH.o 
 
 # crea tutti gli oggetti e li linka correttamente con le librerie; scrivere "make"
 all: $(OBJECTS)
-	$(FC) $(FFLAGS) $(LDFLAGS) -o ./$(EXEC) $(OBJECTS) $(LIBS)
+	$(FC) $(FFLAGS) $(LDFLAGS) -o $(EXEC) $(OBJECTS) $(LIBS)
 
 # rimuove tutti gli oggetti e moduli creati lasciando solo i sorgenti; "make clean"
+.PHONY : clean
 clean:
 	rm -f *\.mod *\.o *~ HswfQMC*
-
-print:
-	echo $(IDENTIFIER)
 
 # crea singolarmente i vari oggetti (se per caso vuoi crearne solo alcuni a mano); "make nome"
 # attenzione a inserire tutti i moduli da cui ogni modulo può dipendere
@@ -126,6 +124,4 @@ module_stati_eccitati.o: module_dati_mc.o module_dati_fisici.o module_funzione_o
 	$(FC) $(FFLAGS) -c module_stati_eccitati.f90 
 
 module_dft.o: module_dft.f90
-	$(FC) $(FFLAGS) -c module_dft.f90 
-
-
+	$(FC) $(FFLAGS) -c module_dft.f90
