@@ -1,4 +1,4 @@
-MODULE hartree
+MODULE dnfH
 	USE dati_fisici
 	IMPLICIT NONE
 	REAL (KIND=8), PARAMETER, PRIVATE :: cutoff_quick_pw=0.0001d0
@@ -19,13 +19,13 @@ MODULE hartree
 		
 	CONTAINS
 	
-	SUBROUTINE inizializza_hartree(k2_f_factor)
+	SUBROUTINE inizializza_dnfH(k2_f_factor)
 		IMPLICIT NONE
 		REAL (KIND=8), INTENT(IN) :: k2_f_factor
 		INTEGER :: i1, i2, i
 		
 		IF (.NOT. iniz_dati_fisici) STOP 'Devi prima inizializzare i dati fisici &
-		  [ module_hartree.f90 > inizializza_hartree ]' 
+		  [ module_dnfH.f90 > inizializza_dnfH ]' 
 				
 		i1=2   !indice per il numero di particelle esistenti
 		DO WHILE (magic_number(i1)<H_N_part)
@@ -45,9 +45,9 @@ MODULE hartree
 				
 		flag_inizializza=.TRUE.
 				
-	END SUBROUTINE inizializza_hartree
+	END SUBROUTINE inizializza_dnfH
 !-----------------------------------------------------------------------
-	SUBROUTINE twist_k_hartree(k2_f_factor)
+	SUBROUTINE twist_k_dnfH(k2_f_factor)
 		IMPLICIT NONE
 		REAL (KIND=8), INTENT(IN) :: k2_f_factor
 		INTEGER :: i1, i2, new_N_M_Hartree
@@ -79,7 +79,7 @@ MODULE hartree
 		
 		CALL fermi_quantization_twist(N_M_Hartree,k_Hartree)
 				
-	END SUBROUTINE twist_k_hartree
+	END SUBROUTINE twist_k_dnfH
 !-----------------------------------------------------------------------
 	SUBROUTINE costruisci_matrice_Hartree(hamiltoniana,c_eff)
 		USE walkers
@@ -92,7 +92,7 @@ MODULE hartree
 		COMPLEX (KIND=8) :: proton_fact, zzz
 		
 		IF (.NOT. flag_inizializza) STOP 'Devi prima inizializzare &
-		  [ module_hartree.f90 > trova_soluzioni_hartree ]'
+		  [ module_dnfH.f90 > trova_soluzioni_dnfH ]'
 				
 		SELECT CASE(hamiltoniana)
 		CASE('fre')
@@ -143,20 +143,20 @@ MODULE hartree
 						
 	END SUBROUTINE costruisci_matrice_Hartree
 !-----------------------------------------------------------------------
-	SUBROUTINE trova_soluzioni_hartree()
+	SUBROUTINE trova_soluzioni_dnfH()
 		IMPLICIT NONE
 		INTEGER :: info, i, j, cont
 		REAL (KIND=8) :: rwork(1:3*N_M_Hartree-1)
 		COMPLEX (KIND=8) :: work(1:3*N_M_Hartree-1)
 		
 		IF (.NOT. flag_inizializza) STOP 'Devi prima inizializzare &
-		  [ module_hartree.f90 > trova_soluzioni_hartree ]'
+		  [ module_dnfH.f90 > trova_soluzioni_dnfH ]'
 				
 		CALL ZHEEV('V','U',N_M_Hartree,M_Hartree,N_M_Hartree,autovalori_Hartree,work,3*N_M_Hartree-1,rwork,info)
 		IF (info/=0) THEN
 			PRINT * , 'ERRORE ', info
 			STOP 'Errore nel calcolo degli autovalori. &
-			  [module_hartree.f90 > trova_soluzioni_hartree ]'
+			  [module_dnfH.f90 > trova_soluzioni_dnfH ]'
 		END IF
 						
 		DO i = 1, N_M_Hartree, 1
@@ -170,7 +170,7 @@ MODULE hartree
 			n_fpw_Hartee(i)=cont                      !numero di pw effettive
 		END DO
 		        		 
-	END SUBROUTINE trova_soluzioni_hartree
+	END SUBROUTINE trova_soluzioni_dnfH
 !-----------------------------------------------------------------------
 	SUBROUTINE fermi_quantization(N_fq,k)
 		IMPLICIT NONE
@@ -341,11 +341,11 @@ MODULE hartree
 		DEALLOCATE(k,k_fermi_bigger)
 	END SUBROUTINE fermi_quantization_twist
 !-----------------------------------------------------------------------
-	SUBROUTINE chiudi_hartree()
+	SUBROUTINE chiudi_dnfH()
 		IMPLICIT NONE
 		
 		DEALLOCATE(M_Hartree,k_Hartree,i_fpw_Hartree,autovalori_Hartree,n_fpw_Hartee)
 		flag_inizializza=.FALSE.
 		
-	END SUBROUTINE chiudi_hartree
-END MODULE hartree
+	END SUBROUTINE chiudi_dnfH
+END MODULE dnfH

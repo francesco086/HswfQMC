@@ -1,13 +1,13 @@
-MODULE dati_simulazione_mc
+MODULE dati_mc
 	IMPLICIT NONE
 	INCLUDE 'mpif.h'
 	CHARACTER(LEN=100) :: random_seed_path, path_dati_funzione_onda
 	LOGICAL, SAVE :: flag_output
-	LOGICAL, PROTECTED, SAVE :: iniz_dati_simulazione_mc=.FALSE., iniz_MPI=.FALSE.
+	LOGICAL, PROTECTED, SAVE :: iniz_dati_mc=.FALSE., iniz_MPI=.FALSE.
 	LOGICAL, PROTECTED, SAVE :: flag_E_kin, flag_E_pot, flag_E_tot, flag_gr, flag_posizioni, flag_continua
 	LOGICAL, PROTECTED, SAVE :: flag_TABC, flag_elettroni, flag_protoni, flag_shadow, flag_mpi, flag_normalizza_pos
 	LOGICAL, PROTECTED, SAVE :: flag_disk, flag_random_file, flag_write_parallel, flag_somme_ewald, trimer_steps
-	LOGICAL, PROTECTED, SAVE :: stampa_dati_funzione_onda, flag_email_notification
+	LOGICAL, PROTECTED, SAVE :: stampa_dati_funzione_onda
 	CHARACTER(LEN=4), SAVE :: howtomove, propmove
 	CHARACTER(LEN=7), SAVE :: what_to_do
 	INTEGER, PROTECTED, SAVE :: N_1ppt, N_TABC, num_k_ewald, N_AV, mpi_ierr, mpi_myrank, mpi_nprocs
@@ -15,30 +15,30 @@ MODULE dati_simulazione_mc
 	INTEGER, SAVE :: cont_N_mc_increase, quick_error, acceptance_rate
 	REAL (KIND=8), PROTECTED, SAVE :: step_e, step_p, step_se
 	REAL (KIND=8), PROTECTED, SAVE :: alpha_ewald, accuracy_energy_opt
-	LOGICAL, PROTECTED, SAVE :: opt_c_eff_hartree, opt_A_Jee, opt_F_Jee, opt_A_Jep, opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp
+	LOGICAL, PROTECTED, SAVE :: opt_c_eff_dnfH, opt_A_Jee, opt_F_Jee, opt_A_Jep, opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp
 	LOGICAL, PROTECTED, SAVE :: opt_rp, opt_SDse, opt_SDe
 	REAL (KIND=8), SAVE :: time_VMC_start
 	
 	CONTAINS
 	
-	SUBROUTINE inizializza_dati_simulazione_mc()
+	SUBROUTINE inizializza_dati_mc()
 		USE generic_tools
 		USE dati_fisici
 		IMPLICIT NONE
-		NAMELIST /dati_simulazione_mc/ N_mc, N_blank, N_1ppt, flag_TABC, N_TABC, N_mc_relax_TABC, step_e, step_se, step_p, &
+		NAMELIST /dati_mc/ N_mc, N_blank, N_1ppt, flag_TABC, N_TABC, N_mc_relax_TABC, step_e, step_se, step_p, &
 		  acceptance_rate, flag_continua, howtomove, propmove, trimer_steps, flag_elettroni, &
 		  flag_protoni, flag_shadow, flag_E_tot, flag_E_kin, flag_E_pot, flag_somme_ewald, alpha_ewald, &
 		  num_k_ewald, flag_gr, N_hist, flag_posizioni, flag_normalizza_pos, N_AV, flag_mpi, what_to_do, &
 		  stampa_dati_funzione_onda, path_dati_funzione_onda, accuracy_energy_opt, &
 		  flag_disk, flag_output, &
-		  quick_error, flag_random_file, random_seed_path, flag_email_notification
+		  quick_error, flag_random_file, random_seed_path
 		NAMELIST /dati_ottimizzazione/ opt_SDe, opt_A_Jee, opt_F_Jee, opt_A_Jep, opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp, &
-		  opt_SDse, opt_c_eff_hartree, opt_rp
+		  opt_SDse, opt_c_eff_dnfH, opt_rp
 		
 		CALL CPU_TIME(time_VMC_start)
 		
 		OPEN (2, FILE='dati_mc.d',STATUS='OLD')
-		READ (2, NML=dati_simulazione_mc)
+		READ (2, NML=dati_mc)
 		CLOSE (2)
 		
 		OPEN (2, FILE='dati_ottimizzazione.d',STATUS='OLD')
@@ -46,7 +46,7 @@ MODULE dati_simulazione_mc
 		CLOSE (2)
 		
 		IF (flag_continua .AND. (.NOT. flag_disk)) STOP 'Non puoi continuare se non hai scritto su disco i dati &
-		  [ module_dati.f90 > inizializza_dati_simulazione_mc ]'
+		  [ module_dati.f90 > inizializza_dati_mc ]'
 		IF (alpha_ewald==-1.d0) alpha_ewald=5.d0/MIN(L(1),L(2),L(3))
 		IF ((iniz_MPI).AND.(N_mc>0)) THEN
 			N_mc=N_mc/mpi_nprocs
@@ -65,18 +65,18 @@ MODULE dati_simulazione_mc
 			END IF
 		END IF
 		
-		iniz_dati_simulazione_mc=.TRUE.
+		iniz_dati_mc=.TRUE.
 		
-	END SUBROUTINE inizializza_dati_simulazione_mc
+	END SUBROUTINE inizializza_dati_mc
 !-----------------------------------------------------------------------
 
 	SUBROUTINE inizializza_MPI()
 		IMPLICIT NONE
 		
-		CALL inizializza_dati_simulazione_mc()
+		CALL inizializza_dati_mc()
 		
 		IF (flag_mpi) THEN
-			IF (.NOT. iniz_dati_simulazione_mc) STOP 'Non puoi inizializzare MPI senza prima leggere i dati iniziali &
+			IF (.NOT. iniz_dati_mc) STOP 'Non puoi inizializzare MPI senza prima leggere i dati iniziali &
 			  [ module_dati.f90 > inizializza_MPI ]'
 			CALL MPI_INIT(mpi_ierr)
 			IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore nell inizializzazione di MPI &
@@ -162,11 +162,11 @@ MODULE dati_simulazione_mc
 	END SUBROUTINE termina_MPI
 !-----------------------------------------------------------------------
 
-	SUBROUTINE chiudi_dati_simulazione_mc()
+	SUBROUTINE chiudi_dati_mc()
 		IMPLICIT NONE
-		iniz_dati_simulazione_mc=.FALSE.
-	END SUBROUTINE chiudi_dati_simulazione_mc
+		iniz_dati_mc=.FALSE.
+	END SUBROUTINE chiudi_dati_mc
 	
-END MODULE dati_simulazione_mc
+END MODULE dati_mc
 
 

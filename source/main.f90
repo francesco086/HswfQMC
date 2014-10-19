@@ -1,5 +1,5 @@
 PROGRAM main
-	USE dati_simulazione_mc
+	USE dati_mc
 	USE VMC
 	USE variational_opt
 	IMPLICIT NONE
@@ -10,6 +10,7 @@ PROGRAM main
 	REAL (KIND=8) :: accuracy_energy
 	REAL :: time1, time2, delta_t, t_sum
 	
+	!initialize MPI (in module_dati_mc.f90)
 	CALL inizializza_MPI()
 	
 	IF (flag_output) THEN
@@ -26,7 +27,7 @@ PROGRAM main
 	END IF	
 	IF (mpi_myrank==0) CALL stampa_logo_HswfQMC()
 	
-	CALL inizializza_dati_simulazione_mc()
+	CALL inizializza_dati_mc()
 	IF (flag_mpi) THEN
 		IF (flag_random_file) THEN
 			CALL mpi_random_seed_da_file(random_seed_path)
@@ -35,12 +36,12 @@ PROGRAM main
 		END IF
 	END IF
 	IF (mpi_myrank/=0) flag_output=.FALSE. 
-	CALL chiudi_dati_simulazione_mc
+	CALL chiudi_dati_mc
 	
-	CALL inizializza_dati_simulazione_mc()
+	CALL inizializza_dati_mc()
 	task_to_perform=what_to_do
 	accuracy_energy=accuracy_energy_opt
-	CALL chiudi_dati_simulazione_mc()
+	CALL chiudi_dati_mc()
 	
 	SELECT CASE(task_to_perform)
 	CASE('simpcal')
@@ -90,9 +91,6 @@ PROGRAM main
 	END SELECT
 	
 	IF (mpi_myrank==0 .AND. flag_output) CLOSE (7)
-	IF ((mpi_myrank==0).AND.(flag_email_notification)) THEN
-		CALL SYSTEM('command; echo "End." | mail -s "[Roothan]: Process done" calcavec@uni-mainz.de')
-	END IF
 	
 	CALL termina_MPI()
 END PROGRAM main

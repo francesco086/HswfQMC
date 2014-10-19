@@ -1,5 +1,5 @@
 MODULE variational_opt
-	USE dati_simulazione_mc
+	USE dati_mc
 	IMPLICIT NONE
 	LOGICAL, PARAMETER :: verbose_mode=.TRUE.
 	INTEGER, SAVE :: num_par_var, num_coord_Rp
@@ -21,7 +21,7 @@ MODULE variational_opt
 		num_coord_Rp=0
 		
 		CALL inizializza_dati_fisici()
-		CALL inizializza_dati_simulazione_mc()
+		CALL inizializza_dati_mc()
 		CALL inizializza_walkers('iniz_opt')
 		CALL inizializza_dati_funzione_onda()
 		
@@ -165,7 +165,7 @@ MODULE variational_opt
 			IF ( opt_SDe ) THEN
 				SELECT CASE (SDe_kind)
 				CASE ('prf')
-					IF (opt_c_eff_hartree) THEN
+					IF (opt_c_eff_dnfH) THEN
 						ih=0
 						DO j = 1, N_pw_lda, 1   !colonna
 							DO i = 1, j-1, 1   !riga
@@ -178,7 +178,7 @@ MODULE variational_opt
 						num_par_var=num_par_var+ih
 					END IF
 				CASE ('fre')
-					IF (opt_c_eff_hartree) THEN
+					IF (opt_c_eff_dnfH) THEN
 						ih=0
 						DO j = 1, N_pw_lda, 1   !colonna
 							DO i = 1, j-1, 1   !riga
@@ -482,35 +482,35 @@ MODULE variational_opt
 			IF ( opt_SDe ) THEN
 				SELECT CASE (SDe_kind)
 				CASE ('prf')
-					IF (opt_c_eff_hartree) THEN
+					IF (opt_c_eff_dnfH) THEN
 						ih=0
 						DO j = 1, N_pw_lda, 1   !colonna
 							DO i = 1, j-1, 1   !riga
 								ih=ih+2
-								parametri_var(ih-1)=REAL(c_eff_hartree(i,j),8)
-								parametri_var(ih)=DIMAG(c_eff_hartree(i,j))
+								parametri_var(ih-1)=REAL(c_eff_dnfH(i,j),8)
+								parametri_var(ih)=DIMAG(c_eff_dnfH(i,j))
 							END DO
 						END DO
 						DO j = 1, N_pw_lda, 1   !colonna
 							i=j
 							ih=ih+1
-							parametri_var(ih)=REAL(c_eff_hartree(i,j),8)
+							parametri_var(ih)=REAL(c_eff_dnfH(i,j),8)
 						END DO
 					END IF
 				CASE ('fre')
-					IF (opt_c_eff_hartree) THEN
+					IF (opt_c_eff_dnfH) THEN
 						ih=0
 						DO j = 1, N_pw_lda, 1   !colonna
 							DO i = 1, j-1, 1   !riga
 								ih=ih+2
-								parametri_var(ih-1)=REAL(c_eff_hartree(i,j),8)
-								parametri_var(ih)=DIMAG(c_eff_hartree(i,j))
+								parametri_var(ih-1)=REAL(c_eff_dnfH(i,j),8)
+								parametri_var(ih)=DIMAG(c_eff_dnfH(i,j))
 							END DO
 						END DO
 						DO j = 1, N_pw_lda, 1   !colonna
 							i=j
 							ih=ih+1
-							parametri_var(ih)=REAL(c_eff_hartree(i,j),8)
+							parametri_var(ih)=REAL(c_eff_dnfH(i,j),8)
 						END DO
 					END IF
 				CASE ('atm')
@@ -539,14 +539,14 @@ MODULE variational_opt
 		END IF
 				
 		IF ( opt_rp ) THEN
-			CALL inizializza_dati_simulazione_mc()
+			CALL inizializza_dati_mc()
 			CALL inizializza_walkers('opt_Rp')
 			DO i = 1, N_part, 1
 				parametri_var(cont:cont+2)=rp_old(1:3,i)
 				cont=cont+3
 			END DO
 			CALL chiudi_walkers()
-			CALL chiudi_dati_simulazione_mc()
+			CALL chiudi_dati_mc()
 		END IF
 						
 		IF (mpi_myrank==0) THEN
@@ -556,14 +556,14 @@ MODULE variational_opt
 		
 		CALL chiudi_dati_funzione_onda()
 		CALL chiudi_walkers()
-		CALL chiudi_dati_simulazione_mc()
+		CALL chiudi_dati_mc()
 		CALL chiudi_dati_fisici()
 		
 	END SUBROUTINE inizializza_variational_opt
 	
 	SUBROUTINE minimizza_energia(target_precisione,metodo)
 		USE dati_fisici
-		USE dati_simulazione_mc
+		USE dati_mc
 		USE funzione_onda
 		USE walkers
 		IMPLICIT NONE
@@ -606,14 +606,14 @@ MODULE variational_opt
 		END IF
 		IF (stampa_dati_funzione_onda) THEN
 			CALL inizializza_dati_fisici()
-			CALL inizializza_dati_simulazione_mc()
+			CALL inizializza_dati_mc()
 			CALL inizializza_walkers('opt_Rp')
 			CALL inizializza_dati_funzione_onda()
 			CALL setta_parametri(parametri_var,num_par_var)
 			CALL stampa_file_dati_funzione_onda('ottimizzazione/OPT_wf.d')
 			CALL chiudi_dati_funzione_onda()
 			CALL chiudi_walkers()
-			CALL chiudi_dati_simulazione_mc()
+			CALL chiudi_dati_mc()
 			CALL chiudi_dati_fisici()
 		END IF
 		CALL chiudi_variational_opt()
@@ -1194,14 +1194,14 @@ MODULE variational_opt
 		IF ( num_coord_Rp>0 ) THEN   !stampo la configurazione Rp_0 nel file 
 			IF (stampa_dati_funzione_onda) THEN
 				CALL inizializza_dati_fisici()
-				CALL inizializza_dati_simulazione_mc()
+				CALL inizializza_dati_mc()
 				CALL inizializza_walkers('opt_Rp')
 				CALL inizializza_dati_funzione_onda()
 				IF (mpi_myrank==0) WRITE (istring, '(I4.4)'), contatore
 				IF (mpi_myrank==0) CALL stampa_file_Rp('reticolo/SR_Rp-'//istring//'.d')
 				CALL chiudi_dati_funzione_onda()
 				CALL chiudi_walkers()
-				CALL chiudi_dati_simulazione_mc()
+				CALL chiudi_dati_mc()
 				CALL chiudi_dati_fisici()
 			END IF
 			IF ( ( AV_accu ).AND.(mpi_myrank==0) ) THEN
@@ -1260,7 +1260,7 @@ MODULE variational_opt
 				IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: Trovato un nuovo minimo assoluto.'
 				IF (stampa_dati_funzione_onda) THEN
 					CALL inizializza_dati_fisici()
-					CALL inizializza_dati_simulazione_mc()
+					CALL inizializza_dati_mc()
 					CALL inizializza_walkers('opt_Rp')
 					CALL inizializza_dati_funzione_onda()
 					CALL setta_parametri(p0,N)
@@ -1268,7 +1268,7 @@ MODULE variational_opt
 					IF ((opt_Rp).AND.(mpi_myrank==0)) CALL stampa_file_Rp('reticolo/OPT_Rp.d')
 					CALL chiudi_dati_funzione_onda()
 					CALL chiudi_walkers()
-					CALL chiudi_dati_simulazione_mc()
+					CALL chiudi_dati_mc()
 					CALL chiudi_dati_fisici()
 				END IF
 				CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
@@ -1572,7 +1572,7 @@ MODULE variational_opt
 			!stampa gli ultimi dati variazionali SR
 			IF (stampa_dati_funzione_onda) THEN
 				CALL inizializza_dati_fisici()
-				CALL inizializza_dati_simulazione_mc()
+				CALL inizializza_dati_mc()
 				CALL inizializza_walkers('opt_Rp')
 				CALL inizializza_dati_funzione_onda()
 				CALL setta_parametri(p0,N)
@@ -1580,7 +1580,7 @@ MODULE variational_opt
 				IF ((mpi_myrank==0).AND.(opt_Rp)) WRITE (istring, '(I4.4)'), contatore
 				IF ((mpi_myrank==0).AND.(opt_Rp)) CALL stampa_file_Rp('reticolo/SR_Rp-'//istring//'.d')
 				CALL chiudi_dati_fisici()
-				CALL chiudi_dati_simulazione_mc()
+				CALL chiudi_dati_mc()
 				CALL chiudi_walkers()
 				CALL chiudi_dati_funzione_onda()
 			END IF
@@ -1588,7 +1588,7 @@ MODULE variational_opt
 			!stampa i dati variazionali AVERAGE
 			IF ((stampa_dati_funzione_onda)) THEN
 				CALL inizializza_dati_fisici()
-				CALL inizializza_dati_simulazione_mc()
+				CALL inizializza_dati_mc()
 				CALL inizializza_walkers('opt_Rp')
 				CALL inizializza_dati_funzione_onda()
 				AV_P=AV_P/REAL(AV_cont,8)
@@ -1603,7 +1603,7 @@ MODULE variational_opt
 					IF (mpi_myrank==0) CALL stampa_file_Rp('reticolo/AV_Rp.d')
 				END IF
 				CALL chiudi_dati_fisici()
-				CALL chiudi_dati_simulazione_mc()
+				CALL chiudi_dati_mc()
 				CALL chiudi_walkers()
 				CALL chiudi_dati_funzione_onda()
 			END IF

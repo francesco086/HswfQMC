@@ -1,5 +1,5 @@
 MODULE stati_eccitati
-	USE dati_simulazione_mc
+	USE dati_mc
 	USE dati_fisici
 	USE funzione_onda
 	IMPLICIT NONE
@@ -12,8 +12,8 @@ MODULE stati_eccitati
 		COMPLEX (KIND=8), ALLOCATABLE :: SDe_dw_new(:,:), SDe_dw_old(:,:), ISDe_dw_new(:,:), ISDe_dw_old(:,:)
 		INTEGER, ALLOCATABLE :: pvte_dw_new(:), pvte_dw_old(:)
 		COMPLEX (KIND=8) ::  detSDe_up_new, detSDe_up_old, detSDe_dw_new, detSDe_dw_old
-		INTEGER, ALLOCATABLE :: num_pw_hartree(:)
-		REAL (KIND=8), ALLOCATABLE :: k_pw_hartree(:,:,:), fattori_pw_hartree(:,:)
+		INTEGER, ALLOCATABLE :: num_pw_dnfH(:)
+		REAL (KIND=8), ALLOCATABLE :: k_pw_dnfH(:,:,:), fattori_pw_dnfH(:,:)
 	END TYPE exc_wave_function
 	TYPE (exc_wave_function), ALLOCATABLE, SAVE, PROTECTED :: excwf(:)
 	INTEGER, SAVE :: N_exc, N_exc_stat, N_orb
@@ -40,7 +40,7 @@ MODULE stati_eccitati
 		WRITE (istring, '(I4.4)'), mpi_myrank
 		file_exc_stat(28:31)=istring
 		
-		E0=SUM(autoenergie_hartree(1:H_N_part))
+		E0=SUM(autoenergie_dnfH(1:H_N_part))
 		E_ctf=E0+cutoff*DABS(E0)
 		N_orb=N_pw_lda
 		CALL trova_stati_eccitati()
@@ -127,7 +127,7 @@ MODULE stati_eccitati
 		DO WHILE (flag_loop_h)
 			flag_loop_p=.TRUE.
 			DO WHILE (flag_loop_p)
-				E_stato=SUM((/(autoenergie_hartree(stati_occ(i3)),i3=1,H_N_part)/))
+				E_stato=SUM((/(autoenergie_dnfH(stati_occ(i3)),i3=1,H_N_part)/))
 				IF (E_stato<=E_ctf) THEN
 					num=num+1
 					!PRINT * , E_stato, stati_occ
@@ -223,18 +223,18 @@ MODULE stati_eccitati
 		END IF
 		
 		DO j = 1, H_N_part, 1
-			num_pw_hartree(j)=num_pw_orbit(i_exc_stat(j,n_stat))
+			num_pw_dnfH(j)=num_pw_orbit(i_exc_stat(j,n_stat))
 		END DO
 		DO j = 1, H_N_part, 1
 			j1=i_exc_stat(j,n_stat)
-			DO i = 1, num_pw_hartree(j), 1
-				k_pw_hartree(0:3,i,j)=k_pw_lda(0:3,indice_pw_hartree(i,j1))
+			DO i = 1, num_pw_dnfH(j), 1
+				k_pw_dnfH(0:3,i,j)=k_pw_lda(0:3,indice_pw_dnfH(i,j1))
 			END DO
 		END DO
 		DO j = 1, H_N_part, 1
 			j1=i_exc_stat(j,n_stat)
-			DO i = 1, num_pw_hartree(j), 1
-				fattori_pw_hartree(i,j)=fattori_pw_lda(indice_pw_hartree(i,j1),j1)
+			DO i = 1, num_pw_dnfH(j), 1
+				fattori_pw_dnfH(i,j)=fattori_pw_lda(indice_pw_dnfH(i,j1),j1)
 			END DO
 		END DO
 		
@@ -269,25 +269,25 @@ MODULE stati_eccitati
 		excwf(iexc)%pvte_dw_old=0.d0
 		
 		IF ((SDe_kind=='prf').OR.(SDe_kind=='fre')) THEN
-			ALLOCATE(excwf(iexc)%num_pw_hartree(H_N_part))
+			ALLOCATE(excwf(iexc)%num_pw_dnfH(H_N_part))
 			DO i1 = 1, H_N_part, 1
-				excwf(iexc)%num_pw_hartree(i1)=num_pw_orbit(i_exc_stat(i1,iexc))
+				excwf(iexc)%num_pw_dnfH(i1)=num_pw_orbit(i_exc_stat(i1,iexc))
 			END DO
-			max_num_pw=MAXVAL(excwf(iexc)%num_pw_hartree(1:H_N_part))
+			max_num_pw=MAXVAL(excwf(iexc)%num_pw_dnfH(1:H_N_part))
 			
-			ALLOCATE(excwf(iexc)%k_pw_hartree(0:3,max_num_pw,H_N_part))
+			ALLOCATE(excwf(iexc)%k_pw_dnfH(0:3,max_num_pw,H_N_part))
 			DO i3 = 1, H_N_part, 1
 				i2=i_exc_stat(i3,iexc)
-				DO i1 = 1, excwf(iexc)%num_pw_hartree(i3), 1
-					excwf(iexc)%k_pw_hartree(0:3,i1,i3)=k_pw_lda(0:3,indice_pw_hartree(i1,i2))
+				DO i1 = 1, excwf(iexc)%num_pw_dnfH(i3), 1
+					excwf(iexc)%k_pw_dnfH(0:3,i1,i3)=k_pw_lda(0:3,indice_pw_dnfH(i1,i2))
 				END DO
 			END DO
 			
-			ALLOCATE(excwf(iexc)%fattori_pw_hartree(max_num_pw,H_N_part))
+			ALLOCATE(excwf(iexc)%fattori_pw_dnfH(max_num_pw,H_N_part))
 			DO i3 = 1, H_N_part, 1
 				i2=i_exc_stat(i3,iexc)
-				DO i1 = 1, excwf(iexc)%num_pw_hartree(i3), 1
-					excwf(iexc)%fattori_pw_hartree(i1,i3)=fattori_pw_lda(indice_pw_hartree(i1,i2),i2)
+				DO i1 = 1, excwf(iexc)%num_pw_dnfH(i3), 1
+					excwf(iexc)%fattori_pw_dnfH(i1,i3)=fattori_pw_lda(indice_pw_dnfH(i1,i2),i2)
 				END DO
 			END DO
 		END IF
@@ -561,9 +561,9 @@ MODULE stati_eccitati
 			 DO j = 1, N, 1
 			 	DO i = 1, N, 1
 			 		SD(i,j)=0.d0
-			 		DO ik = 1, excwf(iexc)%num_pw_hartree(j), 1
-			 			SD(i,j)=SD(i,j)+excwf(iexc)%fattori_pw_hartree(ik,j)*CDEXP((0.d0,1.d0)* &
-			 			  DOT_PRODUCT(excwf(iexc)%k_pw_hartree(1:3,ik,j),r(1:3,i)))
+			 		DO ik = 1, excwf(iexc)%num_pw_dnfH(j), 1
+			 			SD(i,j)=SD(i,j)+excwf(iexc)%fattori_pw_dnfH(ik,j)*CDEXP((0.d0,1.d0)* &
+			 			  DOT_PRODUCT(excwf(iexc)%k_pw_dnfH(1:3,ik,j),r(1:3,i)))
 			 		END DO
 			 		ISD(i,j)=SD(i,j)
 			 	END DO
@@ -583,9 +583,9 @@ MODULE stati_eccitati
 		ELSE IF ((num>0) .AND. (num<=N)) THEN
 			DO j = 1, N, 1
 				SD(num,j)=0.d0
-				DO ik = 1, excwf(iexc)%num_pw_hartree(j), 1
-					SD(num,j)=SD(num,j)+excwf(iexc)%fattori_pw_hartree(ik,j)*CDEXP((0.d0,1.d0)* &
-					  DOT_PRODUCT(excwf(iexc)%k_pw_hartree(1:3,ik,j),r(1:3,num)))
+				DO ik = 1, excwf(iexc)%num_pw_dnfH(j), 1
+					SD(num,j)=SD(num,j)+excwf(iexc)%fattori_pw_dnfH(ik,j)*CDEXP((0.d0,1.d0)* &
+					  DOT_PRODUCT(excwf(iexc)%k_pw_dnfH(1:3,ik,j),r(1:3,num)))
 				END DO
 			END DO
 			CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD)

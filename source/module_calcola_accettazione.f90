@@ -55,7 +55,7 @@ MODULE calcola_accettazione
 	SUBROUTINE inizializza_funzione_onda()
 		USE walkers
 		USE dati_fisici
-		USE dati_simulazione_mc
+		USE dati_mc
 		USE momenta
 		USE funzione_onda
 		IMPLICIT NONE
@@ -72,7 +72,7 @@ MODULE calcola_accettazione
 				
 		IF (flag_TABC) THEN
 			CALL applica_twist(H_N_part, L)
-			IF ((SDe_kind=='prf').OR.(SDe_kind=='fre')) CALL applica_twist_hartree()
+			IF ((SDe_kind=='prf').OR.(SDe_kind=='fre')) CALL applica_twist_dnfH()
 		END IF
 						
 		IF (SDe_kind/='no_') THEN
@@ -311,7 +311,7 @@ MODULE calcola_accettazione
 	SUBROUTINE prima_valutazione_funzione_onda()
 		USE walkers
 		USE dati_fisici
-		USE dati_simulazione_mc
+		USE dati_mc
 		USE momenta
 		USE funzione_onda
 		IMPLICIT NONE
@@ -1140,7 +1140,7 @@ MODULE calcola_accettazione
 
 	SUBROUTINE valuta_accettazione(num_mc,tipo,num,accettazione)
 		USE dati_fisici
-		USE dati_simulazione_mc
+		USE dati_mc
 		USE funzione_onda
 		USE momenta
 		USE walkers
@@ -2815,7 +2815,7 @@ MODULE calcola_accettazione
 
 	SUBROUTINE aggiorna_funzione_onda(tipo,num)
 		USE generic_tools
-		USE dati_simulazione_mc
+		USE dati_mc
 		USE dati_fisici
 		USE funzione_onda
 		USE walkers

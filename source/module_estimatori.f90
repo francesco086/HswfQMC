@@ -1,6 +1,6 @@
 MODULE estimatori
 	USE dati_fisici
-	USE dati_simulazione_mc
+	USE dati_mc
 	USE momenta
 	USE funzione_onda
 	USE walkers
@@ -307,15 +307,15 @@ MODULE estimatori
 					der1_dw=0.d0
 					der2_up=0.d0
 					der2_dw=0.d0
-					DO ik = 1, num_pw_hartree(i), 1
-						frfc1=CDEXP((0.d0,1.d0)*DOT_PRODUCT(k_pw_hartree(1:3,ik,i),re_old(1:3,j)))
-						frfc2=CDEXP((0.d0,1.d0)*DOT_PRODUCT(k_pw_hartree(1:3,ik,i),re_old(1:3,j+H_N_part)))
-						der1_up(1:3)=der1_up(1:3)+(0.d0,1.d0)*k_pw_hartree(1:3,ik,i)* &
-						  fattori_pw_hartree(ik,i)*frfc1
-						der1_dw(1:3)=der1_dw(1:3)+(0.d0,1.d0)*k_pw_hartree(1:3,ik,i)* &
-						  fattori_pw_hartree(ik,i)*frfc2
-						der2_up=der2_up-k_pw_hartree(0,ik,i)*(fattori_pw_hartree(ik,i)*frfc1)
-						der2_dw=der2_dw-k_pw_hartree(0,ik,i)*(fattori_pw_hartree(ik,i)*frfc2)
+					DO ik = 1, num_pw_dnfH(i), 1
+						frfc1=CDEXP((0.d0,1.d0)*DOT_PRODUCT(k_pw_dnfH(1:3,ik,i),re_old(1:3,j)))
+						frfc2=CDEXP((0.d0,1.d0)*DOT_PRODUCT(k_pw_dnfH(1:3,ik,i),re_old(1:3,j+H_N_part)))
+						der1_up(1:3)=der1_up(1:3)+(0.d0,1.d0)*k_pw_dnfH(1:3,ik,i)* &
+						  fattori_pw_dnfH(ik,i)*frfc1
+						der1_dw(1:3)=der1_dw(1:3)+(0.d0,1.d0)*k_pw_dnfH(1:3,ik,i)* &
+						  fattori_pw_dnfH(ik,i)*frfc2
+						der2_up=der2_up-k_pw_dnfH(0,ik,i)*(fattori_pw_dnfH(ik,i)*frfc1)
+						der2_dw=der2_dw-k_pw_dnfH(0,ik,i)*(fattori_pw_dnfH(ik,i)*frfc2)
 					END DO
 					gsdee_up(1:3,j)=gsdee_up(1:3,j)+der1_up*ISDe_up_old(i,j)
 					gsdee_dw(1:3,j)=gsdee_dw(1:3,j)+der1_dw*ISDe_dw_old(i,j)
@@ -329,15 +329,15 @@ MODULE estimatori
 					der1_dw=0.d0
 					der2_up=0.d0
 					der2_dw=0.d0
-					DO ik = 1, num_pw_hartree(i), 1
-						frfc1=CDEXP((0.d0,1.d0)*DOT_PRODUCT(k_pw_hartree(1:3,ik,i),re_old(1:3,j)))
-						frfc2=CDEXP((0.d0,1.d0)*DOT_PRODUCT(k_pw_hartree(1:3,ik,i),re_old(1:3,j+H_N_part)))
-						der1_up(1:3)=der1_up(1:3)+(0.d0,1.d0)*k_pw_hartree(1:3,ik,i)* &
-						  fattori_pw_hartree(ik,i)*frfc1
-						der1_dw(1:3)=der1_dw(1:3)+(0.d0,1.d0)*k_pw_hartree(1:3,ik,i)* &
-						  fattori_pw_hartree(ik,i)*frfc2
-						der2_up=der2_up-k_pw_hartree(0,ik,i)*(fattori_pw_hartree(ik,i)*frfc1)
-						der2_dw=der2_dw-k_pw_hartree(0,ik,i)*(fattori_pw_hartree(ik,i)*frfc2)
+					DO ik = 1, num_pw_dnfH(i), 1
+						frfc1=CDEXP((0.d0,1.d0)*DOT_PRODUCT(k_pw_dnfH(1:3,ik,i),re_old(1:3,j)))
+						frfc2=CDEXP((0.d0,1.d0)*DOT_PRODUCT(k_pw_dnfH(1:3,ik,i),re_old(1:3,j+H_N_part)))
+						der1_up(1:3)=der1_up(1:3)+(0.d0,1.d0)*k_pw_dnfH(1:3,ik,i)* &
+						  fattori_pw_dnfH(ik,i)*frfc1
+						der1_dw(1:3)=der1_dw(1:3)+(0.d0,1.d0)*k_pw_dnfH(1:3,ik,i)* &
+						  fattori_pw_dnfH(ik,i)*frfc2
+						der2_up=der2_up-k_pw_dnfH(0,ik,i)*(fattori_pw_dnfH(ik,i)*frfc1)
+						der2_dw=der2_dw-k_pw_dnfH(0,ik,i)*(fattori_pw_dnfH(ik,i)*frfc2)
 					END DO
 					gsdee_up(1:3,j)=gsdee_up(1:3,j)+der1_up*ISDe_up_old(i,j)
 					gsdee_dw(1:3,j)=gsdee_dw(1:3,j)+der1_dw*ISDe_dw_old(i,j)
@@ -1213,7 +1213,7 @@ MODULE estimatori
 				DO i1 = 1, H_N_part, 1
 					DO i2 = 1, H_N_part, 1
 						DO i3 = 1, H_N_part, 1
-						diff=(autoenergie_hartree(i3)-autoenergie_hartree(i1))
+						diff=(autoenergie_dnfH(i3)-autoenergie_dnfH(i1))
 						IF (DABS(diff)>0.001) THEN
 							zzz=ISDe_up_old(i1,i2)*SDe_up_old(i2,i3)* &
 							  DCONJG(fattori_pw_lda(alpha,i3))*fattori_pw_lda(beta,i1)/diff
@@ -1231,7 +1231,7 @@ MODULE estimatori
 				DO i1 = 1, H_N_part, 1
 					DO i2 = 1, H_N_part, 1
 						DO i3 = 1, H_N_part, 1
-						diff=(autoenergie_hartree(i3)-autoenergie_hartree(i1))
+						diff=(autoenergie_dnfH(i3)-autoenergie_dnfH(i1))
 						IF (DABS(diff)>0.001) THEN
 							zzz=ISDe_up_old(i1,i2)*SDe_up_old(i2,i3)* &
 							  DCONJG(fattori_pw_lda(alpha,i3))*fattori_pw_lda(beta,i1)/diff

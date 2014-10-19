@@ -3,7 +3,7 @@ MODULE funzione_onda
 	REAL, PARAMETER :: CUT_LDA=0.00005  !CUT_LDA=0.000001
 	LOGICAL, SAVE :: iniz_funzione_onda=.FALSE.
 	INTEGER, SAVE :: num_chiamata_twist_lda
-	COMPLEX (KIND=8), SAVE, ALLOCATABLE :: c_eff_hartree(:,:)
+	COMPLEX (KIND=8), SAVE, ALLOCATABLE :: c_eff_dnfH(:,:)
 	REAL (KIND=8), SAVE :: Aee_yuk, Aee_ud_yuk, Fee_yuk, Fee_ud_yuk                      !per gli pseudopotenziali di Yukawa
 	REAL (KIND=8), SAVE :: Aep_yuk, Aep_ud_yuk, Fep_yuk, Fep_ud_yuk
 	REAL (KIND=8), SAVE :: C_kern_e                                             !per il kernel
@@ -22,16 +22,16 @@ MODULE funzione_onda
 	REAL (KIND=8), SAVE :: Gswf, C_atm
 	LOGICAL, PARAMETER, PRIVATE :: verbose_mode=.FALSE.
 	LOGICAL :: split_Aee, split_Aep, split_Asese, split_Asesp, split_Fee, split_Fep, split_Fsese, split_Fsesp
-	LOGICAL :: flag_usa_coeff_hartree
+	LOGICAL :: flag_usa_coeff_dnfH
 	INTEGER, ALLOCATABLE :: coppie(:,:,:), k_pw_int_lda(:,:)
 	INTEGER :: N_pw_lda, num_K_points
 	CHARACTER(LEN=3), PROTECTED, SAVE :: SDe_kind, Jee_kind, Jep_kind, Jpp_kind, SDse_kind, Jse_kind, Kse_kind, Jsesp_kind
 	CHARACTER(LEN=120) :: lda_path
 	REAL (KIND=8), ALLOCATABLE :: fattori_orb_lda(:), k_pw_lda(:,:), twist_lda(:), pesi_K_points(:)
 	COMPLEX (KIND=8), ALLOCATABLE :: fattori_pw_lda(:,:)						!phi_i(x)= fatt_orb_i * ( sum_k [fatt_pw_i_k*EXP(ikx)] )
-	REAL (KIND=8), PROTECTED, SAVE :: kf_coeff_hartree
-	INTEGER, ALLOCATABLE, SAVE :: num_pw_orbit(:), num_pw_hartree(:), indice_pw_hartree(:,:)
-	REAL (KIND=8), ALLOCATABLE :: k_pw_hartree(:,:,:), fattori_pw_hartree(:,:), autoenergie_hartree(:)
+	REAL (KIND=8), PROTECTED, SAVE :: kf_coeff_dnfH
+	INTEGER, ALLOCATABLE, SAVE :: num_pw_orbit(:), num_pw_dnfH(:), indice_pw_dnfH(:,:)
+	REAL (KIND=8), ALLOCATABLE :: k_pw_dnfH(:,:,:), fattori_pw_dnfH(:,:), autoenergie_dnfH(:)
 	LOGICAL, SAVE :: flag_simm_lda
 	INTEGER, ALLOCATABLE, SAVE :: num_fpw_lda(:)
 	REAL (KIND=8), ALLOCATABLE :: k_fpw_lda(:,:,:)
@@ -40,11 +40,11 @@ MODULE funzione_onda
 	CONTAINS
 	
 	SUBROUTINE inizializza_dati_funzione_onda()
-		USE dati_simulazione_mc
+		USE dati_mc
 		USE dati_fisici
 		USE generic_tools
 		USE momenta
-		USE hartree
+		USE dnfH
 		USE walkers
 		IMPLICIT NONE
 		REAL (KIND=8), PARAMETER :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
@@ -58,7 +58,7 @@ MODULE funzione_onda
 		  split_Fsesp, Aee_yuk, Aee_ud_yuk, Fee_yuk, Fee_ud_yuk, Aep_yuk, Aep_ud_yuk, Fep_yuk, Fep_ud_yuk, &
 		  C_kern_e, Asese_yuk, Asese_ud_yuk, Fsese_yuk, Fsese_ud_yuk, Asesp_yuk, Asesp_ud_yuk, Fsesp_yuk, &
 		  Fsesp_ud_yuk, Gswf, C_atm, N_ritraccia_coppie, N_mc_relax_traccia_coppie, A_POT_se, D_POT_se, Gsesp, c_se, &
-		  B_se, D_se, c_sesp, lda_path, kf_coeff_hartree, flag_usa_coeff_hartree
+		  B_se, D_se, c_sesp, lda_path, kf_coeff_dnfH, flag_usa_coeff_dnfH
 		
 		IF (iniz_funzione_onda) STOP 'funzione_onda é giá inizializzato &
 		  [ module_funzione_onda.f90 > inizializza_dati_funzione_onda ]'
@@ -188,14 +188,14 @@ MODULE funzione_onda
 			!CALL normalizza_coefficienti_lda()   !se attivato, attivarlo anche in applica_twist_lda
 			
 		ELSE IF ((SDe_kind=='prf').OR.(SDe_kind=='fre')) THEN
-			CALL inizializza_hartree(kf_coeff_hartree)     !inizializzo hartree, trovano N_pw_lda
-			IF (flag_TABC) CALL twist_k_hartree(kf_coeff_hartree)
-			IF (flag_usa_coeff_hartree) THEN                        !se voglio usare i coefficienti nella matrice hartree, li carico
-				!ALLOCATE(c_eff_hartree(1:N_pw_lda,1:N_pw_lda))
+			CALL inizializza_dnfH(kf_coeff_dnfH)     !inizializzo dnfH, trovano N_pw_lda
+			IF (flag_TABC) CALL twist_k_dnfH(kf_coeff_dnfH)
+			IF (flag_usa_coeff_dnfH) THEN                        !se voglio usare i coefficienti nella matrice dnfH, li carico
+				!ALLOCATE(c_eff_dnfH(1:N_pw_lda,1:N_pw_lda))
 				!INQUIRE(FILE=lda_path,EXIST=flag_file)
 				!IF (flag_file) THEN
 				!	OPEN (UNIT=18, FILE=lda_path, STATUS='OLD')
-				!	READ (18,*), c_eff_hartree
+				!	READ (18,*), c_eff_dnfH
 				!	CLOSE(18)
 				!ELSE
 				!	!IF (mpi_myrank==0) PRINT * , 'funzione_onda: non essendo presente un file, setto c_eff random.'
@@ -205,45 +205,45 @@ MODULE funzione_onda
 				!	dummy=dummy-0.5d0
 				!	DO j = 1, N_pw_lda, 1
 				!		DO i = 1, N_pw_lda, 1
-				!			c_eff_hartree(i,j)=dummy(1,i,j)+(0.d0,1.d0)*dummy(2,i,j)
+				!			c_eff_dnfH(i,j)=dummy(1,i,j)+(0.d0,1.d0)*dummy(2,i,j)
 				!		END DO
 				!	END DO
 				!	DEALLOCATE(dummy)
-				!	c_eff_hartree=1.d0*c_eff_hartree*(hbar*hbar*k_Hartree(0,H_N_part)/(2.d0*MASS_e))
+				!	c_eff_dnfH=1.d0*c_eff_dnfH*(hbar*hbar*k_Hartree(0,H_N_part)/(2.d0*MASS_e))
 				!END IF
-				!CALL costruisci_matrice_Hartree(SDe_kind,c_eff_hartree)
-				STOP 'coefficienti hartree non ancora implementati'
+				!CALL costruisci_matrice_Hartree(SDe_kind,c_eff_dnfH)
+				STOP 'coefficienti dnfH non ancora implementati'
 			ELSE
 				CALL costruisci_matrice_Hartree(SDe_kind)
 			END IF
-			CALL trova_soluzioni_hartree()
+			CALL trova_soluzioni_dnfH()
 			N_pw_lda=N_M_Hartree
 			ALLOCATE(k_pw_lda(0:3,1:N_pw_lda),num_pw_orbit(1:N_pw_lda),fattori_pw_lda(1:N_pw_lda,1:N_pw_lda))
-			ALLOCATE(autoenergie_hartree(1:N_pw_lda),num_pw_hartree(1:H_N_part))
+			ALLOCATE(autoenergie_dnfH(1:N_pw_lda),num_pw_dnfH(1:H_N_part))
 			k_pw_lda(0:3,1:N_pw_lda)=k_Hartree
-			autoenergie_hartree=autovalori_Hartree
+			autoenergie_dnfH=autovalori_Hartree
 			num_pw_orbit=n_fpw_Hartee
-			num_pw_hartree(1:H_N_part)=num_pw_orbit(1:H_N_part)
+			num_pw_dnfH(1:H_N_part)=num_pw_orbit(1:H_N_part)
 			max_num_pw=0
 			DO j = 1, N_pw_lda, 1
 				IF (num_pw_orbit(j)>max_num_pw) max_num_pw=num_pw_orbit(j)
 			END DO
-			ALLOCATE(indice_pw_hartree(1:max_num_pw,1:N_pw_lda))
-			indice_pw_hartree(1:max_num_pw,1:N_pw_lda)=i_fpw_Hartree(1:max_num_pw,1:N_pw_lda)
+			ALLOCATE(indice_pw_dnfH(1:max_num_pw,1:N_pw_lda))
+			indice_pw_dnfH(1:max_num_pw,1:N_pw_lda)=i_fpw_Hartree(1:max_num_pw,1:N_pw_lda)
 			fattori_pw_lda=M_Hartree
-			ALLOCATE(k_pw_hartree(0:3,1:max_num_pw,1:N_pw_lda))
+			ALLOCATE(k_pw_dnfH(0:3,1:max_num_pw,1:N_pw_lda))
 			DO j = 1, N_pw_lda, 1
 				DO i = 1, num_pw_orbit(j), 1
-					k_pw_hartree(0:3,i,j)=k_pw_lda(0:3,indice_pw_hartree(i,j))
+					k_pw_dnfH(0:3,i,j)=k_pw_lda(0:3,indice_pw_dnfH(i,j))
 				END DO
 			END DO
-			ALLOCATE(fattori_pw_hartree(1:max_num_pw,1:N_pw_lda))
+			ALLOCATE(fattori_pw_dnfH(1:max_num_pw,1:N_pw_lda))
 			DO j = 1, N_pw_lda, 1
 				DO i = 1, num_pw_orbit(j), 1
-					fattori_pw_hartree(i,j)=fattori_pw_lda(indice_pw_hartree(i,j),j)
+					fattori_pw_dnfH(i,j)=fattori_pw_lda(indice_pw_dnfH(i,j),j)
 				END DO
 			END DO
-			CALL chiudi_hartree()
+			CALL chiudi_dnfH()
 		END IF
 		                                                         
 		IF ((Jsesp_kind=='bou') .OR. (Jsesp_kind=='ppb')) THEN   
@@ -291,7 +291,7 @@ MODULE funzione_onda
 		  split_Fsesp, Aee_yuk, Aee_ud_yuk, Fee_yuk, Fee_ud_yuk, Aep_yuk, Aep_ud_yuk, Fep_yuk, Fep_ud_yuk, &
 		  C_kern_e, Asese_yuk, Asese_ud_yuk, Fsese_yuk, Fsese_ud_yuk, Asesp_yuk, Asesp_ud_yuk, Fsesp_yuk, &
 		  Fsesp_ud_yuk, Gswf, C_atm, N_ritraccia_coppie, N_mc_relax_traccia_coppie, A_POT_se, D_POT_se, Gsesp, c_se, &
-		  B_se, D_se, c_sesp, lda_path, kf_coeff_hartree, flag_usa_coeff_hartree
+		  B_se, D_se, c_sesp, lda_path, kf_coeff_dnfH, flag_usa_coeff_dnfH
 		
 		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
 		  [ module_funzione_onda.f90 > stampa_file_dati_funzione_onda ]'
@@ -305,13 +305,13 @@ MODULE funzione_onda
 		IF (.NOT. split_Fep) Fep_ud_yuk=Fep_yuk
 		IF (.NOT. split_Fsese) Fsese_ud_yuk=Fsese_yuk
 		IF (.NOT. split_Fsesp) Fsesp_ud_yuk=Fsesp_yuk
-		kf_coeff_hartree=DABS(kf_coeff_hartree)
+		kf_coeff_dnfH=DABS(kf_coeff_dnfH)
 		WRITE (2,NML=dati_funzione_onda)
 		CLOSE (2)
 		
-		IF (((SDe_kind=='prf').OR.(SDe_kind=='fre')).AND.(flag_usa_coeff_hartree)) THEN
-			OPEN (2, FILE=nome_file//'.c_eff_hartree',STATUS='UNKNOWN')
-			WRITE (2, *), c_eff_hartree
+		IF (((SDe_kind=='prf').OR.(SDe_kind=='fre')).AND.(flag_usa_coeff_dnfH)) THEN
+			OPEN (2, FILE=nome_file//'.c_eff_dnfH',STATUS='UNKNOWN')
+			WRITE (2, *), c_eff_dnfH
 			CLOSE(2)
 		END IF
 		
@@ -319,9 +319,9 @@ MODULE funzione_onda
 !-----------------------------------------------------------------------
 
 	SUBROUTINE setta_parametri(nuovi_parametri,numero_parametri)
-		USE dati_simulazione_mc
+		USE dati_mc
 		USE walkers
-		USE hartree
+		USE dnfH
 		IMPLICIT NONE
 		INTEGER, INTENT(IN) :: numero_parametri
 		REAL (KIND=8), INTENT(INOUT) :: nuovi_parametri(1:numero_parametri)
@@ -601,50 +601,50 @@ MODULE funzione_onda
 		END IF
 		IF (SDe_kind/='no_') THEN
 			IF ((SDe_kind=='prf').OR.(SDe_kind=='fre')) THEN
-				IF (opt_c_eff_hartree) THEN
+				IF (opt_c_eff_dnfH) THEN
 					cont=0
 					DO j = 1, N_pw_lda, 1   !colonna
 						DO i = 1, j-1, 1   !riga
 							cont=cont+2
-							c_eff_hartree(i,j)=nuovi_parametri(cont-1)+(0.d0,1.d0)*nuovi_parametri(cont)
+							c_eff_dnfH(i,j)=nuovi_parametri(cont-1)+(0.d0,1.d0)*nuovi_parametri(cont)
 						END DO
 					END DO
 					DO j = 1, N_pw_lda, 1   !colonna
 						i=j
 						cont=cont+1
-						c_eff_hartree(i,j)=nuovi_parametri(cont)
+						c_eff_dnfH(i,j)=nuovi_parametri(cont)
 					END DO
             
-					CALL inizializza_hartree(kf_coeff_hartree)     !inizializzo hartree, trovano N_pw_lda
-					CALL costruisci_matrice_Hartree(SDe_kind,c_eff_hartree)
-					CALL trova_soluzioni_hartree()
+					CALL inizializza_dnfH(kf_coeff_dnfH)     !inizializzo dnfH, trovano N_pw_lda
+					CALL costruisci_matrice_Hartree(SDe_kind,c_eff_dnfH)
+					CALL trova_soluzioni_dnfH()
 					N_pw_lda=N_M_Hartree
-					autoenergie_hartree=autovalori_Hartree
+					autoenergie_dnfH=autovalori_Hartree
 					num_pw_orbit=n_fpw_Hartee
-					num_pw_hartree(1:H_N_part)=num_pw_orbit(1:H_N_part)
+					num_pw_dnfH(1:H_N_part)=num_pw_orbit(1:H_N_part)
 					max_num_pw=0
 					DO j = 1, N_pw_lda, 1
 						IF (num_pw_orbit(j)>max_num_pw) max_num_pw=num_pw_orbit(j)
 					END DO
-					DEALLOCATE(indice_pw_hartree)
-					ALLOCATE(indice_pw_hartree(1:max_num_pw,1:N_pw_lda))
-					indice_pw_hartree(1:max_num_pw,1:N_pw_lda)=i_fpw_Hartree(1:max_num_pw,1:N_pw_lda)
+					DEALLOCATE(indice_pw_dnfH)
+					ALLOCATE(indice_pw_dnfH(1:max_num_pw,1:N_pw_lda))
+					indice_pw_dnfH(1:max_num_pw,1:N_pw_lda)=i_fpw_Hartree(1:max_num_pw,1:N_pw_lda)
 					fattori_pw_lda=M_Hartree
-					DEALLOCATE(k_pw_hartree)
-					ALLOCATE(k_pw_hartree(0:3,1:max_num_pw,1:N_pw_lda))
+					DEALLOCATE(k_pw_dnfH)
+					ALLOCATE(k_pw_dnfH(0:3,1:max_num_pw,1:N_pw_lda))
 					DO j = 1, N_pw_lda, 1
 						DO i = 1, num_pw_orbit(j), 1
-							k_pw_hartree(0:3,i,j)=k_pw_lda(0:3,indice_pw_hartree(i,j))
+							k_pw_dnfH(0:3,i,j)=k_pw_lda(0:3,indice_pw_dnfH(i,j))
 						END DO
 					END DO
-					DEALLOCATE(fattori_pw_hartree)
-					ALLOCATE(fattori_pw_hartree(1:max_num_pw,1:N_pw_lda))
+					DEALLOCATE(fattori_pw_dnfH)
+					ALLOCATE(fattori_pw_dnfH(1:max_num_pw,1:N_pw_lda))
 					DO j = 1, N_pw_lda, 1
 						DO i = 1, num_pw_orbit(j), 1
-							fattori_pw_hartree(i,j)=fattori_pw_lda(indice_pw_hartree(i,j),j)
+							fattori_pw_dnfH(i,j)=fattori_pw_lda(indice_pw_dnfH(i,j),j)
 						END DO
 					END DO
-					CALL chiudi_hartree()
+					CALL chiudi_dnfH()
 				END IF
 			ELSE IF ((SDe_kind=='atm').OR.(SDe_kind=='atp')) THEN
 				IF ( opt_SDe ) THEN
@@ -684,7 +684,7 @@ MODULE funzione_onda
 !-----------------------------------------------------------------------
 
 	SUBROUTINE stampa_parametri_variazionali()
-		USE dati_simulazione_mc
+		USE dati_mc
 		USE dati_fisici
 		IMPLICIT NONE
 		INTEGER :: media_num_pw
@@ -705,15 +705,15 @@ MODULE funzione_onda
 			CASE ('prf')
 				media_num_pw=SUM(num_pw_orbit(1:N_pw_lda))/N_pw_lda
 				PRINT * , '     SDe: ', SDe_kind, '          Numero onde piane:', N_pw_lda, &
-				  '     (', media_num_pw, ' per orbitale)      ctf=', REAL(kf_coeff_hartree,4)
+				  '     (', media_num_pw, ' per orbitale)      ctf=', REAL(kf_coeff_dnfH,4)
 				IF (flag_output) WRITE (7, *), '     SDe: ', SDe_kind, '          Numero onde piane:', N_pw_lda, &
-				  '     (', media_num_pw, ' per orbitale)      ctf=', REAL(kf_coeff_hartree,4)
+				  '     (', media_num_pw, ' per orbitale)      ctf=', REAL(kf_coeff_dnfH,4)
 			CASE ('fre')
 				media_num_pw=SUM(num_pw_orbit(1:N_pw_lda))/N_pw_lda
 				PRINT * , '     SDe: ', SDe_kind, '          Numero onde piane:', N_pw_lda, &
-				  '     (', media_num_pw, ' per orbitale)      ctf=', REAL(kf_coeff_hartree,4)
+				  '     (', media_num_pw, ' per orbitale)      ctf=', REAL(kf_coeff_dnfH,4)
 				IF (flag_output) WRITE (7, *), '     SDe: ', SDe_kind, '          Numero onde piane:', N_pw_lda, &
-				  '     (', media_num_pw, ' per orbitale)      ctf=', REAL(kf_coeff_hartree,4)
+				  '     (', media_num_pw, ' per orbitale)      ctf=', REAL(kf_coeff_dnfH,4)
 			CASE ('atm')
 				PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 				IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
@@ -1082,7 +1082,7 @@ MODULE funzione_onda
 	SUBROUTINE genera_orbitali_lda()
 		USE dft
 		USE dati_fisici
-		USE dati_simulazione_mc
+		USE dati_mc
 		IMPLICIT NONE
 		
 		IF ( mpi_myrank==0 ) THEN
@@ -1110,7 +1110,7 @@ MODULE funzione_onda
 !-----------------------------------------------------------------------
 
 	SUBROUTINE normalizza_coefficienti_lda() !necessaria per non far divergere a infinito (NaN) nel caso HCP con 432 particelle
-		USE dati_simulazione_mc
+		USE dati_mc
 		USE dati_fisici
 		USE walkers
 		IMPLICIT NONE
@@ -1207,55 +1207,55 @@ MODULE funzione_onda
 	END SUBROUTINE normalizza_coefficienti_lda
 !-----------------------------------------------------------------------
 
-	SUBROUTINE applica_twist_hartree()
-		USE hartree
+	SUBROUTINE applica_twist_dnfH()
+		USE dnfH
 		IMPLICIT NONE
 		INTEGER :: i, j, max_num_pw
 				
-		CALL inizializza_hartree(kf_coeff_hartree)     !inizializzo hartree, trovano N_pw_lda
-		CALL twist_k_hartree(kf_coeff_hartree)
-		IF (flag_usa_coeff_hartree) THEN                        !se voglio usare i coefficienti nella matrice hartree, li carico
-			CALL costruisci_matrice_Hartree(SDe_kind,c_eff_hartree)
+		CALL inizializza_dnfH(kf_coeff_dnfH)     !inizializzo dnfH, trovano N_pw_lda
+		CALL twist_k_dnfH(kf_coeff_dnfH)
+		IF (flag_usa_coeff_dnfH) THEN                        !se voglio usare i coefficienti nella matrice dnfH, li carico
+			CALL costruisci_matrice_Hartree(SDe_kind,c_eff_dnfH)
 		ELSE
 			CALL costruisci_matrice_Hartree(SDe_kind)
 		END IF
-		CALL trova_soluzioni_hartree()
+		CALL trova_soluzioni_dnfH()
 		N_pw_lda=N_M_Hartree
-		DEALLOCATE(k_pw_lda,num_pw_orbit,fattori_pw_lda,autoenergie_hartree,num_pw_hartree)
+		DEALLOCATE(k_pw_lda,num_pw_orbit,fattori_pw_lda,autoenergie_dnfH,num_pw_dnfH)
 		ALLOCATE(k_pw_lda(0:3,1:N_pw_lda),num_pw_orbit(1:N_pw_lda),fattori_pw_lda(1:N_pw_lda,1:N_pw_lda))
-		ALLOCATE(autoenergie_hartree(1:N_pw_lda),num_pw_hartree(1:H_N_part))
+		ALLOCATE(autoenergie_dnfH(1:N_pw_lda),num_pw_dnfH(1:H_N_part))
 		k_pw_lda(0:3,1:N_pw_lda)=k_Hartree
-		autoenergie_hartree=autovalori_Hartree
+		autoenergie_dnfH=autovalori_Hartree
 		num_pw_orbit=n_fpw_Hartee
-		num_pw_hartree(1:H_N_part)=num_pw_orbit(1:H_N_part)
+		num_pw_dnfH(1:H_N_part)=num_pw_orbit(1:H_N_part)
 		max_num_pw=0
 		DO j = 1, N_pw_lda, 1
 			IF (num_pw_orbit(j)>max_num_pw) max_num_pw=num_pw_orbit(j)
 		END DO
-		DEALLOCATE(indice_pw_hartree)
-		ALLOCATE(indice_pw_hartree(1:max_num_pw,1:N_pw_lda))
-		indice_pw_hartree(1:max_num_pw,1:N_pw_lda)=i_fpw_Hartree(1:max_num_pw,1:N_pw_lda)
+		DEALLOCATE(indice_pw_dnfH)
+		ALLOCATE(indice_pw_dnfH(1:max_num_pw,1:N_pw_lda))
+		indice_pw_dnfH(1:max_num_pw,1:N_pw_lda)=i_fpw_Hartree(1:max_num_pw,1:N_pw_lda)
 		fattori_pw_lda=M_Hartree
-		DEALLOCATE(k_pw_hartree)
-		ALLOCATE(k_pw_hartree(0:3,1:max_num_pw,1:N_pw_lda))
+		DEALLOCATE(k_pw_dnfH)
+		ALLOCATE(k_pw_dnfH(0:3,1:max_num_pw,1:N_pw_lda))
 		DO j = 1, N_pw_lda, 1
 			DO i = 1, num_pw_orbit(j), 1
-				k_pw_hartree(0:3,i,j)=k_pw_lda(0:3,indice_pw_hartree(i,j))
+				k_pw_dnfH(0:3,i,j)=k_pw_lda(0:3,indice_pw_dnfH(i,j))
 			END DO
 		END DO
-		DEALLOCATE(fattori_pw_hartree)
-		ALLOCATE(fattori_pw_hartree(1:max_num_pw,1:N_pw_lda))
+		DEALLOCATE(fattori_pw_dnfH)
+		ALLOCATE(fattori_pw_dnfH(1:max_num_pw,1:N_pw_lda))
 		DO j = 1, N_pw_lda, 1
 			DO i = 1, num_pw_orbit(j), 1
-				fattori_pw_hartree(i,j)=fattori_pw_lda(indice_pw_hartree(i,j),j)
+				fattori_pw_dnfH(i,j)=fattori_pw_lda(indice_pw_dnfH(i,j),j)
 			END DO
 		END DO
-		CALL chiudi_hartree()
-	END SUBROUTINE applica_twist_hartree
+		CALL chiudi_dnfH()
+	END SUBROUTINE applica_twist_dnfH
 !-----------------------------------------------------------------------
 
 	SUBROUTINE applica_twist_lda()
-		USE dati_simulazione_mc
+		USE dati_mc
 		USE dati_fisici
 		USE generic_tools
 		IMPLICIT NONE
@@ -1743,9 +1743,9 @@ MODULE funzione_onda
 			 DO j = 1, N, 1
 			 	DO i = 1, N, 1
 			 		SD(i,j)=0.d0
-			 		DO ik = 1, num_pw_hartree(j), 1
-			 			SD(i,j)=SD(i,j)+fattori_pw_hartree(ik,j)*CDEXP((0.d0,1.d0)* &
-			 			  DOT_PRODUCT(k_pw_hartree(1:3,ik,j),r(1:3,i)))
+			 		DO ik = 1, num_pw_dnfH(j), 1
+			 			SD(i,j)=SD(i,j)+fattori_pw_dnfH(ik,j)*CDEXP((0.d0,1.d0)* &
+			 			  DOT_PRODUCT(k_pw_dnfH(1:3,ik,j),r(1:3,i)))
 			 		END DO
 			 		ISD(i,j)=SD(i,j)
 			 	END DO
@@ -1765,9 +1765,9 @@ MODULE funzione_onda
 		ELSE IF ((num>0) .AND. (num<=N)) THEN
 			DO j = 1, N, 1
 				SD(num,j)=0.d0
-				DO ik = 1, num_pw_hartree(j), 1
-					SD(num,j)=SD(num,j)+fattori_pw_hartree(ik,j)*CDEXP((0.d0,1.d0)* &
-					  DOT_PRODUCT(k_pw_hartree(1:3,ik,j),r(1:3,num)))
+				DO ik = 1, num_pw_dnfH(j), 1
+					SD(num,j)=SD(num,j)+fattori_pw_dnfH(ik,j)*CDEXP((0.d0,1.d0)* &
+					  DOT_PRODUCT(k_pw_dnfH(1:3,ik,j),r(1:3,num)))
 				END DO
 			END DO
 			CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD)
@@ -2978,8 +2978,8 @@ MODULE funzione_onda
 !-----------------------------------------------------------------------
 
 	SUBROUTINE chiudi_dati_funzione_onda()
-		USE hartree
-		USE dati_simulazione_mc
+		USE dnfH
+		USE dati_mc
 		IMPLICIT NONE
 		
 		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
@@ -2994,12 +2994,12 @@ MODULE funzione_onda
 			num_chiamata_twist_lda=0
 		ELSE IF ((SDe_kind=='prf').OR.(SDe_kind=='fre')) THEN
 			DEALLOCATE(k_pw_lda,fattori_pw_lda)
-			DEALLOCATE(num_pw_orbit,indice_pw_hartree)
-			DEALLOCATE(k_pw_hartree,fattori_pw_hartree,num_pw_hartree)
-			IF (flag_usa_coeff_hartree) THEN                        !se voglio usare i coefficienti nella matrice hartree, li carico
-				DEALLOCATE(c_eff_hartree)
+			DEALLOCATE(num_pw_orbit,indice_pw_dnfH)
+			DEALLOCATE(k_pw_dnfH,fattori_pw_dnfH,num_pw_dnfH)
+			IF (flag_usa_coeff_dnfH) THEN                        !se voglio usare i coefficienti nella matrice dnfH, li carico
+				DEALLOCATE(c_eff_dnfH)
 			END IF
-			DEALLOCATE(autoenergie_hartree)
+			DEALLOCATE(autoenergie_dnfH)
 		END IF
 		IF ((Jsesp_kind=='bou') .OR. (Jsesp_kind=='ppb')) THEN
 			DEALLOCATE(coppie)

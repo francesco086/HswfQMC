@@ -46,7 +46,7 @@ MODULE momenta
 !-----------------------------------------------------------------------
 	SUBROUTINE applica_twist(H_N, L)
 		USE generic_tools
-		USE dati_simulazione_mc
+		USE dati_mc
 		IMPLICIT NONE
 		INTEGER, INTENT(IN) :: H_N
 		REAL (KIND=8), INTENT(IN) :: L(1:3)
@@ -238,7 +238,7 @@ MODULE momenta
 	END SUBROUTINE fermi_quantization_twist
 !-----------------------------------------------------------------------
 	SUBROUTINE chiudi_momenta()
-		USE dati_simulazione_mc
+		USE dati_mc
 		IMPLICIT NONE
 		IF (.NOT. iniz_momenta) STOP 'Prima di chiudere devi inizializzare i momenti &
 		  [ module_momenta.f90 > chiudi_momenta ]'

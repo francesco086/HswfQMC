@@ -3,7 +3,7 @@ MODULE variational_calculations
 	USE momenta
 	USE walkers
 	USE dati_fisici
-	USE dati_simulazione_mc
+	USE dati_mc
 	IMPLICIT NONE
 	TYPE variational_wave_function
 		COMPLEX (KIND=8), ALLOCATABLE :: SDe_up(:,:), ISDe_up(:,:)
@@ -948,12 +948,12 @@ MODULE variational_calculations
 		IF ( opt_SDe ) THEN
 			SELECT CASE (SDe_kind)
 			CASE ('prf')
-				IF (opt_c_eff_hartree) THEN
+				IF (opt_c_eff_dnfH) THEN
 					CALL derivata_SDe_HAR(O(cont:cont+N_pw_lda*N_pw_lda-1,i_mc))
 					cont=cont+N_pw_lda*N_pw_lda
 				END IF
 			CASE ('fre')
-				IF (opt_c_eff_hartree) THEN
+				IF (opt_c_eff_dnfH) THEN
 					CALL derivata_SDe_HAR(O(cont:cont+N_pw_lda*N_pw_lda-1,i_mc))
 					cont=cont+N_pw_lda*N_pw_lda
 				END IF

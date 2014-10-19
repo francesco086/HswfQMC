@@ -63,7 +63,7 @@ endif
 
 # elenco degli oggetti da creare (c'è sempre l'oggetto del programma principale e gli oggetti
 # dei vari moduli)
-OBJECTS=main.o module_dft.o module_dati_fisici.o module_dati_mc.o module_hartree.o module_stati_eccitati.o module_generic_tools.o module_lattice.o module_VMC.o module_estimatori.o module_momenta.o module_calcola_accettazione.o module_funzione_onda.o module_walkers.o module_variational_opt.o module_variational_calculations.o
+OBJECTS=main.o module_dft.o module_dati_fisici.o module_dati_mc.o module_dnfH.o module_stati_eccitati.o module_generic_tools.o module_lattice.o module_VMC.o module_estimatori.o module_momenta.o module_calcola_accettazione.o module_funzione_onda.o module_walkers.o module_variational_opt.o module_variational_calculations.o
 
 
 # crea tutti gli oggetti e li linka correttamente con le librerie; scrivere "make"
@@ -80,7 +80,7 @@ print:
 # crea singolarmente i vari oggetti (se per caso vuoi crearne solo alcuni a mano); "make nome"
 # attenzione a inserire tutti i moduli da cui ogni modulo può dipendere
 # la sintassi vuole il tab nella seconda riga
-main.o: module_dft.o module_stati_eccitati.o module_walkers.o module_hartree.o module_funzione_onda.o module_calcola_accettazione.o module_estimatori.o module_generic_tools.o module_lattice.o module_dati_mc.o module_dati_fisici.o module_VMC.o module_variational_opt.o main.f90 
+main.o: module_dft.o module_stati_eccitati.o module_walkers.o module_dnfH.o module_funzione_onda.o module_calcola_accettazione.o module_estimatori.o module_generic_tools.o module_lattice.o module_dati_mc.o module_dati_fisici.o module_VMC.o module_variational_opt.o main.f90 
 	$(FC) $(FFLAGS) -c main.f90 
 
 module_variational_calculations.o: module_walkers.o module_dati_mc.o module_dati_fisici.o module_funzione_onda.o module_momenta.o module_estimatori.o module_calcola_accettazione.o module_estimatori.o module_variational_calculations.f90
@@ -110,10 +110,10 @@ module_dati_mc.o: module_dati_fisici.o module_generic_tools.o module_dati_mc.f90
 module_dati_fisici.o: module_lattice.o module_generic_tools.o module_dati_fisici.f90
 	$(FC) $(FFLAGS) -c module_dati_fisici.f90 
 
-module_hartree.o: module_dati_fisici.o module_walkers.o module_hartree.f90
-	$(FC) $(FFLAGS) -c module_hartree.f90 
+module_dnfH.o: module_dati_fisici.o module_walkers.o module_dnfH.f90
+	$(FC) $(FFLAGS) -c module_dnfH.f90 
 
-module_funzione_onda.o: module_dft.o module_momenta.o module_generic_tools.o module_dati_mc.o module_dati_fisici.o module_hartree.o module_walkers.o module_funzione_onda.f90
+module_funzione_onda.o: module_dft.o module_momenta.o module_generic_tools.o module_dati_mc.o module_dati_fisici.o module_dnfH.o module_walkers.o module_funzione_onda.f90
 	$(FC) $(FFLAGS) -c module_funzione_onda.f90 
 
 module_momenta.o: module_momenta.f90

@@ -12,7 +12,15 @@ pilot_PATH=$(which pilot-HswfQMC.sh | sed -e "s/\/pilot-HswfQMC.sh//")
 #echo "Path to the pilot executable: "${pilot_PATH}
 
 OS_NAME=$(uname)
-#echo "The Operating System is : "${OS_NAME}
+#echo "The Operating System is: "${OS_NAME}
+
+if [ "${OS_NAME}" = "Darwin" ]
+then
+	NUM_CPU=$(sysctl hw.ncpu | sed -e "s/hw.ncpu://" | sed -e "s/ *//" )
+#else
+#	NUM_CPU=$(grep -c ^processor /proc/cpuinfo)
+fi
+#echo "Number of CPU: ${NUM_CPU}, -j${NUM_CPU}"
 
 LAPACK_FOLDER="lapack_lib"
 
@@ -52,7 +60,7 @@ do
 			;;	
 		build)
 			cd ${pilot_PATH}
-			echo "Build the executable file and necessary folders"
+			echo "Build the executable file HswfQMC_exe"
 			cd source
 			make
 			mv HswfQMC* ../
@@ -169,8 +177,6 @@ complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh
 			cd ${pilot_PATH}
 			echo "Which fortran compiler do you use? "
                         read FF
-			echo "How many cores does your computer have? [if you are not sure type 1] "
-                        read NUM_CPU
 			svn co https://icl.cs.utk.edu/svn/lapack-dev/lapack/trunk
 			mv trunk ${LAPACK_FOLDER}
 			cd ${LAPACK_FOLDER}

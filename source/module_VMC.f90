@@ -2,7 +2,7 @@ MODULE VMC
 	USE stati_eccitati
 	USE calcola_accettazione
 	USE dati_fisici
-	USE dati_simulazione_mc
+	USE dati_mc
 	USE estimatori
 	USE generic_tools
 	USE walkers
@@ -44,7 +44,7 @@ MODULE VMC
 			END IF
 		END IF
 		CALL inizializza_dati_fisici()
-		CALL inizializza_dati_simulazione_mc()
+		CALL inizializza_dati_mc()
 		IF (PRESENT(CONTINUA)) THEN
 			IF (CONTINUA .AND. (.NOT. flag_disk)) CALL cambia_N_mc(N_mc*(2**(cont_N_mc_increase)))
 			CALL change_flag_continua(CONTINUA)
@@ -599,7 +599,7 @@ MODULE VMC
 				DO i = 2, num_sampling, 1
 					IF (flag_TABC .AND. (MOD(i,N_TABC)==0)) THEN     !applica TABC
 						IF (SDe_kind=='pw_') CALL applica_twist(H_N_part, L)
-						IF ((SDe_kind=='prf').OR.(SDe_kind=='fre')) CALL applica_twist_hartree()
+						IF ((SDe_kind=='prf').OR.(SDe_kind=='fre')) CALL applica_twist_dnfH()
 						IF (SDe_kind=='lda') CALL applica_twist_lda()
 						DO i1 = 1, N_mc_relax_TABC, 1
 							IF (flag_elettroni) THEN
@@ -675,7 +675,7 @@ MODULE VMC
 				DO i = 2, num_sampling, 1
 					IF ((MOD(i,N_TABC)==0) .AND. flag_TABC) THEN
 						IF (SDe_kind=='pw_') CALL applica_twist(H_N_part, L)
-						IF ((SDe_kind=='prf').OR.(SDe_kind=='fre')) CALL applica_twist_hartree()
+						IF ((SDe_kind=='prf').OR.(SDe_kind=='fre')) CALL applica_twist_dnfH()
 						IF (SDe_kind=='lda') CALL applica_twist_lda()
 						DO i1 = 1, N_mc_relax_TABC, 1
 							DO j = 1, N_1ppt, 1
@@ -1609,7 +1609,7 @@ MODULE VMC
 		CALL chiudi_funzione_onda()
 		CALL chiudi_walkers()
 		CALL chiudi_dati_fisici()
-		CALL chiudi_dati_simulazione_mc()
+		CALL chiudi_dati_mc()
 		
 		IF (verbose_mode) THEN
 			PRINT * , 'VMC: Ho chiuso il VMC'

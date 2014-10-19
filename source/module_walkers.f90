@@ -32,7 +32,7 @@ MODULE walkers
 	
 	SUBROUTINE inizializza_walkers(codice)
 		USE dati_fisici
-		USE dati_simulazione_mc
+		USE dati_mc
 		USE generic_tools
 		IMPLICIT NONE
 		LOGICAL :: flag_file_pos
@@ -196,7 +196,7 @@ MODULE walkers
 
 	SUBROUTINE attiva_pc()
 		USE dati_fisici
-		USE dati_simulazione_mc
+		USE dati_mc
 		USE generic_tools
 		IMPLICIT NONE
 		IF (.NOT. iniz_dati_fisici) STOP 'Non hai inizializzato dati_fisici &
@@ -241,7 +241,7 @@ MODULE walkers
 !-----------------------------------------------------------------------
 
 	SUBROUTINE proponi_mossa(tipo,num)
-		USE dati_simulazione_mc
+		USE dati_mc
 		USE dati_fisici
 		USE generic_tools
 		IMPLICIT NONE
@@ -249,7 +249,7 @@ MODULE walkers
 		INTEGER, INTENT(IN) :: num
 		IF (.NOT. iniz_dati_fisici) STOP 'Non hai inizializzato dati_fisici &
 		  [ module_walkers.f90 > proponi_mossa ]'
-		IF (.NOT. iniz_dati_simulazione_mc) STOP 'Non hai inizializzato dati_simulazione_mc &
+		IF (.NOT. iniz_dati_mc) STOP 'Non hai inizializzato dati_mc &
 		  [ module_walkers.f90 > proponi_mossa ]'
 		IF (.NOT. iniz_walkers) STOP 'Prima di muovere i walkers devi inizializzarli &
 		  [ module_walkers.f90 > proponi_mossa ]'
@@ -612,7 +612,7 @@ MODULE walkers
 !-----------------------------------------------------------------------
 
 	SUBROUTINE metti_rnew_in_rold(tipo,num)
-		USE dati_simulazione_mc
+		USE dati_mc
 		USE dati_fisici
 		IMPLICIT NONE
 		CHARACTER(LEN=3), INTENT(IN) :: tipo
@@ -834,7 +834,7 @@ MODULE walkers
 
 	SUBROUTINE riporta_indietro_walker(tipo,num)
 		USE dati_fisici
-		USE dati_simulazione_mc
+		USE dati_mc
 		IMPLICIT NONE
 		CHARACTER(LEN=3), INTENT(IN) :: tipo
 		INTEGER, INTENT(IN) :: num
@@ -954,7 +954,7 @@ MODULE walkers
 
 	SUBROUTINE salva_posizione_walkers(nome_file)
 		USE dati_fisici
-		USE dati_simulazione_mc
+		USE dati_mc
 		USE generic_tools
 		IMPLICIT NONE
 		CHARACTER(LEN=*), INTENT(IN) :: nome_file
@@ -1054,7 +1054,7 @@ MODULE walkers
 	SUBROUTINE setta_Rcrystal(vett)
 		USE generic_tools
 		USE dati_fisici
-		USE dati_simulazione_mc
+		USE dati_mc
 		IMPLICIT NONE
 		REAL (KIND=8), DIMENSION(:) :: vett(:)
 		REAL (KIND=8) :: r_crystal_new(1:3,1:N_part)
@@ -1188,7 +1188,7 @@ MODULE walkers
 !-----------------------------------------------------------------------
 
 	SUBROUTINE chiudi_walkers()
-		USE dati_simulazione_mc
+		USE dati_mc
 		USE dati_fisici
 		IMPLICIT NONE
 		IF (.NOT. iniz_walkers) STOP 'Prima di chiudere avresti dovuto inizializzare &
