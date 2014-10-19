@@ -2,7 +2,7 @@
 
 HswfQMC_NAME="HswfQMC"
 
-HswfQMC_PATH=$(which HswfQMC_exe  | sed -e "s/\/HswfQMC_exe//")
+HswfQMC_PATH=$(which pilot-HswfQMC.sh  | sed -e "s/\/pilot-HswfQMC.sh//")
 #echo "Path to the executable: "${HswfQMC_PATH}
 
 CURRENT_PATH=$(pwd)
@@ -27,7 +27,7 @@ do
 			echo "install_lapack - Download and compile the lapack library (recommended) "
 			echo "set_makefile - Set the Makefile automatically"
 			echo "build - Compile (make) the HswfQMC source code in order to have the HswfQMC_exe executable"
-			echo "recompile - Recompile the code from scratch"
+			echo "rebuild - Recompile the code from scratch"
 			
 			echo ""
 			echo "      --- Use HswfQMC ---"
@@ -59,7 +59,7 @@ do
 			cd $CURRENT_PATH
 			exit
 			;;
-		recompile)
+		rebuild)
 			echo "Clean compiled files and compile again?"
 			echo "Are you sure? [y/n] "
 			read ANSW
@@ -155,7 +155,7 @@ export PATH=/Users/kenzo/Applications/HswfQMC:$PATH
 _pilot-HswfQMC.sh()
 {
     local cur=\${COMP_WORDS[COMP_CWORD]}
-    COMPREPLY=( \$(compgen -W \"set_path install_lapack set_makefile build recompile set_dir clean wash commit\" -- \$cur) )
+    COMPREPLY=( \$(compgen -W \"set_path install_lapack set_makefile build rebuild set_dir clean wash commit\" -- \$cur) )
 }
 complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh
 				" >> ~/.${FILE_TO_SET}
