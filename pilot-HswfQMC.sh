@@ -195,7 +195,7 @@ do
 				read ANSW
 				if [ "${ANSW}" = 'y' ]
 				then
-					sed -i -e "/ifeq (\$(IDENTIFIER),${IDENTIFIER})/,+5d" source/makefile.users_settings   #might not work for Os X
+					sed -i -e "/ifeq (\$(IDENTIFIER),${IDENTIFIER})/,+5d" source/makefile.users_settings   #it does not work for Os X
 					FLAG=true
 				else
 					FLAG=false
