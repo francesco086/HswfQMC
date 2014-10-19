@@ -15,6 +15,7 @@ Follow these simple steps:
 * Set the PATH. To do so, execute the command (from the root folder of HswfQMC)
 
   `sh pilot-HswfQMC.sh setpath`
+  
   `source ~/.bashrc` (or `source ~/.bash_profile` if you are using a Mac)
 
   After running this command you can use the script `pilot-HswfQMC` (in the following we will refer to it simply as `pilot`) as an executable from anywhere. To give it a try and see which options you have, go to your home directory (`cd`) and run
