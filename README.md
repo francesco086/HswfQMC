@@ -3,14 +3,14 @@
 
 ##DOWNLOAD:
 
-Simply execute the command
+Execute the command
 
   `git clone https://github.com/francesco086/HswfQMC`
 
 
 ##INSTALL:
 
-Follow these simple steps:
+Follow these steps:
 
 * Set the PATH. To do so, execute the command (from the root folder of HswfQMC)
 
