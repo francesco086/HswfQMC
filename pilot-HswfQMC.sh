@@ -198,8 +198,13 @@ complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh
 			cd ${pilot_PATH}
 			echo "Which fortran compiler do you use? "
                         read FF
-			svn co https://icl.cs.utk.edu/svn/lapack-dev/lapack/trunk
-			mv trunk ${LAPACK_FOLDER}
+			if hash svn 2>/dev/null; then
+                                svn co https://icl.cs.utk.edu/svn/lapack-dev/lapack/trunk
+			else
+                                echo "svn command is missing! Please install subversion and run the lapack installation again."
+                                exit
+                        fi 
+                        mv trunk ${LAPACK_FOLDER}
 			cd ${LAPACK_FOLDER}
 			sed -i.bak "s/FORTRAN  = gfortran/FORTRAN = ${FF}/" make.inc.example
 			sed -i.bak "s/OPTS     = -O2 -frecursiv/OPTS     = -O3 -march=native -frecursiv/" make.inc.example
