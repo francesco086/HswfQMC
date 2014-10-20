@@ -14,12 +14,14 @@ pilot_PATH=$(which pilot-HswfQMC.sh | sed -e "s/\/pilot-HswfQMC.sh//")
 OS_NAME=$(uname)
 #echo "The Operating System is: "${OS_NAME}
 
-if [ "${OS_NAME}" = "Darwin" ]
-then
-	NUM_CPU=$(sysctl hw.ncpu | sed -e "s/hw.ncpu://" | sed -e "s/ *//" )
-#else
-#	NUM_CPU=$(grep -c ^processor /proc/cpuinfo)
-fi
+case ${OS_NAME} in
+	"Darwin")
+		NUM_CPU=$(sysctl hw.ncpu | sed -e "s/hw.ncpu://" | sed -e "s/ *//" )
+		;;
+	"Linux")
+		NUM_CPU=$(grep -c ^processor /proc/cpuinfo)
+		;;
+esac
 #echo "Number of CPU: ${NUM_CPU}, -j${NUM_CPU}"
 
 LAPACK_FOLDER="lapack_lib"
@@ -36,6 +38,7 @@ do
 			echo "set_makefile - Set the Makefile automatically"
 			echo "build - Compile (make) the HswfQMC source code in order to have the HswfQMC_exe executable"
 			echo "rebuild - Recompile the code from scratch"
+			echo "git_pull - Update the code to the latest version on GitHub (it might require a rebuild)"
 			
 			echo ""
 			echo "      --- Use HswfQMC ---"
@@ -103,6 +106,19 @@ do
                         fi
                         exit
                         ;;
+		git_pull)
+			echo "Update to the latest version on GitHub by executing 'git pull origin master'."
+			echo "Are you sure? [y/n]"
+			read ANSW
+			if [ "$ANSW" = "y" ]
+			then
+				git pull origin master
+			else
+				echo "Aborted"
+			fi
+			cd 
+			exit
+			;;
 		clean)
 			echo "Clean all old datas from previous simulations!"
 			echo "Are you sure? [y/n] "
@@ -143,14 +159,19 @@ do
 			;;
 		set_path)
 			echo "Set the PATH variable in order to be able to use pilot-HswfQMC"
-			if [ "${OS_NAME}" = "Darwin" ]
-			then
-				echo "-Recognized an OS X system. Modify .bash_profile instead of .bashrc"
-				FILE_TO_SET="bash_profile"
-			else
-				echo "-Standard platform"
-				FILE_TO_SET="bashrc"
-			fi
+			case ${OS_NAME} in
+				"Darwin")
+					echo "-Recognized an OS X system. Setting .bash_profile."
+					FILE_TO_SET="bash_profile"
+					;;
+				"Linux")
+					echo "-Recognized a Linux operating system. Setting .bashrc"
+					FILE_TO_SET="bashrc"
+					;;
+				*)
+					echo "Operative system not recognized."
+					;;
+			esac
 			chmod u+x pilot-HswfQMC.sh
 			COUNT_SETPATH=$(grep ~/.${FILE_TO_SET} -e "PATH=${CURRENT_PATH}:\$PATH" | wc -l)
 			if [ $COUNT_SETPATH == 0 ]
@@ -185,8 +206,8 @@ complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh
 			sed -i.bak "s/LOADER   = gfortran/LOADER   = ${FF}/" make.inc.example
 			\rm make.inc.example.bak
 			mv make.inc.example make.inc
-			make -j blaslib
-			make -j lapacklib
+			make -j${NUM_CPU} blaslib
+			make -j${NUM_CPU} lapacklib
 			mv librefblas.a libblas${HswfQMC_NAME}.a
 			mv liblapack.a liblapack${HswfQMC_NAME}.a
 			cd $CURRENT_PATH
