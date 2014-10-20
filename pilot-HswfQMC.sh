@@ -184,7 +184,7 @@ export PATH=/Users/kenzo/Applications/HswfQMC:$PATH
 _pilot-HswfQMC.sh()
 {
     local cur=\${COMP_WORDS[COMP_CWORD]}
-    COMPREPLY=( \$(compgen -W \"set_path install_lapack set_makefile build rebuild set_dir clean wash commit\" -- \$cur) )
+    COMPREPLY=( \$(compgen -W \"git_pull set_path install_lapack set_makefile build rebuild set_dir clean wash commit\" -- \$cur) )
 }
 complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh
 				" >> ~/.${FILE_TO_SET}

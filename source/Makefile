@@ -1,7 +1,7 @@
 #compile for debugging (useful for finding arrays overflow)
 DEBUG=false
 #compile without optimization or debugging flags, for quick compiling
-QUICK_COMPILE=true
+QUICK_COMPILE=false
 #standard executable name
 EXEC2=HswfQMC
 

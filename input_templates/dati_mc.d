@@ -38,3 +38,5 @@ quick_error=0		                         !Number of blocks used to estimate the e
 flag_random_file=T                               !Use a file with true random numbers to initialize the pseudo-random number generator
 random_seed_path='RANDOM_SEED_FOLDER/randomseed1.d'    !Path to the file used to initialized the pseudo-random number generator
 /
+
+
