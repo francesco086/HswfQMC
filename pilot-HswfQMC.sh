@@ -173,11 +173,22 @@ do
 					;;
 			esac
 			chmod u+x pilot-HswfQMC.sh
-			COUNT_SETPATH=$(grep ~/.${FILE_TO_SET} -e "PATH=${CURRENT_PATH}:\$PATH" | wc -l)
-			if [ $COUNT_SETPATH == 0 ]
+			COUNT_SETPATH=$(grep ~/.${FILE_TO_SET} -e "#add path for HswfQMC" | wc -l)
+			if [ $COUNT_SETPATH \> "0" ]
 			then
-				PATH=${CURRENT_PATH}:\$PATH
-				echo "
+				echo "The path was already set, overwriting."
+            #delete the previous text
+				case ${OS_NAME} in
+					"Darwin")
+						sed -i -e "/#add path for HswfQMC/{N;N;N;N;N;N;N;N;d;}" ~/.${FILE_TO_SET}
+						;;
+					"Linux")
+						sed -i -e "/#add path for HswfQMC/,+8d" ~/.${FILE_TO_SET}
+						;;
+				esac
+			fi
+			PATH=${CURRENT_PATH}:\$PATH
+			echo "
 #add path for HswfQMC
 export PATH=/Users/kenzo/Applications/HswfQMC:$PATH
 #introduce autocompletation feature to pilot-HswfQMC
@@ -186,11 +197,7 @@ _pilot-HswfQMC.sh()
     local cur=\${COMP_WORDS[COMP_CWORD]}
     COMPREPLY=( \$(compgen -W \"git_pull set_path install_lapack set_makefile build rebuild set_dir clean wash commit\" -- \$cur) )
 }
-complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh
-				" >> ~/.${FILE_TO_SET}
-			else
-				echo "-The variable PATH was already correctly set"
-			fi
+complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh" >> ~/.${FILE_TO_SET}
 			exit
 			;;
 		install_lapack)
@@ -235,7 +242,14 @@ complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh
 				read ANSW
 				if [ "${ANSW}" = 'y' ]
 				then
-					sed -i -e "/ifeq (\$(IDENTIFIER),${IDENTIFIER})/,+5d" source/makefile.users_settings   #it does not work for Os X
+				   case ${OS_NAME} in
+				   	"Darwin")
+				   		sed -i -e "/ifeq (\$(IDENTIFIER),${IDENTIFIER})/{N;N;N;N;N;d;}" source/makefile.users_settings
+				   		;;
+				   	"Linux")
+				   		sed -i -e "/ifeq (\$(IDENTIFIER),${IDENTIFIER})/,+5d" source/makefile.users_settings
+				   		;;
+				   esac
 					FLAG=true
 				else
 					FLAG=false

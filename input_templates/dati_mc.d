@@ -1,4 +1,4 @@
-&dati_simulazione_mc
+&dati_mc
 N_mc=-10000                                      !Number of sampled points (or steps). If N_mc > 0 then it specifies the number for each processor
 N_blank=2000                                     !Number of warming steps
 N_1ppt=-150                                      !Number of performed single-particle moves between two consecutive sampled points (or steps). If N_1ppt < 0, then N_1ppt=-N*N_1ppt/100 (Np is the number of particles)

@@ -2,7 +2,7 @@ MODULE dati_mc
 	IMPLICIT NONE
 	INCLUDE 'mpif.h'
 	CHARACTER(LEN=100) :: random_seed_path, path_dati_funzione_onda
-	LOGICAL, SAVE :: flag_output
+	LOGICAL, SAVE :: flag_output, flag_email_notification
 	LOGICAL, PROTECTED, SAVE :: iniz_dati_mc=.FALSE., iniz_MPI=.FALSE.
 	LOGICAL, PROTECTED, SAVE :: flag_E_kin, flag_E_pot, flag_E_tot, flag_gr, flag_posizioni, flag_continua
 	LOGICAL, PROTECTED, SAVE :: flag_TABC, flag_elettroni, flag_protoni, flag_shadow, flag_mpi, flag_normalizza_pos
@@ -25,14 +25,14 @@ MODULE dati_mc
 		USE generic_tools
 		USE dati_fisici
 		IMPLICIT NONE
-
 		NAMELIST /dati_mc/ N_mc, N_blank, N_1ppt, flag_TABC, N_TABC, N_mc_relax_TABC, step_e, step_se, step_p, &
-		  acceptance_rate, flag_continua, howtomove, propmove, trimer_steps, flag_elettroni, &
+ 		  acceptance_rate, flag_continua, howtomove, propmove, trimer_steps, flag_elettroni, &
 		  flag_protoni, flag_shadow, flag_E_tot, flag_E_kin, flag_E_pot, flag_somme_ewald, alpha_ewald, &
-		  num_k_ewald, flag_gr, N_hist, flag_posizioni, flag_normalizza_pos, N_AV, flag_MPI, what_to_do, &
+		  num_k_ewald, flag_gr, N_hist, flag_posizioni, flag_normalizza_pos, N_AV, flag_mpi, what_to_do, &
 		  stampa_dati_funzione_onda, path_dati_funzione_onda, accuracy_energy_opt, &
-		  flag_disk, flag_output, quick_error, flag_random_file, random_seed_path
-
+		  flag_disk, flag_output, &
+		  quick_error, flag_random_file, random_seed_path
+		
 		NAMELIST /dati_ottimizzazione/ opt_SDe, opt_A_Jee, opt_F_Jee, opt_A_Jep, opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp, &
 		  opt_SDse, opt_c_eff_dnfH, opt_rp
 		
