@@ -43,6 +43,7 @@ do
 			echo ""
 			echo "      --- Use HswfQMC ---"
 			echo "set_dir - Make the current folder a working folder (with all necessary input files and folders)"
+			echo "set_orbitals - Calculate LDA orbitals via Quantum Espresso and place them in the folder ./orbitals"
 			echo "clean - Clean all old data from previous simulations"
 			echo "wash - Clean all old data from previous simulations but the optimized wf and lattice positions"
 			
@@ -60,7 +61,49 @@ do
 			sed -i.sedbak "s|RANDOM_SEED_FOLDER|${PATHRANDOM}|" dati_mc.d
 			rm *.sedbak
 			exit
-			;;	
+			;;
+		set_orbitals)
+			echo "Calculates LDA orbitals via Quantum Espresso and places them in the folder ./orbitals. pw.x and iotk programs (from QEspresso) must be in your PATH."
+			echo "Existing orbitals folder will be deleted, are you sure? [y/n]"
+			read ANSW
+			if [ "$ANSW" = "y" ]
+			then
+				echo "pw.x input file name? [scf.in]"
+				read SCFIN
+				if [ -z "$SCFIN" ] || [ "$SCFIN" == " " ]; then
+					SCFIN=scf.in
+				fi
+				echo "$SCFIN"
+				if [[ -e $SCFIN ]]
+				then
+					echo "Do you plan to use TABC with these orbitals? [y/n]"
+					read USETABC
+					rm -r -f orbitals
+					mkdir -v orbitals
+					mkdir -v orbitals/qework
+					cp $SCFIN orbitals/qework/scf.in
+					qework_PATH="$CURRENT_PATH/orbitals/qework/"
+					cd $qework_PATH
+					cp "$HswfQMC_PATH/helpers/qespresso/run" "$HswfQMC_PATH/helpers/qespresso/out_xml.sh" ./
+					chmod u+x run
+					chmod u+x out_xml.sh
+					./run
+					./out_xml.sh
+					cd $qework_PATH
+					if [ "$USETABC" = "y" ]
+					then
+						cp -r OUT.save/* "$CURRENT_PATH/orbitals/"
+					else
+						cp -r OUT.save/K00001/* "$CURRENT_PATH/orbitals/"
+					fi
+					cd $CURRENT_PATH
+					rm -r $qework_PATH
+				else
+					echo "pw.x input file not found."
+				fi
+			fi
+			exit
+			;;
 		build)
 			cd ${pilot_PATH}
 			echo "Build the executable file HswfQMC_exe"
@@ -195,7 +238,7 @@ export PATH=/Users/kenzo/Applications/HswfQMC:$PATH
 _pilot-HswfQMC.sh()
 {
     local cur=\${COMP_WORDS[COMP_CWORD]}
-    COMPREPLY=( \$(compgen -W \"git_pull set_path install_lapack set_makefile build rebuild set_dir clean wash commit\" -- \$cur) )
+    COMPREPLY=( \$(compgen -W \"git_pull set_path install_lapack set_makefile build rebuild set_dir set_orbitals clean wash commit\" -- \$cur) )
 }
 complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh" >> ~/.${FILE_TO_SET}
 			exit
@@ -204,14 +247,14 @@ complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh" >> ~/.${FILE_TO_SET}
 			echo "Download and compile the lapack library"
 			cd ${pilot_PATH}
 			echo "Which fortran compiler do you use? "
-                        read FF
+			read FF
 			if hash svn 2>/dev/null; then
-                                svn co https://icl.cs.utk.edu/svn/lapack-dev/lapack/trunk
+				svn co https://icl.cs.utk.edu/svn/lapack-dev/lapack/trunk
 			else
-                                echo "svn command is missing! Please install subversion and run the lapack installation again."
-                                exit
-                        fi 
-                        mv trunk ${LAPACK_FOLDER}
+				echo "svn command is missing! Please install subversion and run the lapack installation again."
+				exit
+			fi
+			mv trunk ${LAPACK_FOLDER}
 			cd ${LAPACK_FOLDER}
 			sed -i.bak "s/FORTRAN  = gfortran/FORTRAN = ${FF}/" make.inc.example
 			sed -i.bak "s/OPTS     = -O2 -frecursiv/OPTS     = -O3 -march=native -frecursiv/" make.inc.example
