@@ -64,3 +64,4 @@ source/*.mod
 HswfQMC*
 source/HswfQMC*
 lapack_lib
+source/makefile.users_settings*

@@ -76,8 +76,6 @@ do
 				echo "$SCFIN"
 				if [[ -e $SCFIN ]]
 				then
-					echo "Do you plan to use TABC with these orbitals? [y/n]"
-					read USETABC
 					rm -r -f orbitals
 					mkdir -v orbitals
 					mkdir -v orbitals/qework
@@ -90,12 +88,7 @@ do
 					./run
 					./out_xml.sh
 					cd $qework_PATH
-					if [ "$USETABC" = "y" ]
-					then
-						cp -r OUT.save/* "$CURRENT_PATH/orbitals/"
-					else
-						cp -r OUT.save/K00001/* "$CURRENT_PATH/orbitals/"
-					fi
+					cp -r OUT.save/* "$CURRENT_PATH/orbitals/"
 					cd $CURRENT_PATH
 					rm -r $qework_PATH
 				else

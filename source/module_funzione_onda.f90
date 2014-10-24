@@ -131,11 +131,11 @@ MODULE funzione_onda
 					END DO
 				END DO
 			ELSE
-				CALL leggi_N_pw(TRIM(lda_path)//'/gkvectors.xml',N_pw_lda)
+				CALL leggi_N_pw(TRIM(lda_path)//'/K00001/gkvectors.xml',N_pw_lda)
 				ALLOCATE(k_pw_lda(0:3,1:N_pw_lda),fattori_orb_lda(1:H_N_part),fattori_pw_lda(1:N_pw_lda,1:H_N_part))
 				ALLOCATE(k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
-				CALL leggi_evc_xml(H_N_part,N_pw_lda,TRIM(lda_path)//'/evc.xml',fattori_pw_lda)
-				CALL leggi_gkvectors_xml(N_pw_lda,TRIM(lda_path)//'/gkvectors.xml',k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
+				CALL leggi_evc_xml(H_N_part,N_pw_lda,TRIM(lda_path)//'/K00001/evc.xml',fattori_pw_lda)
+				CALL leggi_gkvectors_xml(N_pw_lda,TRIM(lda_path)//'/K00001/gkvectors.xml',k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
 				DO i = 1, 3, 1
 					twist_lda(i)=twist_lda(i)/r_s
 				END DO
