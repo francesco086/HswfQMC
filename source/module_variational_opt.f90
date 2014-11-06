@@ -539,14 +539,14 @@ MODULE variational_opt
 		END IF
 				
 		IF ( opt_rp ) THEN
-			CALL inizializza_dati_mc()
-			CALL inizializza_walkers('opt_Rp')
+			!CALL inizializza_dati_mc()
+			!CALL inizializza_walkers('opt_Rp')
 			DO i = 1, N_part, 1
 				parametri_var(cont:cont+2)=rp_old(1:3,i)
 				cont=cont+3
 			END DO
-			CALL chiudi_walkers()
-			CALL chiudi_dati_mc()
+			!CALL chiudi_walkers()
+			!CALL chiudi_dati_mc()
 		END IF
 						
 		IF (mpi_myrank==0) THEN
@@ -558,7 +558,7 @@ MODULE variational_opt
 		CALL chiudi_walkers()
 		CALL chiudi_dati_mc()
 		CALL chiudi_dati_fisici()
-		
+
 	END SUBROUTINE inizializza_variational_opt
 	
 	SUBROUTINE minimizza_energia(target_precisione,metodo)
@@ -775,11 +775,9 @@ MODULE variational_opt
 			CALL sampling(.FALSE.)
 			CALL inizializza_variational_calculations(num,par_pt,1)
 			CALL sampling(.TRUE.)
-			CALL trascrivi_dati()
-			CALL restituisci_energia(energia)
-			IF ((flag_disk .AND. mpi_myrank==0) .OR. (.NOT. flag_disk)) THEN
-				CALL estrai_s_kl_e_f_k(energia)
-			END IF
+         CALL trascrivi_dati()
+         CALL restituisci_energia(energia)
+			CALL estrai_s_kl_e_f_k()
 			CALL chiudi_VMC()
 			CALL chiudi_variational_calculations()
 		ELSE
@@ -1278,20 +1276,22 @@ MODULE variational_opt
 			END IF
 			
 			IF ((flag_disk .AND. mpi_myrank==0) .OR. (.NOT. flag_disk)) THEN
-				Is_kl=s_kl
-				CALL DGETRF( N, N, Is_kl, N, pvt, info )
-				CALL DGETRI( N, Is_kl, N, pvt, work, 3*N, info )
+            Is_kl=s_kl
 				!!! per evitare ill-conditions
-				CALL DSYTRD( 'U', N, s_kl, N, D_tr, E_tr, TAU_tr, work, 3*N, info )
+				CALL DSYTRD( 'U', N, Is_kl, N, D_tr, E_tr, TAU_tr, work, 3*N, info )
 				CALL DSTERF( N, D_tr, E_tr, info )
 				eps=0.d0
 				DO i = 1, N, 1
 					eps=MAX(D_tr(i),eps)
 				END DO
-				eps=eps*0.001
+            eps=eps*0.00001d0
 				DO i = 1, N, 1
 					s_kl(i,i)=s_kl(i,i)+eps
 				END DO	
+            !trovo la matrice inversa di s_kl
+				Is_kl=s_kl
+				CALL DGETRF( N, N, Is_kl, N, pvt, info )
+				CALL DGETRI( N, Is_kl, N, pvt, work, 3*N, info )
 						
 				dp=0.d0
 				DO j = 1, N, 1
@@ -1495,6 +1495,7 @@ MODULE variational_opt
 				
 				IF (.NOT. auto_stop) flag_loop=.TRUE.
 												
+            !lambda2=1.d0
 				!determino e stampo lo spostamento variazionale
 				IF (flag_loop) THEN
 					IF ( N-num_coord_Rp>0 ) THEN
@@ -1536,10 +1537,11 @@ MODULE variational_opt
 					END IF
 					IF ((mpi_myrank==0).AND.(num_coord_Rp>0)) THEN
 						PRINT '(A54,F9.3,A2)', ' VAR_OPT: seguendo SR, muovo i protoni:   (lambda2_Rp=',lambda2_Rp,') '!'  (lambda3=', lambda3,')'
-						!WRITE (stringa, '(I4.4)'), num_coord_Rp
-						!DO i = 1, N_part, 1
-						!	PRINT '(1X,A8,I3.3,10X,3(F9.3,5X))' , 'Protone ', i, dp(N-num_coord_Rp+i*3-2:N-num_coord_Rp+i*3)
-						!END DO
+						WRITE (stringa, '(I4.4)'), num_coord_Rp
+						DO i = 1, N_part, 1
+							PRINT '(1X,A8,I3.3,10X,3(F9.3,5X))' , 'Protone ', i, dp(N-num_coord_Rp+i*3-2:N-num_coord_Rp+i*3)
+						END DO
+                  PRINT *, "distanza=", DSQRT(DOT_PRODUCT(p0(1:3)-p0(4:6),p0(1:3)-p0(4:6)))
 						IF (flag_output) THEN
 							WRITE (7, '(A54,F9.3,A2)'), &
 							  ' VAR_OPT: seguendo SR, muovo i protoni:   (lambda2_Rp=',lambda2_Rp,') '!'  (lambda3=', lambda3,')'
@@ -3041,197 +3043,76 @@ MODULE variational_opt
 		
 	END SUBROUTINE controlla_punto_e_parametro
 
-	SUBROUTINE estrai_s_kl_e_f_k(E)
+	SUBROUTINE estrai_s_kl_e_f_k()
 		USE VMC
 		USE variational_calculations
 		IMPLICIT NONE
-		REAL (KIND=8), INTENT(IN) :: E(1:2)
 		CHARACTER(LEN=4) :: codice_numerico1, codice_numerico2
 		INTEGER :: i, j
 		INTEGER (KIND=8) :: i_mc
-		REAL (KIND=8) :: Oi(1:num_par_var), OiOj(1:num_par_var,1:num_par_var), OiE(1:num_par_var)
+		REAL (KIND=8) :: E, Oi(1:num_par_var), OiOj(1:num_par_var,1:num_par_var), OiE(1:num_par_var)
 		REAL (KIND=8) :: media, errore, estimatore(1:2), dummy1(1:N_mc)
 		
 		s_kl=0.d0
 		f_k=0.d0
-		
-		IF (quick_error==0) THEN
-			IF (flag_disk) THEN
-				!IF (SDse_kind=='no_') THEN
-				!	IF (mpi_myrank==0) THEN
-				!		DO j = 1, num_par_var, 1
-				!			WRITE (codice_numerico1, '(I4.4)'), j
-				!			CALL calcola_estimatori('estimatori/gradiente/O_'//codice_numerico1,media,errore)
-				!			Oi(j)=media
-				!			CALL calcola_estimatori('estimatori/gradiente/EO_'//codice_numerico1,media,errore)
-				!			OiE(j)=media
-				!			DO i = j, num_par_var, 1
-				!				WRITE (codice_numerico2, '(I4.4)'), i
-				!				CALL calcola_estimatori('estimatori/gradiente/O_'//codice_numerico1//'-'//codice_numerico2,media,errore)
-				!				OiOj(i,j)=media
-				!				OiOj(j,i)=OiOj(i,j)
-				!			END DO
-				!		END DO
-				!	END IF
-				!ELSE
-					IF (mpi_myrank==0) THEN
-						DO j = 1, num_par_var, 1
-							WRITE (codice_numerico1, '(I4.4)'), j
-							CALL calcola_estimatori('estimatori/gradiente/O_'//codice_numerico1,media,errore, &
-							  'estimatori/w'//codice_simulazione)
-							Oi(j)=media
-							CALL calcola_estimatori('estimatori/gradiente/EO_'//codice_numerico1,media,errore, &
-							  'estimatori/w'//codice_simulazione)
-							OiE(j)=media
-							DO i = j, num_par_var, 1
-								WRITE (codice_numerico2, '(I4.4)'), i
-								CALL calcola_estimatori('estimatori/gradiente/O_'//codice_numerico1//'-'//codice_numerico2,media,errore, &
-								  'estimatori/w'//codice_simulazione)
-								OiOj(i,j)=media
-							END DO
-						END DO
-					END IF
-				!END IF
-			ELSE
-				!IF (SDse_kind=='no_') THEN
-				!	DO j = 1, num_par_var, 1
-				!		CALL calcola_estimatore_da_RAM(estimatore,O(j,1:N_mc),N_mc)
-				!		Oi(j)=estimatore(1)
-				!		DO i_mc = 1, N_mc, 1
-				!			dummy1(i_mc)=E_tot(i_mc)*O(j,i_mc)
-				!		END DO
-				!		CALL calcola_estimatore_da_RAM(estimatore,dummy1(1:N_mc),N_mc)
-				!		OiE(j)=estimatore(1)
-				!		DO i = j, num_par_var, 1
-				!			DO i_mc = 1, N_mc, 1
-				!				dummy1(i_mc)=O(i,i_mc)*O(j,i_mc)
-				!			END DO
-				!			CALL calcola_estimatore_da_RAM(estimatore,dummy1(1:N_mc),N_mc)
-				!			OiOj(i,j)=estimatore(1)
-				!			OiOj(j,i)=estimatore(1)
-				!		END DO
-				!	END DO
-				!ELSE
-					DO j = 1, num_par_var, 1
-						CALL calcola_estimatore_da_RAM(estimatore,O(j,1:N_mc),N_mc,w)
-						Oi(j)=estimatore(1)
-						DO i_mc = 1, N_mc, 1
-							dummy1(i_mc)=E_tot(i_mc)*O(j,i_mc)
-						END DO
-						CALL calcola_estimatore_da_RAM(estimatore,dummy1(1:N_mc),N_mc,w)
-						OiE(j)=estimatore(1)
-						DO i = j, num_par_var, 1
-							DO i_mc = 1, N_mc, 1
-								dummy1(i_mc)=O(i,i_mc)*O(j,i_mc)
-							END DO
-							CALL calcola_estimatore_da_RAM(estimatore,dummy1(1:N_mc),N_mc,w)
-							OiOj(i,j)=estimatore(1)
-							OiOj(j,i)=estimatore(1)
-						END DO
-					END DO
-				!END IF
-			END IF
+      
+      !Calcolo E
+      DO i_mc = 1, N_mc, 1
+         dummy1(i_mc)=E_tot(i_mc)*w(i_mc)
+      END DO
+      dummy1(1)=SUM(dummy1(1:N_mc))
+      CALL MPI_REDUCE(dummy1(1),E,1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+      DO j = 1, num_par_var, 1
+         !Calcolo i termini Oi
+         DO i_mc = 1, N_mc, 1
+            dummy1(i_mc)=O(j,i_mc)*w(i_mc)
+         END DO
+         dummy1(1)=SUM(dummy1(1:N_mc))
+         CALL MPI_REDUCE(dummy1(1),Oi(j),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+         !Calcolo i termini OiE
+         DO i_mc = 1, N_mc, 1
+            dummy1(i_mc)=E_tot(i_mc)*O(j,i_mc)*w(i_mc)
+         END DO
+         dummy1(1)=SUM(dummy1(1:N_mc))
+         CALL MPI_REDUCE(dummy1(1),OiE(j),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+         !Calcolo i termini OiOj
+         DO i = j, num_par_var, 1
+             DO i_mc = 1, N_mc, 1
+               dummy1(i_mc)=O(i,i_mc)*O(j,i_mc)*w(i_mc)
+             END DO
+             dummy1(1)=SUM(dummy1(1:N_mc))
+             CALL MPI_REDUCE(dummy1(1),OiOj(i,j),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+             OiOj(j,i)=OiOj(i,j)
+         END DO
+      END DO
+      
+      !Operazioni che deve eseguire solo il master
+      IF (mpi_myrank==0) THEN
+      !Divido per i numeri di termini accumulati per avere la media
+      dummy1(1)=1.d0/REAL(N_mc*mpi_nprocs,8)
+      E=E*dummy1(1)
+      Oi=Oi*dummy1(1)
+      OiE=OiE*dummy1(1)
+      OiOj=OiOj*dummy1(1)
 
-			DO j = 1, num_par_var, 1
-				DO i = j, num_par_var, 1
-					s_kl(i,j)=OiOj(i,j)-Oi(i)*Oi(j)
-					s_kl(j,i)=s_kl(i,j)
-				END DO
-			END DO
-			DO i = 1, num_par_var, 1
-				f_k(i)=Oi(i)*E(1)-OiE(i)
-			END DO
-			
-		ELSE IF (quick_error>3) THEN
-			IF (flag_disk) THEN
-				!IF (SDse_kind=='no_') THEN
-				!	IF (mpi_myrank==0) THEN
-				!		DO j = 1, num_par_var, 1
-				!			WRITE (codice_numerico1, '(I4.4)'), j
-				!			CALL calcola_estimatori_quick(quick_error,'estimatori/gradiente/O_'//codice_numerico1,media,errore)
-				!			Oi(j)=media
-				!			CALL calcola_estimatori_quick(quick_error,'estimatori/gradiente/EO_'//codice_numerico1,media,errore)
-				!			OiE(j)=media
-				!			DO i = j, num_par_var, 1
-				!				WRITE (codice_numerico2, '(I4.4)'), i
-				!				CALL calcola_estimatori_quick(quick_error,'estimatori/gradiente/O_'//codice_numerico1//'-'//codice_numerico2,media,errore)
-				!				OiOj(i,j)=media
-				!				OiOj(j,i)=OiOj(i,j)
-				!			END DO
-				!		END DO
-				!	END IF
-				!ELSE
-					IF (mpi_myrank==0) THEN
-						DO j = 1, num_par_var, 1
-							WRITE (codice_numerico1, '(I4.4)'), j
-							CALL calcola_estimatori_quick(quick_error,'estimatori/gradiente/O_'//codice_numerico1,media,errore, &
-							  'estimatori/w'//codice_simulazione)
-							Oi(j)=media
-							CALL calcola_estimatori_quick(quick_error,'estimatori/gradiente/EO_'//codice_numerico1,media,errore, &
-							  'estimatori/w'//codice_simulazione)
-							OiE(j)=media
-							DO i = j, num_par_var, 1
-								WRITE (codice_numerico2, '(I4.4)'), i
-								CALL calcola_estimatori_quick(quick_error,'estimatori/gradiente/O_'//codice_numerico1//'-'//codice_numerico2,media,errore, &
-								  'estimatori/w'//codice_simulazione)
-								OiOj(i,j)=media
-							END DO
-						END DO
-					END IF
-				!END IF
-			ELSE
-				!IF (SDse_kind=='no_') THEN
-				!	DO j = 1, num_par_var, 1
-				!		CALL calcola_estimatore_da_RAM_quick(quick_error,estimatore,O(j,1:N_mc),N_mc)
-				!		Oi(j)=estimatore(1)
-				!		DO i_mc = 1, N_mc, 1
-				!			dummy1(i_mc)=E_tot(i_mc)*O(j,i_mc)
-				!		END DO
-				!		CALL calcola_estimatore_da_RAM_quick(quick_error,estimatore,dummy1(1:N_mc),N_mc)
-				!		OiE(j)=estimatore(1)
-				!		DO i = j, num_par_var, 1
-				!			DO i_mc = 1, N_mc, 1
-				!				dummy1(i_mc)=O(i,i_mc)*O(j,i_mc)
-				!			END DO
-				!			CALL calcola_estimatore_da_RAM_quick(quick_error,estimatore,dummy1(1:N_mc),N_mc)
-				!			OiOj(i,j)=estimatore(1)
-				!			OiOj(j,i)=estimatore(1)
-				!		END DO
-				!	END DO
-				!ELSE
-					DO j = 1, num_par_var, 1
-						CALL calcola_estimatore_da_RAM_quick(quick_error,estimatore,O(j,1:N_mc),N_mc,w)
-						Oi(j)=estimatore(1)
-						DO i_mc = 1, N_mc, 1
-							dummy1(i_mc)=E_tot(i_mc)*O(j,i_mc)
-						END DO
-						CALL calcola_estimatore_da_RAM_quick(quick_error,estimatore,dummy1(1:N_mc),N_mc,w)
-						OiE(j)=estimatore(1)
-						DO i = j, num_par_var, 1
-							DO i_mc = 1, N_mc, 1
-								dummy1(i_mc)=O(i,i_mc)*O(j,i_mc)
-							END DO
-							CALL calcola_estimatore_da_RAM_quick(quick_error,estimatore,dummy1(1:N_mc),N_mc,w)
-							OiOj(i,j)=estimatore(1)
-							OiOj(j,i)=estimatore(1)
-						END DO
-					END DO
-				!END IF
-			END IF
-
-			DO j = 1, num_par_var, 1
-				DO i = j, num_par_var, 1
-					s_kl(i,j)=OiOj(i,j)-Oi(i)*Oi(j)
-					s_kl(j,i)=s_kl(i,j)
-				END DO
-			END DO
-			DO i = 1, num_par_var, 1
-				f_k(i)=Oi(i)*E(1)-OiE(i)
-			END DO
-			
-		ELSE
-			STOP 'Il parametro quick_error non é stato scelto opportunamente'
-		END IF
+      !IF (mpi_myrank==0)  PRINT *, Oi
+      !CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
+      !STOP 
+      
+      !Costruisco la matrice s_kl e il vettore f_k
+		   DO j = 1, num_par_var, 1
+		   	DO i = 1, num_par_var, 1
+		   		s_kl(i,j)=OiOj(i,j)-Oi(i)*Oi(j)
+		   	END DO
+		   END DO
+		   DO i = 1, num_par_var, 1
+		   	f_k(i)=Oi(i)*E-OiE(i)
+		   END DO
+      END IF
+      
+      !Distribuisco s_kl e f_k a tutti i processori
+		CALL MPI_BCAST(s_kl,num_par_var*num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
+      CALL MPI_BCAST(f_k,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
 				
 	END SUBROUTINE estrai_s_kl_e_f_k
 

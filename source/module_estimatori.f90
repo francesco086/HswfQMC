@@ -2810,7 +2810,7 @@ END SUBROUTINE derivata_Jep_ATM
 							END IF
 						END IF
 					END IF
-					O(j:j+2)=O(j:j+2)+0.5d0*uep1*rij_ep_old(1:3,i,j)/rij_ep_old(0,i,j)
+					O(3*(j-1)+1:3*j)=O(3*(j-1)+1:3*j)-0.5d0*uep1*rij_ep_old(1:3,i,j)/rij_ep_old(0,i,j)
 				END DO
 			END DO
 		CASE ('yup')
@@ -2843,7 +2843,7 @@ END SUBROUTINE derivata_Jep_ATM
 							END IF
 						END IF
 					END IF
-					O(j*3-2:j*3)=O(j*3-2:j*3)+0.5d0*uep1*frf2(1:3)
+					O(3*(j-1)+1:3*j)=O(3*(j-1)+1:3*j)-0.5d0*uep1*frf2(1:3)
 				END DO
 			END DO
 		END SELECT

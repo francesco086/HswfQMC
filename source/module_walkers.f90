@@ -94,7 +94,7 @@ MODULE walkers
 			!!! OPT2
 			!net_dist=MINVAL(L)/(N_part**(1.d0/3.d0))
 			!!! OPT3, uso il raggio di Bohr
-			net_dist=1.d0
+			net_dist=1.0d0
 			IF (crystal_cell=='mol__') net_dist=0.74d0
 			CALL RANDOM_NUMBER(re_new)
 			DO j = 1, N_part, 1
