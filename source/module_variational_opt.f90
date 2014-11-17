@@ -1284,7 +1284,7 @@ MODULE variational_opt
 				DO i = 1, N, 1
 					eps=MAX(D_tr(i),eps)
 				END DO
-            eps=eps*0.00001d0
+            eps=eps*0.0001d0
 				DO i = 1, N, 1
 					s_kl(i,i)=s_kl(i,i)+eps
 				END DO	
@@ -1541,13 +1541,12 @@ MODULE variational_opt
 						DO i = 1, N_part, 1
 							PRINT '(1X,A8,I3.3,10X,3(F9.3,5X))' , 'Protone ', i, dp(N-num_coord_Rp+i*3-2:N-num_coord_Rp+i*3)
 						END DO
-                  PRINT *, "distanza=", DSQRT(DOT_PRODUCT(p0(1:3)-p0(4:6),p0(1:3)-p0(4:6)))
 						IF (flag_output) THEN
 							WRITE (7, '(A54,F9.3,A2)'), &
 							  ' VAR_OPT: seguendo SR, muovo i protoni:   (lambda2_Rp=',lambda2_Rp,') '!'  (lambda3=', lambda3,')'
-							!DO i = 1, N_part, 1
-							!	WRITE (7, '(1X,A8,I3.3,10X,3(F9.3,5X))'), 'Protone ', i, dp(N-num_coord_Rp+i*3-2:N-num_coord_Rp+i*3)
-							!END DO
+							DO i = 1, N_part, 1
+								WRITE (7, '(1X,A8,I3.3,10X,3(F9.3,5X))'), 'Protone ', i, dp(N-num_coord_Rp+i*3-2:N-num_coord_Rp+i*3)
+							END DO
 						END IF
 					END IF
 				END IF
