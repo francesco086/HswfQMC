@@ -6,10 +6,11 @@ ifeq ($(IDENTIFIER),kenzo@crazydiamond)
         FC=mpif90-openmpi-gcc49
 endif
 
+
 ifeq ($(IDENTIFIER),kenzo@majorana)
         EXEC=$(EXEC1)
         LIBS=-llapackHswfQMC -lblasHswfQMC
-        LDFLAGS=-L/home/kenzo/Codes/HswfQMC/lapack_lib
+        LDFLAGS=-L/storage/Codes/HswfQMC/lapack_lib
         FC=mpif90
 endif
 

@@ -584,7 +584,7 @@ MODULE variational_opt
 			CALL pure_stochastic_reconfiguration(parametri_var,num_par_var,.TRUE.)
 		CASE('stoc_ns')   !SR senza fermarsi
 			CALL stochastic_reconfiguration(parametri_var,num_par_var,.FALSE.,.FALSE.)
-		CASE('stoc_av')   !SR senza fermarsi
+		CASE('stoc_av')   !SR senza fermarsi accumulando AV_wf.d
 			CALL stochastic_reconfiguration(parametri_var,num_par_var,.FALSE.,.TRUE.)
 		END SELECT
 		IF (mpi_myrank==0) THEN
@@ -1147,21 +1147,25 @@ MODULE variational_opt
 		REAL (KIND=8), PARAMETER :: MIN_VAR_NEC=0.025, MIN_LAMBDA2=0.5, MIN_VAR_ACC=0.001, MAX_VAR_ACC=0.25, MAX_VAR_PROT=0.1
 		LOGICAL, INTENT(IN) :: auto_stop, AV_accu
 		INTEGER (KIND=4), INTENT(IN) :: N
-		LOGICAL :: flag_loop, loop_stop(1:6), accettabile, flag_file, flag_trovato_minimo, flag_freeze, flag_AV_wf
+		LOGICAL :: flag_loop, loop_stop(1:6), accettabile, flag_file, flag_trovato_minimo, flag_freeze
 		CHARACTER(LEN=2) :: id
 		CHARACTER(LEN=4) :: stringa, istring
 		INTEGER :: i, j, info, contatore, IO, i_orbit, AV_cont
+      INTEGER :: lwork
 		REAL (KIND=8) :: lambda, eps, lambda2, lambda3, boundd, dummy(1:4), dummy2(0:N)
 		REAL (KIND=8) :: lambda_Rp, lambda2_Rp, flambda2_Rp
 		REAL (KIND=8) :: p0(1:N), dp_iniz(1:N), AV_P(1:N)
 		REAL (KIND=8) :: dp(1:N), Is_kl(1:N,1:N), pvt(1:N), cont_step
-		REAL (KIND=8) :: work(1:3*N), D_tr(1:N), E_tr(1:N-1), TAU_tr(1:N-1)
-		REAL (KIND=8) :: energia(1:2), vec_app(1:N), vec_app_old(1:N), flambda2
+      REAL(KIND=8), ALLOCATABLE :: work(:)
+		REAL (KIND=8) :: D_tr(1:N), E_tr(1:N-1), TAU_tr(1:N-1)
+		REAL (KIND=8) :: energia(1:2), minE_AV(1:2), vec_app(1:N), vec_app_old(1:N), flambda2
 		REAL (KIND=8) :: old_step(1:5), old_p0(1:N,1:5), old_E(1:2,1:5), derivE(1:4)
 		REAL (KIND=8) :: old_step_Rp(1:5)
 		REAL (KIND=8) :: dist_poss, dist_perc, dist_poss_5, dist_perc_5, av_errore, derE, nextdE
 		REAL (KIND=8) :: old_Emin(1:2), p0_minimo(1:N), Pdist_min(1:5)
 		REAL (KIND=8), ALLOCATABLE :: gRpuu(:), gRpuu_new(:), gRpud(:), gRpud_new(:), x_gr(:)
+      REAL(KIND=8) :: Usvd(1:N,1:N), VTsvd(1:N,1:N), Ssvd(1:N)
+
 		lambda2=1.d0
 		lambda2_Rp=1.d0
 		id='SR'
@@ -1169,7 +1173,11 @@ MODULE variational_opt
 		AV_cont=0
 		AV_P=0.d0
 		contatore=0
+      minE_AV=(/ 100.d0, 0.d0 /)
 		
+      lwork=10*N
+      ALLOCATE(work(1:lwork))
+
 		INQUIRE(FILE='ottimizzazione/SR_energies.dat',EXIST=flag_file)
 		IF ((flag_file).AND.(mpi_myrank==0)) THEN
 			OPEN (UNIT=8, FILE='ottimizzazione/SR_energies.dat', STATUS='OLD')
@@ -1227,16 +1235,11 @@ MODULE variational_opt
 		Pdist_min=0.d0
 		flag_loop=.TRUE.
 		loop_stop=.FALSE.
-		IF ( AV_accu ) THEN
-			flag_AV_wf=.TRUE.
-		ELSE
-			flag_AV_wf=.FALSE.
-		END IF
 				
 		DO WHILE (flag_loop)
 			contatore=contatore+1
 			CALL SR_campiona_wf_attuale(id,p0,N,energia,accettabile)
-			
+
 			IF (mpi_myrank==0) WRITE (8, *), cont_step, energia(1:2)
 			IF (mpi_myrank==0) CLOSE (8)
 			IF (mpi_myrank==0) OPEN (UNIT=8, FILE='ottimizzazione/SR_energies.dat', STATUS='OLD', POSITION='APPEND')
@@ -1272,26 +1275,50 @@ MODULE variational_opt
 				CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
 			ELSE
 				flag_trovato_minimo=.FALSE.
-				flag_AV_wf=.TRUE.
 			END IF
 			
 			IF ((flag_disk .AND. mpi_myrank==0) .OR. (.NOT. flag_disk)) THEN
+            !!!Is_kl=s_kl
+				!!!!!! per evitare ill-conditions
+				!!!CALL DSYTRD( 'U', N, Is_kl, N, D_tr, E_tr, TAU_tr, work, lwork, info )
+				!!!CALL DSTERF( N, D_tr, E_tr, info )
+				!!!eps=0.d0
+				!!!DO i = 1, N, 1
+				!!!	eps=MAX(D_tr(i),eps)
+				!!!END DO
+            !!!eps=eps*0.0001d0
+				!!!DO i = 1, N, 1
+				!!!	s_kl(i,i)=s_kl(i,i)+eps
+				!!!END DO	
+            !!!!trovo la matrice inversa di s_kl
+				!!!Is_kl=s_kl
+				!!!CALL DGETRF( N, N, Is_kl, N, pvt, info )
+				!!!CALL DGETRI( N, Is_kl, N, pvt, work, 3*N, info )
+            
             Is_kl=s_kl
-				!!! per evitare ill-conditions
-				CALL DSYTRD( 'U', N, Is_kl, N, D_tr, E_tr, TAU_tr, work, 3*N, info )
-				CALL DSTERF( N, D_tr, E_tr, info )
-				eps=0.d0
-				DO i = 1, N, 1
-					eps=MAX(D_tr(i),eps)
-				END DO
-            eps=eps*0.0001d0
-				DO i = 1, N, 1
-					s_kl(i,i)=s_kl(i,i)+eps
-				END DO	
-            !trovo la matrice inversa di s_kl
-				Is_kl=s_kl
-				CALL DGETRF( N, N, Is_kl, N, pvt, info )
-				CALL DGETRI( N, Is_kl, N, pvt, work, 3*N, info )
+            CALL DGESVD('A','A',N,N,Is_kl,N,Ssvd,Usvd,N,VTsvd,N,work,lwork,info)
+            IF (info /= 0) THEN
+               PRINT *, "Error in SVD [ stochastic_reconfiguration > module_variational_opt.f90 ]"
+               STOP
+            END IF
+            Is_kl=0.d0
+            !!!IF (mpi_myrank==0) PRINT *, "SVD:"
+            DO i = 1, N, 1
+               IF (Ssvd(i)>Ssvd(1)*0.001d0) THEN
+                  Is_kl(i,i)=1.d0/Ssvd(i)
+                  !!!IF (mpi_myrank==0) PRINT *, Ssvd(i), "   si"
+               ELSE
+                  Is_kl(i,i)=0.d0
+                  !!!IF (mpi_myrank==0) PRINT *, Ssvd(i), "   no"
+               END IF
+            END DO
+            Is_kl=MATMUL(Usvd,MATMUL(Is_kl,VTsvd))
+            Usvd=MATMUL(s_kl,Is_kl)
+            !!!PRINT *, "CHECK INVERSE AMTRIX:"
+            !!!DO i = 1, N, 1
+            !!!   PRINT *, Usvd(i,:)
+            !!!END DO
+            !!!STOP
 						
 				dp=0.d0
 				DO j = 1, N, 1
@@ -1553,15 +1580,29 @@ MODULE variational_opt
 			END IF
 			CALL MPI_BCAST(dp(1:N),N,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
 			CALL MPI_BCAST(flag_loop,1,MPI_LOGICAL,0,MPI_COMM_WORLD,mpi_ierr)	
-					
+			      
 			IF (flag_loop) THEN
 				p0=p0+dp
-				IF ( flag_AV_wf ) THEN
+				IF ( AV_accu ) THEN
 					AV_P=AV_P+p0
 					AV_cont=AV_cont+1
 				ELSE
-					AV_P=p0
-					AV_cont=1
+               !resetto AV_wf solo se l'energia e` piu bassa di 3 sigma del minimo precedente
+               IF (energia(1)+2.d0*energia(2)<minE_AV(1)-2.d0*minE_AV(2)) THEN
+                  minE_AV=energia
+                  AV_P=p0
+                  AV_cont=1
+               ELSE
+                  AV_P=AV_P+p0
+                  AV_cont=AV_cont+1
+                  IF ( AV_cont > 20 ) THEN
+                     IF (mpi_myrank==0)  PRINT *,'VAR_OPT: > > > Nello stesso minimo da 20 iterazioni. Stop forzato < < <'
+                     IF ((flag_output).AND.(mpi_myrank==0)) THEN
+                        WRITE (7, *), ' VAR_OPT: > > > Nello stesso minimo da 20 iterazioni. Stop forzato < < <'
+                     END IF 
+                     flag_loop=.FALSE.
+                  END IF
+               END IF
 				END IF
 			END IF
 			old_p0(1:N,5)=old_p0(1:N,4)
@@ -1586,8 +1627,9 @@ MODULE variational_opt
 				CALL chiudi_dati_funzione_onda()
 			END IF
 			
+
 			!stampa i dati variazionali AVERAGE
-			IF ((stampa_dati_funzione_onda)) THEN
+			IF (stampa_dati_funzione_onda) THEN
 				CALL inizializza_dati_fisici()
 				CALL inizializza_dati_mc()
 				CALL inizializza_walkers('opt_Rp')
@@ -1597,6 +1639,7 @@ MODULE variational_opt
 				AV_P=AV_P*REAL(AV_cont,8)
 				IF (mpi_myrank==0) CALL stampa_file_dati_funzione_onda('ottimizzazione/AV_wf.d')
 				IF (mpi_myrank==0) PRINT *, 'VAR_OPT: salvato file AV_wf.d, considerando gli ultimi ', AV_cont, 'punti.'
+            IF (mpi_myrank==0) PRINT *, '         minE_AV=',minE_AV(1), "+-", minE_AV(2)
 				IF ((flag_output).AND.(mpi_myrank==0)) THEN
 					WRITE (7, *), ' VAR_OPT: salvato file AV_wf.d, considerando gli ultimi ', AV_cont, 'punti.'
 				END IF
@@ -1631,6 +1674,7 @@ MODULE variational_opt
 		parametri_var=p0_minimo
 		IF (mpi_myrank==0) CLOSE (8)
 		DEALLOCATE(s_kl, f_k)
+      DEALLOCATE(work)
 
 	END SUBROUTINE stochastic_reconfiguration
 

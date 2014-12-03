@@ -1,14 +1,14 @@
 &dati_ottimizzazione
-opt_SDe=.TRUE.
-opt_A_Jee=.TRUE.
-opt_F_Jee=.TRUE.
-opt_A_Jep=.TRUE.
-opt_F_Jep=.TRUE.
-opt_Jse=.TRUE.
-opt_Kse=.TRUE.
-opt_Jsesp=.TRUE.
-opt_SDse=.FALSE.
-opt_rp=.FALSE.
+opt_SDe=T
+opt_A_Jee=T
+opt_F_Jee=T
+opt_A_Jep=T
+opt_F_Jep=T
+opt_Jse=T
+opt_Kse=T
+opt_Jsesp=T
+opt_SDse=F
+opt_rp=F
 /
 
 !It specifies which part of the wave function is optimized with Stochastic Reconfiguration
