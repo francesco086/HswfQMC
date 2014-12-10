@@ -120,11 +120,10 @@ do
 			if [ "$ANSW" = "y" ]
 			then
 				cd $HswfQMC_PATH
-				\rm HswfQMC*
 				cd source/
 				make clean
 				make
-                        	mv HswfQMC* ../
+           	mv HswfQMC* ../
 				cd $CURRENT_PATH
 			else
 				echo "Aborted"

@@ -1,5 +1,5 @@
 #compile for debugging (useful for finding arrays overflow)
-DEBUG=false
+DEBUG=true
 #compile without optimization or debugging flags, for quick compiling
 QUICK_COMPILE=false
 #standard executable name
@@ -12,7 +12,7 @@ IDENTIFIER:=$(USERNAME)@$(COMPUTER)
 #set the flags for the compiler 
 FFLAGS=-O3 -march=native
 #standard: append _exe to the executable name
-EXEC1=$(EXEC2)_exe
+EXEC1=$(EXEC2)_dev
 
 #debug compiling mode
 ifeq ($(DEBUG),true)

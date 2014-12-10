@@ -1571,6 +1571,89 @@ MODULE funzione_onda
 				
 		END SUBROUTINE valuta_SD_bat	
 	
+	!-----------------------------------------------------------------------
+
+		SUBROUTINE valuta_SD_1s_backflow(num,updw,L,re,rp,rij,N,SD,detSD,ISD,pvt,ISD_old,detSD_old)
+			USE generic_tools
+			IMPLICIT NONE
+			REAL (KIND=8), PARAMETER :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
+         CHARACTER (LEN=2) :: updw
+			INTEGER, INTENT(IN) :: N, num   !num e' compreso fra 1 e 2*N
+         REAL(KIND=8), INTENT(IN) :: L(1:3)
+			REAL (KIND=8), INTENT(IN) :: re(1:3,1:N+N), rp(1:3,1:N+N), rij(1:N+N,1:N+N)
+			COMPLEX (KIND=8), INTENT(IN) :: ISD_old(1:N,1:N), detSD_old
+			INTEGER :: i, j, ip, info, perm, iadd
+			INTEGER, INTENT(OUT) :: pvt(1:N)
+			REAL (KIND=8) :: norm
+			COMPLEX (KIND=8) :: SD(1:N,1:N), ISD(1:N,1:N), detSD
+         COMPLEX (KIND=8) :: ISD_now(1:N,1:N), detSD_now
+         REAL(KIND=8) :: q(0:3), dist(0:3)
+		
+			IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
+			  [ module_funzione_onda.f90 > valuta_SD_bat ]'
+		
+			norm=1.d0 !/DSQRT(PI)
+			
+         IF (updw=='up') iadd=0
+         IF (updw=='dw') iadd=N
+
+			IF (num==-1) THEN
+				!Calcolo i termini matriciali di SD_new
+				DO j = 1, N, 1
+					DO i = 1, N, 1
+                  q(1:3)=re(1:3,i+iadd)
+                  DO ip = 1, N+N, 1
+                     q(1:3)=q(1:3)-rp(1:3,ip)/(1.d0+DEXP(A_POT_se*(rij(j+iadd,ip)-D_POT_se)))
+                  END DO
+                  q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
+                  q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
+						SD(i,j)=(1.d0,0.d0)*norm*DEXP(-C_atm*q(0))
+						ISD(i,j)=SD(i,j)
+					END DO
+				END DO
+				!Calcolo il determinante di SD_new
+				CALL ZGETRF( N, N, ISD, N, pvt, info )
+				IF (info/=0) STOP 'ERRORE NELLA DECOMPOSIZIONE LU'
+				perm=0
+				detSD=(1.d0,0.d0)
+				DO  i = 1, N, 1
+					IF (pvt(i) /= i) perm=perm+1
+				END DO
+				IF (MOD(perm,2) == 1 ) detSD=-detSD
+				DO  i = 1, N, 1
+					detSD=detSD*ISD(i,i)
+				END DO
+			ELSE IF ((num>0) .AND. (num<=N)) THEN
+				DO i = 1+iadd, N+iadd, 1
+               q(1:3)=re(1:3,num+iadd)
+               DO ip = 1, N+N, 1
+                  q(1:3)=q(1:3)-rp(1:3,ip)/(1.d0+DEXP(A_POT_se*(rij(i,ip)-D_POT_se)))
+               END DO
+               q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
+               q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
+					SD(num,i-iadd)=(1.d0,0.d0)*norm*DEXP(-C_atm*q(0))
+				END DO
+				CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD_now)  !aggiorna det
+            CALL aggiorna_matrice_inversa_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD_now,ISD_now) !aggiorna ISD
+				DO i = 1+iadd, N+iadd, 1
+               q(1:3)=re(1:3,i)
+               DO ip = 1, N+N, 1
+                  q(1:3)=q(1:3)-rp(1:3,ip)/(1.d0+DEXP(A_POT_se*(rij(num+iadd,ip)-D_POT_se)))
+               END DO
+               q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
+               q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
+					SD(i-iadd,num)=(1.d0,0.d0)*norm*DEXP(-C_atm*q(0))
+				END DO
+            CALL aggiorna_determinante_C_col_1ppt(N,num,ISD_now,detSD_now,SD,detSD)
+			ELSE
+				STOP 'num non accettabile &
+				  [ module_funzione_onda.f90 > valuta_SD_bat ]'
+			END IF
+				
+			IF (verbose_mode) PRINT * , 'funzione_onda: detSD(gss)=', detSD
+				
+		END SUBROUTINE valuta_SD_1s_backflow	
+	
 !-----------------------------------------------------------------------
 
 	SUBROUTINE valuta_SD_gem(num,rij,N,SD,detSD,ISD,pvt,ISD_old,detSD_old)

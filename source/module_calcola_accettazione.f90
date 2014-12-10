@@ -418,6 +418,21 @@ MODULE calcola_accettazione
 				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E DOWN. INFO=', info
 				STOP
 			END IF
+      CASE ('1sb')
+         CALL valuta_SD_1s_backflow(-1,'up',L,re_old,rp_old,rij_ep_old,H_N_part, &
+            SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,ISDe_up_new,detSDe_up_new)
+         CALL valuta_SD_1s_backflow(-1,'up',L,re_old,rp_old,rij_ep_old,H_N_part, &
+            SDe_dw_old,detSDe_dw_old,ISDe_dw_old,pvte_dw_old,ISDe_dw_new,detSDe_dw_new)
+			CALL ZGETRI( H_N_part, ISDe_up_old, H_N_part, pvte_up_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E UP. INFO=', info
+				STOP
+			END IF
+			CALL ZGETRI( H_N_part, ISDe_dw_old, H_N_part, pvte_dw_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E DOWN. INFO=', info
+				STOP
+			END IF
 		CASE ('atp')
 			CALL attiva_pc()
 			CALL valuta_SD_atm(-1,rijpc_ep_old(0,1:H_N_part,1:H_N_part),H_N_part, &
@@ -1208,6 +1223,11 @@ MODULE calcola_accettazione
 	  				  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,SDe_up_old,detSDe_up_old)
 	  				CALL valuta_SD_bat(num,'dw',rij_ep_new(0,:,:),H_N_part, &
 	  				  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+            CASE ('1sb')
+               CALL valuta_SD_1s_backflow(num,'up',L,re_new,rp_new,rij_ep_new,H_N_part,&
+                  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+               CALL valuta_SD_1s_backflow(num-H_N_part,'dw',L,re_new,rp_new,rij_ep_new,H_N_part,&
+                  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
 				CASE ('atp')
 					CALL calcola_nuove_distanze_pc(tipo,num,'e_p_')
 					CALL valuta_SD_atm(num,rijpc_ep_new(0,1:H_N_part,1:H_N_part),H_N_part, &
@@ -1561,6 +1581,19 @@ MODULE calcola_accettazione
 						CALL valuta_SD_bat(num-H_N_part,'dw',rij_ep_new(0,:,:),H_N_part, &
 						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
 					END IF
+            CASE ('1sb')
+               IF (num==-1) THEN
+                  CALL valuta_SD_1s_backflow(num,'up',L,re_new,rp_new,rij_ep_new,H_N_part,&
+                     SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+                  CALL valuta_SD_1s_backflow(num-H_N_part,'dw',L,re_new,rp_new,rij_ep_new,H_N_part,&
+                     SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+               ELSE IF ((num>0) .AND. (num<=H_N_part)) THEN
+                  CALL valuta_SD_1s_backflow(num,'up',L,re_new,rp_new,rij_ep_new,H_N_part,&
+                     SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+               ELSE IF ((num>H_N_part) .AND. (num<=N_part)) THEN
+                  CALL valuta_SD_1s_backflow(num-H_N_part,'dw',L,re_new,rp_new,rij_ep_new,H_N_part,&
+                     SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+               END IF
 				CASE ('atp')
 					CALL calcola_nuove_distanze_pc(tipo,num,'e_p_')
 					IF (num==-1) THEN
@@ -2838,15 +2871,49 @@ MODULE calcola_accettazione
 					ISDe_dw_old=ISDe_dw_new
 					pvte_dw_old=pvte_dw_new
 				ELSE IF ((num>0) .AND. (num<=N_part)) THEN
-					IF (num<=H_N_part) THEN
-						CALL aggiorna_matrice_inversa_C_1ppt(H_N_part,num,ISDe_up_old,detSDe_up_old,SDe_up_new,detSDe_up_new,ISDe_up_new)
-						SDe_up_old(num,1:H_N_part)=SDe_up_new(num,1:H_N_part)
-						ISDe_up_old=ISDe_up_new
-					ELSE IF (num>H_N_part) THEN
-						CALL aggiorna_matrice_inversa_C_1ppt(H_N_part,num-H_N_part,ISDe_dw_old,detSDe_dw_old,SDe_dw_new,detSDe_dw_new,ISDe_dw_new)
-						SDe_dw_old(num-H_N_part,1:H_N_part)=SDe_dw_new(num-H_N_part,1:H_N_part)
-						ISDe_dw_old=ISDe_dw_new
-					END IF
+               IF (SDe_kind=='1sb') THEN
+					   IF (num<=H_N_part) THEN
+                     CALL aggiorna_determinante_C_1ppt(H_N_part,num,ISDe_up_old,detSDe_up_old,&
+                        SDe_up_new,detSDe_up_new)
+					   	CALL aggiorna_matrice_inversa_C_1ppt(H_N_part,num,ISDe_up_old,detSDe_up_old,&
+                        SDe_up_new,detSDe_up_new,ISDe_up_new)
+                     SDe_up_old(num,1:H_N_part)=SDe_up_new(num,1:H_N_part)
+                     ISDe_up_old=ISDe_up_new
+                     detSDe_up_old=detSDe_up_new
+                     CALL aggiorna_determinante_C_col_1ppt(H_N_part,num,ISDe_up_old,detSDe_up_old,&
+                        SDe_up_new,detSDe_up_new)
+                     CALL aggiorna_matrice_inversa_C_col_1ppt(H_N_part,num,ISDe_up_old,detSDe_up_old,&
+                        SDe_up_new,detSDe_up_new,ISDe_up_new)
+					   	SDe_up_old(num,1:H_N_part)=SDe_up_new(num,1:H_N_part)
+					   	ISDe_up_old=ISDe_up_new
+					   ELSE IF (num>H_N_part) THEN
+                     CALL aggiorna_determinante_C_1ppt(H_N_part,num-H_N_part,ISDe_dw_old,detSDe_dw_old,&
+                        SDe_dw_new,detSDe_dw_new)
+					   	CALL aggiorna_matrice_inversa_C_1ppt(H_N_part,num-H_N_part,ISDe_dw_old,detSDe_dw_old,&
+                        SDe_dw_new,detSDe_dw_new,ISDe_dw_new)
+                     SDe_dw_old(num-H_N_part,1:H_N_part)=SDe_dw_new(num-H_N_part,1:H_N_part)
+                     ISDe_dw_old=ISDe_dw_new
+                     detSDe_dw_old=detSDe_dw_new
+                     CALL aggiorna_determinante_C_col_1ppt(H_N_part,num-H_N_part,ISDe_dw_old,detSDe_dw_old,&
+                        SDe_dw_new,detSDe_dw_new)
+                     CALL aggiorna_matrice_inversa_C_col_1ppt(H_N_part,num-H_N_part,ISDe_dw_old,detSDe_dw_old,&
+                        SDe_dw_new,detSDe_dw_new,ISDe_dw_new)
+					   	SDe_dw_old(num-H_N_part,1:H_N_part)=SDe_dw_new(num-H_N_part,1:H_N_part)
+					   	ISDe_dw_old=ISDe_dw_new
+					   END IF
+               ELSE
+					   IF (num<=H_N_part) THEN
+					   	CALL aggiorna_matrice_inversa_C_1ppt(H_N_part,num,ISDe_up_old,detSDe_up_old,&
+                        SDe_up_new,detSDe_up_new,ISDe_up_new)
+					   	SDe_up_old(num,1:H_N_part)=SDe_up_new(num,1:H_N_part)
+					   	ISDe_up_old=ISDe_up_new
+					   ELSE IF (num>H_N_part) THEN
+					   	CALL aggiorna_matrice_inversa_C_1ppt(H_N_part,num-H_N_part,ISDe_dw_old,detSDe_dw_old,&
+                        SDe_dw_new,detSDe_dw_new,ISDe_dw_new)
+					   	SDe_dw_old(num-H_N_part,1:H_N_part)=SDe_dw_new(num-H_N_part,1:H_N_part)
+					   	ISDe_dw_old=ISDe_dw_new
+					   END IF
+               END IF
 				END IF
 			END IF
 			detSDe_up_old=detSDe_up_new
