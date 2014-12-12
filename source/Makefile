@@ -1,5 +1,5 @@
 #compile for debugging (useful for finding arrays overflow)
-DEBUG=true
+DEBUG=false
 #compile without optimization or debugging flags, for quick compiling
 QUICK_COMPILE=false
 #standard executable name

@@ -722,6 +722,11 @@ MODULE funzione_onda
 	  			PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
 	  			  'SDe: ', SDe_kind,'  -  C_atm=', C_atm
+	  		CASE ('1sb')
+	  			PRINT '(6X,A5,A3,A11,F9.3,2(5X,A9,F9.3))' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm, &
+               'A_POT_se=', A_POT_se, 'D_POT_se=', D_POT_se
+	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3,2(A9,F9.3,5X))'), &
+	  			  'SDe: ', SDe_kind,'  -  C_atm=', C_atm, 'A_POT_se=', A_POT_se, 'D_POT_se=', D_POT_se
 			CASE ('atp')
 				PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 				IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
@@ -1590,7 +1595,7 @@ MODULE funzione_onda
          REAL(KIND=8) :: q(0:3), dist(0:3)
 		
 			IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-			  [ module_funzione_onda.f90 > valuta_SD_bat ]'
+			  [ module_funzione_onda.f90 > valuta_SD_1s_backflow ]'
 		
 			norm=1.d0 !/DSQRT(PI)
 			
@@ -1623,7 +1628,7 @@ MODULE funzione_onda
 				DO  i = 1, N, 1
 					detSD=detSD*ISD(i,i)
 				END DO
-			ELSE IF ((num>0) .AND. (num<=N)) THEN
+			ELSE IF ((num>0) .AND. (num<=N+N)) THEN
 				DO i = 1+iadd, N+iadd, 1
                q(1:3)=re(1:3,num+iadd)
                DO ip = 1, N+N, 1
@@ -1647,7 +1652,7 @@ MODULE funzione_onda
             CALL aggiorna_determinante_C_col_1ppt(N,num,ISD_now,detSD_now,SD,detSD)
 			ELSE
 				STOP 'num non accettabile &
-				  [ module_funzione_onda.f90 > valuta_SD_bat ]'
+				  [ module_funzione_onda.f90 > valuta_SD_1s_backflow ]'
 			END IF
 				
 			IF (verbose_mode) PRINT * , 'funzione_onda: detSD(gss)=', detSD

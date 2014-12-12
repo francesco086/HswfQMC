@@ -176,13 +176,13 @@ MODULE estimatori
 
 	SUBROUTINE energia_cinetica(E_kin,E_JF)
 		IMPLICIT NONE
-		INTEGER :: i, j, i3, idw, jdw, ik, info, i_SD, j_SD, alpha, beta, gamm, il, iadd, spin
-      REAL(KIND=8) :: q(0:3),SDe(H_N_part,H_N_part),sigm1(N_part,N_part),sigm2(N_part,N_part)
+		INTEGER :: i, j, i3, idw, jdw, ik, info, i_SD, j_SD, alpha, beta, gamm, il, iadd, spin, t, m, n
+      REAL(KIND=8) :: q(0:3,H_N_part),rq(0:3,H_N_part,H_N_part),SDe(H_N_part,H_N_part)
+      REAL(KIND=8) :: sigm(N_part,N_part),sigm1(N_part,N_part),sigm2(N_part,N_part)
+      REAL(KIND=8) :: Gvrq(3,3,H_N_part,H_N_part,H_N_part)
+      REAL(KIND=8) :: Grq(3,H_N_part,H_N_part,H_N_part,2), Gphi(3,H_N_part,H_N_part,H_N_part,2)
+      REAL(KIND=8) :: Lrq(3,H_N_part,H_N_part,H_N_part,2), Lphi(3,H_N_part,H_N_part,H_N_part,2)
       REAL(KIND=8) :: Dd(3,N_part,N_part), D2d(3,N_part,N_part)
-      REAL(KIND=8) :: D(3,H_N_part,H_N_part,2), D2(3,3,N_part,H_N_part,H_N_part,2)
-      REAL(KIND=8) :: Gq(3,3,N_part,H_N_part,H_N_part,2), Lq(3,3,N_part,H_N_part,H_N_part,2)
-      REAL(KIND=8) :: Gphi(3,N_part,H_N_part,H_N_part,2), GD(3,3,N_part,H_N_part,H_N_part,2)
-      REAL(KIND=8) :: Lphi(3,N_part,H_N_part,H_N_part,2)
 		REAL (KIND=8) :: frf1(0:3), frf2(1:3), frf3, frf5, frf6, mix_prod, norm
 		REAL (KIND=8) :: frfs1(0:3), frfs2(0:3), frf2s1(1:3), frf2s2(1:3), frf3s1(1:3), frf3s2(1:3)
 		REAL (KIND=8) :: uee1, uee2, uep1, uep2
@@ -385,15 +385,18 @@ MODULE estimatori
 
 		CASE ('1sb')
 
+         norm=1.d0
+
          DO j = 1, N_part, 1
          DO i = 1, N_part, 1
             frf5=A_POT_se*(rij_ep_old(0,i,j)-D_POT_se)
-            sigm1(i,j)=1.d0/(DEXP(frf5)+2.d0+DEXP(-frf5))
-            sigm2(i,j)=( DEXP(-0.5d0*frf5) - DEXP(0.5d0*frf5) )/ &
-               (( DEXP(-0.5d0*frf5) + DEXP(0.5d0*frf5) )**3)
+            frf3=DEXP(frf5)
+            sigm(i,j)=1.d0/(1.d0+frf3)
+            sigm1(i,j)=-frf3/((1.d0+frf3)*(1.d0+frf3))
+            sigm2(i,j)=(2.d0*frf3*frf3-frf3*(1.d0+frf3))/((1.d0+frf3)**3)
             Dd(1:3,i,j)=A_POT_se*rij_ep_old(1:3,i,j)/rij_ep_old(0,i,j)
-            D2d(1:3,i,j)=A_POT_se*(1.d0-rij_ep_old(1:3,i,j)*rij_ep_old(1:3,i,j)/(rij_ep_old(0,i,j)*rij_ep_old(0,i,j)))/&
-               rij_ep_old(0,i,j)
+            !D2d(1:3,i,j)=A_POT_se*(1.d0-rij_ep_old(1:3,i,j)*rij_ep_old(1:3,i,j)/(rij_ep_old(0,i,j)*rij_ep_old(0,i,j)))/&
+            !   rij_ep_old(0,i,j)
          END DO
          END DO
          
@@ -409,82 +412,88 @@ MODULE estimatori
                STOP "ORRORE SPIN"
             END IF
             
+
+            DO i = 1, H_N_part, 1
+               q(1:3,i)=0.d0
+               DO ik = 1, N_part, 1
+                  q(1:3,i)=q(1:3,i)+rp_old(1:3,ik)*sigm(i+iadd,ik)
+               END DO
+            END DO
+            CALL valuta_distanza_ij(re_old(1:3,1+iadd:H_N_part+iadd),q(1:3,1:H_N_part),&
+               H_N_part,L(1:3),rq(0:3,1:H_N_part,1:H_N_part))
+
+            DO il = 1, H_N_part, 1
             DO j = 1, H_N_part, 1
             DO i = 1, H_N_part, 1
-               q(1:3)=re_old(1:3,i+iadd)
-               DO ik = 1, N_part, 1
-                  q(1:3)=q(1:3)-rp_old(1:3,ik)/(1.d0+DEXP(rij_ep_old(0,j+iadd,ik)))
-               END DO
-               q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
-               q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
-               
-               D(1:3,i,j,spin)=-C_atm*SDe(i,j)*q(1:3)/q(0)
-
-               DO il = 1, N_part, 1
-               DO beta = 1, 3, 1
-               DO gamm = 1, 3, 1
-                  D2(gamm,beta,il,i,j,spin)=q(gamm)*q(beta)*(1.d0+q(0))
-                  IF (gamm==beta) D2(gamm,beta,il,i,j,spin)=D2(gamm,beta,il,i,j,spin)-q(0)*q(0)
-                  D2(gamm,beta,il,i,j,spin)=D2(gamm,beta,il,i,j,spin)*SDe(i,j)/(q(0)*q(0)*q(0))
-               END DO
-               END DO
-               END DO
-               DO il = 1, N_part, 1
+            DO alpha = 1, 3, 1
+               Grq(alpha,i,j,il,spin)=0.d0
+               IF (il==i) Grq(alpha,i,j,il,spin)=Grq(alpha,i,j,il,spin)+rq(alpha,i,j)
+               IF (j==il) THEN
+                  DO ik = 1, N_part, 1
                   DO beta = 1, 3, 1
-                     DO alpha = 1, 3, 1
-                        IF ((alpha==beta).AND.(il==i)) THEN
-                           Gq(alpha,beta,il,i,j,spin)=1.d0
-                        ELSE
-                           Gq(alpha,beta,il,i,j,spin)=0.d0
-                           Lq(alpha,beta,il,i,j,spin)=0.d0
-                        END IF
-                        IF (il==j) THEN
-                           DO ik = 1, N_part, 1
-                              Gq(alpha,beta,il,i,j,spin)=Gq(alpha,beta,il,i,j,spin)- &
-                                 sigm1(il,ik)*rp_old(beta,ik)*Dd(alpha,il,ik)
-                              Lq(alpha,beta,il,i,j,spin)=Lq(alpha,beta,il,i,j,spin) - &
-                                 sigm2(il,ik)*rp_old(beta,ik)*Dd(alpha,il,ik)*Dd(alpha,il,ik) - &
-                                 sigm1(il,ik)*rp_old(beta,ik)*D2d(alpha,il,ik)
-                           END DO
-                        END IF
+                     Grq(alpha,i,j,il,spin)=Grq(alpha,i,j,il,spin)-&
+                        rq(beta,i,j)*rp_old(beta,ik)*sigm1(j+iadd,ik)*Dd(alpha,j+iadd,ik)
+                  END DO
+                  END DO
+               END IF
+               Grq(alpha,i,j,il,spin)=Grq(alpha,i,j,il,spin)/rq(0,i,j)
+               Gphi(alpha,i,j,il,spin)=-C_atm*SDe(i,j)*Grq(alpha,i,j,il,spin)
+            END DO
+            END DO
+            END DO
+            END DO
+
+            DO il = 1, H_N_part, 1
+            DO j = 1, H_N_part, 1
+            DO i = 1, H_N_part, 1
+            DO alpha = 1, 3, 1
+            DO beta = 1, 3, 1
+               Gvrq(beta,alpha,i,j,il)=0.d0
+               IF ((i==il).AND.(alpha==beta)) Gvrq(beta,alpha,i,j,il)=Gvrq(beta,alpha,i,j,il)+1.d0
+               IF (il==j) THEN
+                  DO ik = 1, N_part, 1
+                     Gvrq(beta,alpha,i,j,il)=Gvrq(beta,alpha,i,j,il)-rp_old(beta,ik)*sigm1(j+iadd,ik)*Dd(alpha,j+iadd,ik)
+                  END DO
+               END IF
+            END DO
+            END DO
+            END DO
+            END DO
+            END DO
+
+            DO il = 1, H_N_part, 1
+            DO j = 1, H_N_part, 1
+            DO i = 1, H_N_part, 1
+            DO alpha = 1, 3, 1
+               Lrq(alpha,i,j,il,spin)=0.d0
+               !1
+               IF ((il==i).OR.(il==j)) Lrq(alpha,i,j,il,spin)=Lrq(alpha,i,j,il,spin)-&
+                  Grq(alpha,i,j,il,spin)*Grq(alpha,i,j,il,spin)/rq(0,i,j)
+               IF (i==il) THEN
+                  !2
+                  Lrq(alpha,i,j,il,spin)=Lrq(alpha,i,j,il,spin)+Gvrq(alpha,alpha,i,j,il)/rq(0,i,j)
+               END IF
+               DO ik = 1, N_part, 1
+                  DO beta = 1, 3, 1
+                     !3
+                     Lrq(alpha,i,j,il,spin)=Lrq(alpha,i,j,il,spin)-Gvrq(beta,alpha,i,j,il)*rp_old(beta,ik)*&
+                        sigm1(j+iadd,ik)*Dd(alpha,j+iadd,ik)/rq(0,i,j)
+                  END DO
+               END DO
+               IF (j==il) THEN
+                  DO ik = 1, N_part, 1
+                     DO beta = 1, 3, 1
+                        !4
+                        Lrq(alpha,i,j,il,spin)=Lrq(alpha,i,j,il,spin)-rq(beta,i,j)*rp_old(beta,ik)*sigm2(j+iadd,ik)*&
+                           Dd(alpha,j+iadd,ik)*Dd(alpha,j+iadd,ik)/rq(0,i,j)
+                        !5
+                        Lrq(alpha,i,j,il,spin)=Lrq(alpha,i,j,il,spin)-rq(beta,i,j)*rp_old(beta,ik)*sigm1(j+iadd,ik)*&
+                           A_POT_se*(1.d0-(rij_ep_old(alpha,j+iadd,ik)/rij_ep_old(0,j+iadd,ik))**2)/&
+                           (rq(0,i,j)*rij_ep_old(0,j+iadd,ik))
                      END DO
                   END DO
-               END DO
-            END DO
-            END DO
-
-            DO j = 1, H_N_part, 1
-            DO i = 1, H_N_part, 1
-            DO il = 1, N_part, 1
-               DO alpha = 1, 3, 1
-                  Gphi(alpha,il,i,j,spin)=0.d0
-                  DO beta = 1, 3, 1
-                     Gphi(alpha,il,i,j,spin)=Gphi(alpha,il,i,j,spin)+ &
-                        Gq(alpha,beta,il,i,j,spin)*D(beta,i,j,spin)
-                  END DO
-               END DO
-               DO beta = 1, 3, 1
-               DO alpha = 1, 3, 1
-                  GD(alpha,beta,il,i,j,spin)=0.d0
-                  DO gamm = 1, 3, 1
-                     GD(alpha,beta,il,i,j,spin)=GD(alpha,beta,il,i,j,spin)+ &
-                        Gq(alpha,gamm,il,i,j,spin)*D2(gamm,beta,il,i,j,spin)
-                  END DO
-               END DO
-               END DO
-            END DO
-            END DO
-            END DO
-
-            DO j = 1, H_N_part, 1
-            DO i = 1, H_N_part, 1
-            DO il = 1, N_part, 1
-            DO alpha = 1, 3, 1
-               Lphi(alpha,il,i,j,spin)=0.d0
-               DO beta = 1, 3, 1
-                  Lphi(alpha,il,i,j,spin)=Gphi(alpha,il,i,j,spin)+Lq(alpha,beta,il,i,j,spin)*D(beta,i,j,spin)+&
-                     Gq(alpha,beta,il,i,j,spin)*GD(alpha,beta,il,i,j,spin)
-               END DO
+               END IF
+               Lphi(alpha,i,j,il,spin)=C_atm*SDe(i,j)*(C_atm*Grq(alpha,i,j,il,spin)*Grq(alpha,i,j,il,spin)-Lrq(alpha,i,j,il,spin))
             END DO
             END DO
             END DO
@@ -495,80 +504,143 @@ MODULE estimatori
          DO il = 1, H_N_part, 1
             DO j = 1, H_N_part, 1
             DO i = 1, H_N_part, 1
-               gsdee_up(1:3,il)=gsdee_up(1:3,il)+Gphi(1:3,il,i,j,1)*ISDe_up_old(j,i)
+               gsdee_up(1:3,il)=gsdee_up(1:3,il)+Gphi(1:3,i,j,il,1)*ISDe_up_old(j,i)
             END DO
             END DO
          END DO
          DO il = 1, H_N_part, 1
             DO j = 1, H_N_part, 1
             DO i = 1, H_N_part, 1
-               gsdee_dw(1:3,il)=gsdee_dw(1:3,il)+Gphi(1:3,il,i,j,2)*ISDe_dw_old(j,i)
+               gsdee_dw(1:3,il)=gsdee_dw(1:3,il)+Gphi(1:3,i,j,il,2)*ISDe_dw_old(j,i)
             END DO
             END DO
          END DO
-         DO il = 1, N_part, 1
+
+
+         DO il = 1, H_N_part, 1
             DO j = 1, H_N_part, 1
             DO i = 1, H_N_part, 1
             DO alpha = 1, 3, 1
-               lsdee=lsdee+Lphi(alpha,il,i,j,1)*ISDe_up_old(j,i)
+               lsdee=lsdee+Lphi(alpha,i,j,il,1)*ISDe_up_old(j,i)
             END DO
             END DO
             END DO
             DO j = 1, H_N_part, 1
             DO i = 1, H_N_part, 1
             DO alpha = 1, 3, 1
-               lsdee=lsdee+Lphi(alpha,il,i,j,2)*ISDe_dw_old(j,i)
+               lsdee=lsdee+Lphi(alpha,i,j,il,2)*ISDe_dw_old(j,i)
             END DO
             END DO
             END DO
          END DO
 
-         !!!DO il = 1, H_N_part, 1
-         !!!   iadd=0
-         !!!   IF (il>H_N_part) iadd=H_N_part 
-         !!!   DO j = 1, H_N_part, 1
-         !!!      q(1:3)=re_old(1:3,j+iadd)
-         !!!      DO ik = 1, N_part, 1
-         !!!         q(1:3)=q(1:3)-rp_old(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_old(0,j+iadd,ik)-D_POT_se)))
-         !!!      END DO
-         !!!      PRINT *, L(1:3)
-         !!!      q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
-         !!!      q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
-         !!!      DO i = 1, H_N_part, 1
-         !!!         grad_phi=0.d0
-         !!!         DO alpha = 1, 3, 1
-         !!!            rq(alpha)=re_old(alpha,i+iadd)-q(alpha)-L(alpha)* & 
-         !!!               DNINT((re_old(alpha,i+iadd)-q(alpha))/L(alpha))
-         !!!            DO beta = 1, 3, 1
-         !!!               IF ((alpha==beta).AND.(il==i)) grad_phi(alpha)=grad_phi(alpha)+1.d0
-         !!!               IF (j==il) THEN
-         !!!                  DO ik = 1, N_part, 1
-         !!!                     frf3=A_POT_se*(rij_ep_old(0,j+iadd,ik)-D_POT_se)
-         !!!                     frf5=1.d0/(DEXP(frf3)+2.d0+DEXP(-frf3))
-         !!!                     grad_phi(alpha)=grad_phi(alpha) - &
-         !!!                        rp_old(beta,ik)*re_old(alpha,j+iadd)*frf5/rij_ep_old(0,j+iadd,ik)
-         !!!                  END DO
-         !!!               END IF
-         !!!               grad_phi(alpha)=grad_phi(alpha)*rq(beta)
-         !!!            END DO
-         !!!         END DO
-         !!!         rq(0)=DSQRT(DOT_PRODUCT(rq(1:3),rq(1:3)))
-         !!!         grad_phi=-C_atm*grad_phi/rq(0)
-         !!!         IF (iadd==0) THEN
-         !!!            Mfrf(j,i,1:3)=grad_phi(1:3)*SDe_up_old(i,j)
-         !!!         ELSE
-         !!!            Mfrf(j,i,1:3)=grad_phi(1:3)*SDe_dw_old(i,j)
-         !!!         END IF
-         !!!      END DO
-         !!!   END DO
-         !!!   DO beta = 1, 3, 1
-         !!!      IF (iadd==0) THEN
-         !!!         gsdee_up(beta,il)=SUM(Mfrf(:,:,beta)*ISDe_up_old(:,:))
-         !!!      ELSE
-         !!!         gsdee_dw(beta,il)=SUM(Mfrf(:,:,beta)*ISDe_dw_old(:,:))
-         !!!      END IF
-         !!!   END DO
+         !!!!CHECK GRADIENTE
+         !!!il=1
+         !!!PRINT *, "CHECK GRADIENT "
+         !!!PRINT *, "Analytical: ", REAL(gsdee_up(1:3,1))
+         !!!PRINT *, " -> ", Grq(1:3,1,1,il,1)
+         !!!PRINT *, 
+
+         !!!frf6=0.00001d0
+
+         !!!q(1:3,1)=re_old(1:3,il)
+         !!!DO ik = 1, N_part, 1
+         !!!   q(1:3,1)=q(1:3,1)-rp_old(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_old(0,il,ik)-D_POT_se)))
          !!!END DO
+         !!!q(1:3,1)=q(1:3,1)-L(1:3)*DNINT(q(1:3,1)/L(1:3))
+         !!!q(0,1)=DSQRT(DOT_PRODUCT(q(1:3,1),q(1:3,1)))
+			!!!frf3=q(0,1)
+			!!!!frf3=norm*DEXP(-C_atm*q(0,1))
+			!!!frf3=q(0,1)
+			!!!
+         !!!re_new(1:3,il)=re_old(1:3,il)+(/ frf6, 0.d0, 0.d0 /)
+         !!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
+         !!!q(1:3,1)=re_new(1:3,il)
+         !!!DO ik = 1, N_part, 1
+         !!!   q(1:3,1)=q(1:3,1)-rp_new(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_new(0,il,ik)-D_POT_se)))
+         !!!END DO
+         !!!q(1:3,1)=q(1:3,1)-L(1:3)*DNINT(q(1:3,1)/L(1:3))
+         !!!q(0,1)=DSQRT(DOT_PRODUCT(q(1:3,1),q(1:3,1)))
+			!!!!frf2(1)=norm*DEXP(-C_atm*q(0,1))
+			!!!frf2(1)=q(0,1)
+
+         !!!re_new(1:3,il)=re_old(1:3,il)+(/ 0.d0, frf6, 0.d0 /)
+         !!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
+         !!!q(1:3,1)=re_new(1:3,il)
+         !!!DO ik = 1, N_part, 1
+         !!!   q(1:3,1)=q(1:3,1)-rp_new(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_new(0,il,ik)-D_POT_se)))
+         !!!END DO
+         !!!q(1:3,1)=q(1:3,1)-L(1:3)*DNINT(q(1:3,1)/L(1:3))
+         !!!q(0,1)=DSQRT(DOT_PRODUCT(q(1:3,1),q(1:3,1)))
+			!!!!frf2(2)=norm*DEXP(-C_atm*q(0,1))
+			!!!frf2(2)=q(0,1)
+
+         !!!re_new(1:3,il)=re_old(1:3,il)+(/ 0.d0, 0.d0, frf6 /)
+         !!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
+         !!!q(1:3,1)=re_new(1:3,il)
+         !!!DO ik = 1, N_part, 1
+         !!!   q(1:3,1)=q(1:3,1)-rp_new(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_new(0,il,ik)-D_POT_se)))
+         !!!END DO
+         !!!q(1:3,1)=q(1:3,1)-L(1:3)*DNINT(q(1:3,1)/L(1:3))
+         !!!q(0,1)=DSQRT(DOT_PRODUCT(q(1:3,1),q(1:3,1)))
+			!!!!frf2(3)=norm*DEXP(-C_atm*q(0,1))
+			!!!frf2(3)=q(0,1)
+
+         !!!PRINT *, "Numerical:  ", ((DEXP(-C_atm*frf2(1:3))-DEXP(-C_atm*frf3))/frf6)/DEXP(-C_atm*frf3)
+         !!!PRINT *, " -> ", (frf2(1:3)-frf3)/frf6
+         !!!PRINT *, 
+         !!!PRINT *, 
+         !!!!FINE CHECK GRADIENTE
+
+         !!!!CHECK LAPLACIANO
+         !!!PRINT *, "CHECK LAPLACIAN"
+
+         !!!il=1
+         !!!PRINT *, "Analytical: ", Lphi(1:3,1,1,il,1)/REAL(SDe_up_old(1,1))
+         !!!PRINT *, " -> ", Lrq(1:3,1,1,il,1)
+         !!!PRINT *, 
+
+         !!!re_new(1:3,il)=re_old(1:3,il)-(/ frf6, 0.d0, 0.d0 /)
+         !!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
+         !!!q(1:3,1)=re_new(1:3,il)
+         !!!DO ik = 1, N_part, 1
+         !!!   q(1:3,1)=q(1:3,1)-rp_new(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_new(0,il,ik)-D_POT_se)))
+         !!!END DO
+         !!!q(1:3,1)=q(1:3,1)-L(1:3)*DNINT(q(1:3,1)/L(1:3))
+         !!!q(0,1)=DSQRT(DOT_PRODUCT(q(1:3,1),q(1:3,1)))
+			!!!!frf1(1)=norm*DEXP(-C_atm*q(0,1))
+			!!!frf1(1)=q(0,1)
+
+         !!!re_new(1:3,il)=re_old(1:3,il)-(/ 0.d0, frf6, 0.d0 /)
+         !!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
+         !!!q(1:3,1)=re_new(1:3,il)
+         !!!DO ik = 1, N_part, 1
+         !!!   q(1:3,1)=q(1:3,1)-rp_new(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_new(0,il,ik)-D_POT_se)))
+         !!!END DO
+         !!!q(1:3,1)=q(1:3,1)-L(1:3)*DNINT(q(1:3,1)/L(1:3))
+         !!!q(0,1)=DSQRT(DOT_PRODUCT(q(1:3,1),q(1:3,1)))
+			!!!!frf1(2)=norm*DEXP(-C_atm*q(0,1))
+			!!!frf1(2)=q(0,1)
+
+         !!!re_new(1:3,il)=re_old(1:3,il)-(/ 0.d0, 0.d0, frf6 /)
+         !!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
+         !!!q(1:3,1)=re_new(1:3,il)
+         !!!DO ik = 1, N_part, 1
+         !!!   q(1:3,1)=q(1:3,1)-rp_new(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_new(0,il,ik)-D_POT_se)))
+         !!!END DO
+         !!!q(1:3,1)=q(1:3,1)-L(1:3)*DNINT(q(1:3,1)/L(1:3))
+         !!!q(0,1)=DSQRT(DOT_PRODUCT(q(1:3,1),q(1:3,1)))
+			!!!!frf1(3)=norm*DEXP(-C_atm*q(0,1))
+			!!!frf1(3)=q(0,1)
+
+         !!!PRINT *, "Numerical:  ", (DEXP(-C_atm*frf2(1:3))-2.d0*DEXP(-C_atm*frf3)+DEXP(-C_atm*frf1(1:3)))/&
+         !!!   (frf6*frf6*DEXP(-C_atm*frf3))
+         !!!PRINT *, " -> ", (frf2(1:3)-2.d0*frf3+frf1(1:3))/(frf6*frf6)
+         !!!PRINT *, 
+         !!!!FINE CHECK LAPLACIANO
+         !!!STOP
+
+
 		CASE ('atp')
 			frfs1(1:3)=PI/L(1:3)
 			DO i = 1, H_N_part, 1
