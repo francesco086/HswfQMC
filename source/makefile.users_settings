@@ -1,5 +1,5 @@
 
-ifeq ($(IDENTIFIER),kenzo@crazydiamond)
+ifeq ($(IDENTIFIER),kenzo@CrazyDiamond.local)
         EXEC=$(EXEC1)
         LIBS=-llapackHswfQMC -lblasHswfQMC
         LDFLAGS=-L/Users/kenzo/Applications/HswfQMC/lapack_lib

@@ -194,6 +194,8 @@ MODULE variational_opt
 					num_par_var=num_par_var+1
 				CASE ('bat')
 					num_par_var=num_par_var+1
+				CASE ('1sb')
+					num_par_var=num_par_var+3
 				CASE ('atp')
 					num_par_var=num_par_var+1
 				END SELECT
@@ -518,6 +520,13 @@ MODULE variational_opt
 					cont=cont+1
 				CASE ('bat')
 					parametri_var(cont)=C_atm
+					cont=cont+1
+				CASE ('1sb')
+					parametri_var(cont)=C_atm
+					cont=cont+1
+					parametri_var(cont)=A_POT_se
+					cont=cont+1
+					parametri_var(cont)=D_POT_se
 					cont=cont+1
 				CASE ('atp')
 					parametri_var(cont)=C_atm
@@ -1304,7 +1313,7 @@ MODULE variational_opt
             Is_kl=0.d0
             !!!IF (mpi_myrank==0) PRINT *, "SVD:"
             DO i = 1, N, 1
-               IF (Ssvd(i)>Ssvd(1)*0.001d0) THEN
+               IF (Ssvd(i)>Ssvd(1)*0.00001d0) THEN
                   Is_kl(i,i)=1.d0/Ssvd(i)
                   !!!IF (mpi_myrank==0) PRINT *, Ssvd(i), "   si"
                ELSE
@@ -1314,7 +1323,7 @@ MODULE variational_opt
             END DO
             Is_kl=MATMUL(Usvd,MATMUL(Is_kl,VTsvd))
             Usvd=MATMUL(s_kl,Is_kl)
-            !!!PRINT *, "CHECK INVERSE AMTRIX:"
+            !!!PRINT *, "CHECK INVERSE MATRIX:"
             !!!DO i = 1, N, 1
             !!!   PRINT *, Usvd(i,:)
             !!!END DO

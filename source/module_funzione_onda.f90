@@ -656,6 +656,15 @@ MODULE funzione_onda
 					C_atm=nuovi_parametri(cont)
 					cont=cont+1
 				END IF
+			ELSE IF (SDe_kind=='1sb') THEN
+				IF ( opt_SDe ) THEN
+					C_atm=nuovi_parametri(cont)
+					cont=cont+1
+					A_POT_se=nuovi_parametri(cont)
+					cont=cont+1
+					D_POT_se=nuovi_parametri(cont)
+					cont=cont+1
+				END IF
 			END IF
 		END IF
 		IF ( SDse_kind/='no_' ) THEN
@@ -1606,12 +1615,12 @@ MODULE funzione_onda
 				!Calcolo i termini matriciali di SD_new
 				DO j = 1, N, 1
 					DO i = 1, N, 1
-                  q(1:3)=re(1:3,i+iadd)
-                  DO ip = 1, N+N, 1
-                     q(1:3)=q(1:3)-rp(1:3,ip)/(1.d0+DEXP(A_POT_se*(rij(j+iadd,ip)-D_POT_se)))
-                  END DO
-                  q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
-                  q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
+                  		q(1:3)=re(1:3,i+iadd)
+                  		DO ip = 1, N+N, 1
+                     		q(1:3)=q(1:3)-rp(1:3,ip)/(1.d0+DEXP(A_POT_se*(rij(j+iadd,ip)-D_POT_se)))
+                  		END DO
+                  		q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
+                  		q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
 						SD(i,j)=(1.d0,0.d0)*norm*DEXP(-C_atm*q(0))
 						ISD(i,j)=SD(i,j)
 					END DO
