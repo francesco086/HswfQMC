@@ -1,6 +1,6 @@
 &dati_funzione_onda
 SDe_kind='bat'        !Electronic Slater Determinant: 'pw_'=simple plane waves, 'lda'=DFT orbitals (to be specifies), 'prf'=diagonalized nuclear field Hamiltonian (dnfH), 'fre'=dnfH without interactions, 'atm'/'atp'=exp(-r*C_atm) with or without PC, 'bat'=bi-atomic, 'no_'=no SD
-Jee_kind='yup'        !Electron-Electron Jastrow: 'yuk'/'yup'=Yukawa with or without PC, 'spl'/'spp'=spline with or without PC, inizialized to fit the Yukawa Jastrow, 'no_'=no Jee
+Jee_kind='spp'        !Electron-Electron Jastrow: 'yuk'/'yup'=Yukawa with or without PC, 'spl'/'spp'=spline with or without PC, inizialized to fit the Yukawa Jastrow, 'no_'=no Jee
 Jep_kind='yup'        !Electronic-Proton Jastrow: 'yuk'/'yup'=Yukawa, 'atm'/'atp'=exp(-F*r), 'no_'=no Jep
 Jpp_kind='no_'        !Proton-Proton Jastrow: 'no_'=no Jpp
 SDse_kind='no_'       !eShadow Slater Determinant: 'pw_'=simple plane waves, 'pw2'=plane waves squared(for sign problem), 'lda'=DFT orbitals, 'no_'=no SD, 'gem'=geminal of gaussians, 'gss'=gaussians centered on the protons, 'atm'/'atp'=exp(-r)
@@ -15,9 +15,9 @@ split_Fee=F           !Spin split for Fee
 split_Fep=F           !Spin split for Fep
 split_Fsese=F         !Spin split for Fsese
 split_Fsesp=F         !Spin split for Fsesp
-m_Jsplee=1
-nknots_Jsplee=10
-cutoff_Jsplee=T
+m_Jsplee=2
+nknots_Jsplee=5
+cutoff_Jsplee=F
 AEE_YUK=  1.2819801758793221     ,
 AEE_UD_YUK=  2.2098611377210831     ,
 FEE_YUK=  1.1178362429152959     ,
