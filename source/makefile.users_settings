@@ -1,16 +1,7 @@
-
-ifeq ($(IDENTIFIER),kenzo@CrazyDiamond.local)
-        EXEC=$(EXEC1)
-        LIBS=-llapackHswfQMC -lblasHswfQMC
-        LDFLAGS=-L/Users/kenzo/Applications/HswfQMC/lapack_lib
-        FC=mpif90-openmpi-gcc49
-endif
-
-
 ifeq ($(IDENTIFIER),kenzo@majorana)
         EXEC=$(EXEC1)
-        LIBS=-llapackHswfQMC -lblasHswfQMC
-        LDFLAGS=-L/storage/Codes/HswfQMC/lapack_lib
+        LIBS=-llapackHswfQMC -lblasHswfQMC -lmarkusplineHswfQMC
+        LDFLAGS=-L/storage/Codes/HswfQMC/lapack_lib -I/storage/Codes/HswfQMC/markuspline -L/storage/Codes/HswfQMC/markuspline
         FC=mpif90
 endif
 

@@ -471,6 +471,11 @@ MODULE calcola_accettazione
 		CASE ('yup') 
 			CALL attiva_pc()
 			CALL valuta_Uee_YUK(-1,rijpc_ee_old,N_part,u_ee_old,Uee_old)
+      CASE ('spl')
+         CALL valuta_Uee_SPL(-1,rij_ee_old,N_part,u_ee_old,Uee_old)
+      CASE ('spp')
+         CALL attiva_pc()
+         CALL valuta_Uee_SPL(-1,rijpc_ee_old,N_part,u_ee_old,Uee_old)
 		CASE ('no_') 
 			Uee_old=0.d0
 		CASE DEFAULT
@@ -1250,6 +1255,11 @@ MODULE calcola_accettazione
 				CASE ('yup')
 					CALL calcola_nuove_distanze_pc(tipo,num,'e_e_')
 					CALL valuta_Uee_YUK(num,rijpc_ee_new,N_part,u_ee_new,Uee_new)
+				CASE ('spl')
+					CALL valuta_Uee_SPL(num,rij_ee_new,N_part,u_ee_new,Uee_new)
+				CASE ('spp')
+					CALL calcola_nuove_distanze_pc(tipo,num,'e_e_')
+					CALL valuta_Uee_SPL(num,rijpc_ee_new,N_part,u_ee_new,Uee_new)
 				CASE ('no_')
 					Uee_old=0.d0
 				CASE DEFAULT
@@ -1624,6 +1634,11 @@ MODULE calcola_accettazione
 				CASE ('yup')
 					CALL calcola_nuove_distanze_pc(tipo,num,'e_e_')
 					CALL valuta_Uee_YUK(num,rijpc_ee_new,N_part,u_ee_new,Uee_new)
+				CASE ('spl')
+					CALL valuta_Uee_SPL(num,rij_ee_new,N_part,u_ee_new,Uee_new)
+				CASE ('spp')
+					CALL calcola_nuove_distanze_pc(tipo,num,'e_e_')
+					CALL valuta_Uee_SPL(num,rijpc_ee_new,N_part,u_ee_new,Uee_new)
 				CASE ('no_')
 					Uee_old=0.d0
 				CASE DEFAULT
@@ -2919,6 +2934,7 @@ MODULE calcola_accettazione
 			detSDe_up_old=detSDe_up_new
 			detSDe_dw_old=detSDe_dw_new
 			
+         !Jee
 			IF (Jee_kind/='no_') THEN	
 				IF (num==-1) THEN
 					u_ee_old=u_ee_new
@@ -2930,6 +2946,7 @@ MODULE calcola_accettazione
 			Uee_old=Uee_new
 		END IF
 		
+      !Jep
 		IF ((tipo=='all') .OR. (tipo=='e__') .OR. (tipo=='p__') .OR. (tipo=='tre')) THEN
 			IF (Jep_kind/='no_') THEN
 				IF (num==-1) THEN

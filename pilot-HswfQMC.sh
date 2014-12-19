@@ -34,6 +34,7 @@ do
 								"
 			echo "      --- Build and set the HswfQMC code ---"
 			echo "set_path - set the PATH shell variable in order to be able to use the pilot script and the HswfQMC_exe executalbe"
+         echo "install_markuspline - Download and compile the markuspline library (https://github.com/francesco086/markuspline)"
 			echo "install_lapack - Download and compile the lapack library (recommended) "
 			echo "set_makefile - Set the Makefile automatically"
 			echo "build - Compile (make) the HswfQMC source code in order to have the HswfQMC_exe executable"
@@ -237,7 +238,7 @@ export PATH=/Users/kenzo/Applications/HswfQMC:$PATH
 _pilot-HswfQMC.sh()
 {
     local cur=\${COMP_WORDS[COMP_CWORD]}
-    COMPREPLY=( \$(compgen -W \"git_pull set_path install_lapack set_makefile build rebuild set_dir set_orbitals clean wash commit\" -- \$cur) )
+    COMPREPLY=( \$(compgen -W \"git_pull set_path install_markuspline install_lapack set_makefile build rebuild set_dir set_orbitals clean wash commit\" -- \$cur) )
 }
 complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh" >> ~/.${FILE_TO_SET}
 			exit
@@ -269,6 +270,29 @@ complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh" >> ~/.${FILE_TO_SET}
 			echo "Lapack library compiled! In order to use it, insert in the Makefile:"
 			echo "LIBS=-llapack${HswfQMC_NAME} -lblas${HswfQMC_NAME}"
 			echo "LDFLAGS=-L${pilot_PATH}/${LAPACK_FOLDER}"
+			exit
+			;;
+		install_markuspline)
+         echo "Download and compile the markuspline library (https://github.com/francesco086/markuspline)"
+			cd ${pilot_PATH}
+			echo "Which fortran compiler do you use? [press enter for default: gfortran]"
+			read FF
+			if [ "${FF}" = "" ]
+         then
+            FF="gfortran"
+         fi
+         \rm -r -f markuspline/
+         git clone https://github.com/francesco086/markuspline
+			cd markuspline/
+         gfortran -O3 -march=native -c module_markuspline.f90
+         ar rcv libmarkuspline.a *.o
+         ranlib libmarkuspline.a
+         mv libmarkuspline.a libmarkuspline${HswfQMC_NAME}.a
+			cd $CURRENT_PATH
+			echo ""
+			echo "markuspline library compiled! In order to use it, insert in the Makefile:"
+			echo "LIBS=-lmarkuspline${HswfQMC_NAME}"
+			echo "LDFLAGS=-I${pilot_PATH}/markuspline -L${pilot_PATH}/markuspline"
 			exit
 			;;
 		set_makefile)
@@ -304,19 +328,19 @@ complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh" >> ~/.${FILE_TO_SET}
 				echo "Your profile is going to be set."
 				echo "ifeq (\$(IDENTIFIER),${IDENTIFIER})" >> source/makefile.users_settings
 				echo "        EXEC=\$(EXEC1)" >> source/makefile.users_settings
-				echo "Did you use pilotHswfQMC install_lapack? [y/n]"
+				echo "Did you use 'pilotHswfQMC install_lapack' and 'pilotHswfQMC install_markuspline'? [y/n]"
 				read ANSW
 				if [ "${ANSW}" = "y" ]
 				then
-					echo "        LIBS=-llapack${HswfQMC_NAME} -lblas${HswfQMC_NAME}" >> source/makefile.users_settings
-					echo "        LDFLAGS=-L${pilot_PATH}/${LAPACK_FOLDER}" >> source/makefile.users_settings
+					echo "        LIBS=-llapack${HswfQMC_NAME} -lblas${HswfQMC_NAME} -lmarkuspline${HswfQMC_NAME}" >> source/makefile.users_settings
+					echo "        LDFLAGS=-L${pilot_PATH}/${LAPACK_FOLDER} -I${pilot_PATH}/markuspline -L${pilot_PATH}/markuspline" >> source/makefile.users_settings
 				else
 					echo "Provide the followings:"
-					echo "LIBS=[press enter for default: -llapack -lblas]"
+					echo "LIBS=[press enter for default: -llapack -lblas -lmarkuspline]"
 					read ANSWLIBS
 					if [ "${ANSWLIBS}" = "" ]
 					then
-						echo "        LIBS=-llapack -lblas" >> source/makefile.users_settings
+						echo "        LIBS=-llapack -lblas -lmarkuspline" >> source/makefile.users_settings
 					else
 						echo "        LIBS=${ANSWLIBS}" >> source/makefile.users_settings
 					fi

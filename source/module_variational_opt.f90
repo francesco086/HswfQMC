@@ -59,6 +59,15 @@ MODULE variational_opt
 						num_par_var=num_par_var+1
 					END IF
 				END IF
+         CASE ('spl','spp')
+            IF (opt_A_Jee.OR.opt_F_Jee) THEN
+               IF (split_Aee.OR.split_Fee) THEN
+                  num_par_var=num_par_var+(Jsplee%Nknots+1)*(Jsplee%m+1)
+                  num_par_var=num_par_var+(Jsplee_ud%Nknots+1)*(Jsplee_ud%m+1)
+               ELSE
+                  num_par_var=num_par_var+(Jsplee%Nknots+1)*(Jsplee%m+1)
+               END IF
+            END IF
 			END SELECT
 		END IF
 		IF (Jep_kind/='no_') THEN
@@ -289,6 +298,21 @@ MODULE variational_opt
 						END IF
 					END IF
 				END IF
+         CASE ('spl','spp')
+            IF (opt_A_Jee.OR.opt_F_Jee) THEN
+               IF (split_Aee.OR.split_Fee) THEN
+                  parametri_var(cont:cont+(Jsplee%Nknots+1)*(Jsplee%m+1)-1)=&
+                     RESHAPE(Jsplee%t(0:Jsplee%m,0:Jsplee%Nknots),(/(Jsplee%Nknots+1)*(Jsplee%m+1)/))
+                  cont=cont+(Jsplee%Nknots+1)*(Jsplee%m+1)
+                  parametri_var(cont:cont+(Jsplee_ud%nknots+1)*(Jsplee_ud%m+1)-1)=&
+                     RESHAPE(Jsplee_ud%t(0:Jsplee_ud%m,0:Jsplee_ud%Nknots),(/(Jsplee%Nknots+1)*(Jsplee%m+1)/))
+                  cont=cont+(Jsplee_ud%Nknots+1)*(Jsplee_ud%m+1)
+               ELSE
+                  parametri_var(cont:cont+(Jsplee%Nknots+1)*(Jsplee%m+1)-1)=&
+                     RESHAPE(Jsplee%t(0:Jsplee%m,0:Jsplee%Nknots),(/(Jsplee%Nknots+1)*(Jsplee%m+1)/))
+                  cont=cont+(Jsplee%Nknots+1)*(Jsplee%m+1)
+               END IF
+            END IF
 			END SELECT
 		END IF
 		IF (Jep_kind/='no_') THEN

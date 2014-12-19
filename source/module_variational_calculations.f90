@@ -424,6 +424,10 @@ MODULE variational_calculations
 			CALL valuta_Uee_YUK(-1,rij_ee_old,N_part,vwf_data(i_wf)%u_ee,vwf_data(i_wf)%Uee)
 		CASE ('yup') 
 			CALL valuta_Uee_YUK(-1,rijpc_ee_old,N_part,vwf_data(i_wf)%u_ee,vwf_data(i_wf)%Uee)
+      CASE ('spl')
+         CALL valuta_Uee_SPL(-1,rij_ee_old,N_part,vwf_data(i_wf)%u_ee,vwf_data(i_wf)%Uee)
+      CASE ('spp')
+         CALL valuta_Uee_SPL(-1,rijpc_ee_old,N_part,vwf_data(i_wf)%u_ee,vwf_data(i_wf)%Uee)
 		CASE ('no_') 
 			vwf_data(i_wf)%Uee=0.d0
 		CASE DEFAULT
@@ -728,6 +732,17 @@ MODULE variational_calculations
 					END IF
 				END IF
 			END IF
+      CASE ('spl','spp')
+         IF (opt_A_Jee.OR.opt_F_Jee) THEN
+            IF (split_Aee.OR.split_Fee) THEN
+               CALL derivata_Jee_SPL(O(cont:cont+(Jsplee%Nknots+1)*(Jsplee%m+1)+&
+                  (Jsplee_ud%Nknots+1)*(Jsplee_ud%m+1),i_mc))
+               cont=cont+(Jsplee%Nknots+1)*(Jsplee%m+1)+(Jsplee_ud%Nknots+1)*(Jsplee_ud%m+1)
+            ELSE
+               CALL derivata_Jee_SPL(O(cont:cont+(Jsplee%Nknots+1)*(Jsplee%m+1),i_mc))
+               cont=cont+(Jsplee%Nknots+1)*(Jsplee%m+1)
+            END IF
+         END IF
 		END SELECT
 		
 		SELECT CASE (Jep_kind)

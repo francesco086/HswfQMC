@@ -767,6 +767,124 @@ MODULE estimatori
 				END DO
 				lee=lee+DOT_PRODUCT(gee(1:3,j),gee(1:3,j))
 			END DO
+		CASE ('spl')
+			DO j = 1, N_part, 1
+				DO i = 1, N_part, 1
+               IF (i/=j) THEN
+                  IF (split_Aee.OR.split_Fee) THEN
+                     IF (((i<=H_N_part).AND.(j<=H_N_part)).OR.((i>H_N_part).AND.(j>H_N_part))) THEN
+                        CALL MSPL_compute(SPL=Jsplee, DERIV=1, R=rij_ee_old(0,i,j), VAL=frf3)
+                        CALL MSPL_compute(SPL=Jsplee, DERIV=2, R=rij_ee_old(0,i,j), VAL=frf5)
+                     ELSE
+                        CALL MSPL_compute(SPL=Jsplee_ud, DERIV=1, R=rij_ee_old(0,i,j), VAL=frf3)
+                        CALL MSPL_compute(SPL=Jsplee_ud, DERIV=2, R=rij_ee_old(0,i,j), VAL=frf5)
+                     END IF
+                  ELSE
+                     CALL MSPL_compute(SPL=Jsplee, DERIV=1, R=rij_ee_old(0,i,j), VAL=frf3)
+                     CALL MSPL_compute(SPL=Jsplee, DERIV=2, R=rij_ee_old(0,i,j), VAL=frf5)
+                  END IF
+                  frf1(1:3)=rij_ee_old(1:3,i,j)/rij_ee_old(0,i,j)
+                  gee(1:3,j)=gee(1:3,j)-0.5d0*frf3*frf1(1:3)
+
+                  lee=lee-0.5d0*( 2.d0*frf3/rij_ee_old(0,i,j) + frf5 )
+					END IF
+				END DO
+				lee=lee+DOT_PRODUCT(gee(1:3,j),gee(1:3,j))
+
+            !!!!CHECK GRADIENTE (ricorda di rimettere PROTECTED nei walkers)
+            !!!frf6=0.0001d0
+            !!!frf3=0.d0
+            !!!frf2=0.d0
+            !!!frf1=0.d0
+
+            !!!DO i = 1, N_part, 1
+            !!!IF (i/=j) THEN
+            !!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_old(0,i,j), VAL=frf3, RESET=.FALSE.)
+            !!!   re_new=re_old
+
+            !!!   re_new(1:3,j)=re_old(1:3,j)+(/ frf6, 0.d0, 0.d0/)
+            !!!   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new)
+            !!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_new(0,i,j), VAL=frf2(1), RESET=.FALSE.)
+            !!!   re_new(1:3,j)=re_old(1:3,j)
+
+            !!!   re_new(1:3,j)=re_old(1:3,j)+(/ 0.d0, frf6, 0.d0/)
+            !!!   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new)
+            !!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_new(0,i,j), VAL=frf2(2), RESET=.FALSE.)
+            !!!   re_new(1:3,j)=re_old(1:3,j)
+
+            !!!   re_new(1:3,j)=re_old(1:3,j)+(/ 0.d0, 0.d0, frf6/)
+            !!!   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new)
+            !!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_new(0,i,j), VAL=frf2(3), RESET=.FALSE.)
+            !!!   re_new(1:3,j)=re_old(1:3,j)
+            !!!END IF
+            !!!END DO
+
+            !!!PRINT *, "Check gradiente"
+            !!!PRINT *, "Analitico : ", gee(1:3,j)
+            !!!PRINT *, "Numerico : ", & 
+            !!!(DEXP(-0.5d0*frf2(1:3))-DEXP(-0.5d0*frf3))/(DEXP(-0.5d0*frf3)*frf6)
+            !!!PRINT *, 
+            !!!!FINE CHECK GRADIENTE
+            !!!
+            !!!!CHECK LAPLACIANO
+            !!!DO i = 1, N_part, 1
+            !!!IF (i/=j) THEN
+            !!!   re_new(1:3,j)=re_old(1:3,j)-(/ frf6, 0.d0, 0.d0/)
+            !!!   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new)
+            !!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_new(0,i,j), VAL=frf1(1), RESET=.FALSE.)
+            !!!   re_new(1:3,j)=re_old(1:3,j)
+
+            !!!   re_new(1:3,j)=re_old(1:3,j)-(/ 0.d0, frf6, 0.d0/)
+            !!!   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new)
+            !!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_new(0,i,j), VAL=frf1(2), RESET=.FALSE.)
+            !!!   re_new(1:3,j)=re_old(1:3,j)
+
+            !!!   re_new(1:3,j)=re_old(1:3,j)-(/ 0.d0, 0.d0, frf6/)
+            !!!   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new)
+            !!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_new(0,i,j), VAL=frf1(3), RESET=.FALSE.)
+            !!!   re_new(1:3,j)=re_old(1:3,j)
+            !!!END IF
+            !!!END DO
+
+            !!!PRINT *, "Check laplaciano"
+            !!!PRINT *, "Analitico : ", lee
+            !!!PRINT *, "Numerico : ", &
+            !!!   SUM(DEXP(-0.5d0*frf2(1:3))-2.d0*DEXP(-0.5d0*frf3)+DEXP(-0.5d0*frf1(1:3)))/(DEXP(-0.5d0*frf3)*frf6*frf6)
+
+            !!!!FINE CHECK LAPLACIANO
+            !!!STOP
+
+			END DO
+		CASE ('spp')
+         frf2(1:3)=PI/L(1:3)
+			DO j = 1, N_part, 1
+				DO i = 1, N_part, 1
+               IF (i/=j) THEN
+                  IF (split_Aee.OR.split_Fee) THEN
+                     IF (((i<=H_N_part).AND.(j<=H_N_part)).OR.((i>H_N_part).AND.(j>H_N_part))) THEN
+                        CALL MSPL_compute(SPL=Jsplee, DERIV=1, R=rijpc_ee_old(0,i,j), VAL=frf3)
+                        CALL MSPL_compute(SPL=Jsplee, DERIV=2, R=rijpc_ee_old(0,i,j), VAL=frf5)
+                     ELSE
+                        CALL MSPL_compute(SPL=Jsplee_ud, DERIV=1, R=rijpc_ee_old(0,i,j), VAL=frf3)
+                        CALL MSPL_compute(SPL=Jsplee_ud, DERIV=2, R=rijpc_ee_old(0,i,j), VAL=frf5)
+                     END IF
+                  ELSE
+                     CALL MSPL_compute(SPL=Jsplee, DERIV=1, R=rijpc_ee_old(0,i,j), VAL=frf3)
+                     CALL MSPL_compute(SPL=Jsplee, DERIV=2, R=rijpc_ee_old(0,i,j), VAL=frf5)
+                  END IF
+                  frf1(1:3)=DCOS(frf2(1:3)*rij_ee_old(1:3,i,j))*rijpc_ee_old(1:3,i,j)/rijpc_ee_old(0,i,j)
+                  gee(1:3,j)=gee(1:3,j)-0.5d0*frf3*frf1(1:3)
+
+                  lee=lee-0.5d0*( frf3*(   &
+                     DOT_PRODUCT(DCOS(rij_ee_old(1:3,i,j)*frf2(1:3)),DCOS(rij_ee_old(1:3,i,j)*frf2(1:3)))/rijpc_ee_old(0,i,j) &
+                        - DOT_PRODUCT(rijpc_ee_old(1:3,i,j)*DCOS(rij_ee_old(1:3,i,j)*frf2(1:3)), &
+                           rijpc_ee_old(1:3,i,j)*DCOS(rij_ee_old(1:3,i,j)*frf2(1:3)))/(rijpc_ee_old(0,i,j)**3) &
+                        - DOT_PRODUCT(rijpc_ee_old(1:3,i,j)*frf2(1:3),rijpc_ee_old(1:3,i,j)*frf2(1:3))/rijpc_ee_old(0,i,j) &
+                     ) + frf5*DOT_PRODUCT(frf1(1:3),frf1(1:3)) )
+					END IF
+				END DO
+				lee=lee+DOT_PRODUCT(gee(1:3,j),gee(1:3,j))
+         END DO
 		END SELECT
 		
 		!calcolo la parte del Jastrow ep
@@ -1401,7 +1519,7 @@ MODULE estimatori
 		DO j = H_N_part+1, N_part, 1
 			DO i = H_N_part+1, N_part, 1
 				O=O-(rij_ep_old(0,i,j)*DEXP(-C_atm*rij_ep_old(0,i,j)) + &
-				  rij_ep_old(0,i,j-H_N_part)*DEXP(-C_atm*rij_ep_old(0,i,j-H_N_part)) )*ISDe_dw_old(j,i)
+				  rij_ep_old(0,i,j-H_N_part)*DEXP(-C_atm*rij_ep_old(0,i,j-H_N_part)) )*ISDe_dw_old(j-H_N_part,i-H_N_part)
 			END DO
 		END DO
 	
@@ -1923,6 +2041,77 @@ MODULE estimatori
 		O=O*0.5d0
 		
 	END SUBROUTINE derivata_Jee_YUK
+!-----------------------------------------------------------------------
+   SUBROUTINE  derivata_Jee_SPL(O)
+      IMPLICIT NONE
+       REAL(KIND=8), DIMENSION(:) :: O(:)
+       INTEGER :: i, j
+       REAL(KIND=8) :: td(0:Jsplee%m,0:Jsplee%Nknots), td_ud(0:Jsplee_ud%m,0:Jsplee_ud%Nknots)
+
+       SELECT CASE(Jee_kind)
+       CASE('spl')
+          IF (split_Aee.OR.split_Fee) THEN
+             td=0.d0
+             td_ud=0.d0
+             DO j = 1, N_part-1, 1
+             DO i = j+1, N_part, 1
+               IF ( (i<=H_N_part .AND. j<=H_N_part) .OR. (i>H_N_part .AND. j>H_N_part) ) THEN
+                  CALL MSPL_t_deriv(SPL=Jsplee,R=rij_ee_old(0,i,j),&
+                     T_DERIV=td(0:Jsplee%m,0:Jsplee%Nknots),RESET=.FALSE.)
+               ELSE
+                  CALL MSPL_t_deriv(SPL=Jsplee_ud,R=rij_ee_old(0,i,j),&
+                     T_DERIV=td_ud(0:Jsplee_ud%m,0:Jsplee_ud%Nknots),RESET=.FALSE.)
+               END IF
+             END DO
+             END DO
+             O(1:(Jsplee%m+1)*(Jsplee%Nknots+1))=&
+                -0.5d0*RESHAPE(td(0:Jsplee%m,0:Jsplee%Nknots),(/(Jsplee%m+1)*(Jsplee%Nknots+1)/))
+             O((Jsplee%m+1)*(Jsplee%Nknots+1)+1:(Jsplee%m+1)*(Jsplee%Nknots+1)+(Jsplee_ud%m+1)*(Jsplee_ud%Nknots+1))=&
+                -0.5d0*RESHAPE(td(0:Jsplee_ud%m,0:Jsplee_ud%Nknots),(/(Jsplee_ud%m+1)*(Jsplee_ud%Nknots+1)/))
+          ELSE
+             td=0.d0
+             DO j = 1, N_part-1, 1
+             DO i = j+1, N_part, 1
+                CALL MSPL_t_deriv(SPL=Jsplee,R=rij_ee_old(0,i,j),&
+                   T_DERIV=td(0:Jsplee%m,0:Jsplee%Nknots),RESET=.FALSE.)
+             END DO
+             END DO
+             O(1:(Jsplee%m+1)*(Jsplee%Nknots+1))=&
+                -0.5d0*RESHAPE(td(0:Jsplee%m,0:Jsplee%Nknots),(/(Jsplee%m+1)*(Jsplee%Nknots+1)/))
+          END IF
+       CASE('spp')
+          IF (split_Aee.OR.split_Fee) THEN
+             td=0.d0
+             td_ud=0.d0
+             DO j = 1, N_part-1, 1
+             DO i = j+1, N_part, 1
+               IF ( (i<=H_N_part .AND. j<=H_N_part) .OR. (i>H_N_part .AND. j>H_N_part) ) THEN
+                  CALL MSPL_t_deriv(SPL=Jsplee,R=rijpc_ee_old(0,i,j),&
+                     T_DERIV=td(0:Jsplee%m,0:Jsplee%Nknots),RESET=.FALSE.)
+               ELSE
+                  CALL MSPL_t_deriv(SPL=Jsplee_ud,R=rijpc_ee_old(0,i,j),&
+                     T_DERIV=td_ud(0:Jsplee_ud%m,0:Jsplee_ud%Nknots),RESET=.FALSE.)
+               END IF
+             END DO
+             END DO
+             O(1:(Jsplee%m+1)*(Jsplee%Nknots+1))=&
+                -0.5d0*RESHAPE(td(0:Jsplee%m,0:Jsplee%Nknots),(/(Jsplee%m+1)*(Jsplee%Nknots+1)/))
+             O((Jsplee%m+1)*(Jsplee%Nknots+1)+1:(Jsplee%m+1)*(Jsplee%Nknots+1)+(Jsplee_ud%m+1)*(Jsplee_ud%Nknots+1))=&
+                -0.5d0*RESHAPE(td(0:Jsplee_ud%m,0:Jsplee_ud%Nknots),(/(Jsplee_ud%m+1)*(Jsplee_ud%Nknots+1)/))
+          ELSE
+             td=0.d0
+             DO j = 1, N_part-1, 1
+             DO i = j+1, N_part, 1
+                CALL MSPL_t_deriv(SPL=Jsplee,R=rijpc_ee_old(0,i,j),&
+                   T_DERIV=td(0:Jsplee%m,0:Jsplee%Nknots),RESET=.FALSE.)
+             END DO
+             END DO
+             O(1:(Jsplee%m+1)*(Jsplee%Nknots+1))=&
+                -0.5d0*RESHAPE(td(0:Jsplee%m,0:Jsplee%Nknots),(/(Jsplee%m+1)*(Jsplee%Nknots+1)/))
+          END IF
+       END SELECT
+      
+   END SUBROUTINE  derivata_Jee_SPL
 !-----------------------------------------------------------------------
 	SUBROUTINE derivata_Jep_YUK(O)
 		IMPLICIT NONE

@@ -3,7 +3,7 @@ DEBUG=false
 #compile without optimization or debugging flags, for quick compiling
 QUICK_COMPILE=false
 #standard executable name
-EXEC2=HswfQMC
+EXEC2=HswfQMC-dev
 
 COMPUTER:=$(shell hostname)
 USERNAME:=$(shell whoami)
@@ -112,7 +112,7 @@ module_dnfH.o: module_dati_fisici.o module_walkers.o module_dnfH.f90
 	$(FC) $(FFLAGS) -c module_dnfH.f90 
 
 module_funzione_onda.o: module_dft.o module_momenta.o module_generic_tools.o module_dati_mc.o module_dati_fisici.o module_dnfH.o module_walkers.o module_funzione_onda.f90
-	$(FC) $(FFLAGS) -c module_funzione_onda.f90 
+	$(FC) $(FFLAGS) $(LDFLAGS) -c module_funzione_onda.f90 $(LIBS)
 
 module_momenta.o: module_momenta.f90
 	$(FC) $(FFLAGS) -c module_momenta.f90 
