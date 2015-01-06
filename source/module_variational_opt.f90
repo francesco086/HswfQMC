@@ -104,6 +104,15 @@ MODULE variational_opt
 						num_par_var=num_par_var+1
 					END IF
 				END IF
+         CASE ('spl','spp')
+            IF (opt_A_Jep.OR.opt_F_Jep) THEN
+               IF (split_Aep.OR.split_Fep) THEN
+                  num_par_var=num_par_var+(Jsplep%Nknots+1)*(Jsplep%m+1)
+                  num_par_var=num_par_var+(Jsplep_ud%Nknots+1)*(Jsplep_ud%m+1)
+               ELSE
+                  num_par_var=num_par_var+(Jsplep%Nknots+1)*(Jsplep%m+1)
+               END IF
+            END IF
 			CASE ('atm')
 				num_par_var=num_par_var+1
 			CASE ('atp')
@@ -383,6 +392,21 @@ MODULE variational_opt
 						END IF
 					END IF
 				END IF
+         CASE ('spl','spp')
+            IF (opt_A_Jep.OR.opt_F_Jep) THEN
+               IF (split_Aep.OR.split_Fep) THEN
+                  parametri_var(cont:cont+(Jsplep%Nknots+1)*(Jsplep%m+1)-1)=&
+                     RESHAPE(Jsplep%t(0:Jsplep%m,0:Jsplep%Nknots),(/(Jsplep%Nknots+1)*(Jsplep%m+1)/))
+                  cont=cont+(Jsplep%Nknots+1)*(Jsplep%m+1)
+                  parametri_var(cont:cont+(Jsplep_ud%nknots+1)*(Jsplep_ud%m+1)-1)=&
+                     RESHAPE(Jsplep_ud%t(0:Jsplep_ud%m,0:Jsplep_ud%Nknots),(/(Jsplep%Nknots+1)*(Jsplep%m+1)/))
+                  cont=cont+(Jsplep_ud%Nknots+1)*(Jsplep_ud%m+1)
+               ELSE
+                  parametri_var(cont:cont+(Jsplep%Nknots+1)*(Jsplep%m+1)-1)=&
+                     RESHAPE(Jsplep%t(0:Jsplep%m,0:Jsplep%Nknots),(/(Jsplep%Nknots+1)*(Jsplep%m+1)/))
+                  cont=cont+(Jsplep%Nknots+1)*(Jsplep%m+1)
+               END IF
+            END IF
 			CASE ('atm')
 				parametri_var(cont)=Fep_yuk
 				cont=cont+1
@@ -1659,12 +1683,20 @@ MODULE variational_opt
 				IF (mpi_myrank==0) CALL stampa_file_dati_funzione_onda('ottimizzazione/SR_wf.d')
 				IF (mpi_myrank==0) WRITE (istring, '(I4.4)'), contatore
 				IF ((mpi_myrank==0).AND.(opt_Rp)) CALL stampa_file_Rp('reticolo/SR_Rp-'//istring//'.d')
-            IF ((Jee_kind=='spl').OR.(Jee_kind=='spp')) THEN
+            IF (((Jee_kind=='spl').OR.(Jee_kind=='spp')).AND.(opt_A_Jee.OR.opt_F_Jee)) THEN
                IF (mpi_myrank==0) THEN
                   CALL MSPL_print_on_file(SPL=Jsplee, DERIV=0, FILENAME='ottimizzazione/splines/Jsplee'//istring//'.d',&
                      NPOINTS=INT(N_hist,4) ) 
                   IF (split_Aee.OR.split_Fee) CALL MSPL_print_on_file(SPL=Jsplee_ud, DERIV=0,&
                      FILENAME='ottimizzazione/splines/Jsplee_ud.'//istring, NPOINTS=INT(N_hist,4) )
+               END IF
+            END IF
+            IF (((Jep_kind=='spl').OR.(Jep_kind=='spp')).AND.(opt_A_Jep.OR.opt_F_Jep)) THEN
+               IF (mpi_myrank==0) THEN
+                  CALL MSPL_print_on_file(SPL=Jsplep, DERIV=0, FILENAME='ottimizzazione/splines/Jsplep'//istring//'.d',&
+                     NPOINTS=INT(N_hist,4) ) 
+                  IF (split_Aep.OR.split_Fep) CALL MSPL_print_on_file(SPL=Jsplep_ud, DERIV=0,&
+                     FILENAME='ottimizzazione/splines/Jsplep_ud.'//istring, NPOINTS=INT(N_hist,4) )
                END IF
             END IF
 				CALL chiudi_dati_fisici()

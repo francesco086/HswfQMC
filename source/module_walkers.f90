@@ -2,7 +2,7 @@ MODULE walkers
 	IMPLICIT NONE
 	LOGICAL, PROTECTED, SAVE :: iniz_walkers=.FALSE., iniz_pc=.FALSE.
 	LOGICAL :: flag_traccia_coppie_mol_ss
-	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: re_new(:,:), re_old(:,:), rp_new(:,:), rp_old(:,:)
+	REAL (KIND=8), ALLOCATABLE, SAVE :: re_new(:,:), re_old(:,:), rp_new(:,:), rp_old(:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: se1_new(:,:), se1_old(:,:), se2_new(:,:), se2_old(:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: sp1_new(:,:), sp1_old(:,:), sp2_new(:,:), sp2_old(:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_ee_new(:,:,:), rij_ee_old(:,:,:)

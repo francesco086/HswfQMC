@@ -440,6 +440,10 @@ MODULE variational_calculations
 			CALL valuta_Uep_YUK(-1,0,rij_ep_old,N_part,vwf_data(i_wf)%u_ep,vwf_data(i_wf)%Uep)
 		CASE ('yup') 
 			CALL valuta_Uep_YUK(-1,0,rijpc_ep_old,N_part,vwf_data(i_wf)%u_ep,vwf_data(i_wf)%Uep)
+      CASE ('spl')
+         CALL valuta_Uep_SPL(-1,rij_ep_old,N_part,vwf_data(i_wf)%u_ep,vwf_data(i_wf)%Uep)
+      CASE ('spp')
+         CALL valuta_Uep_SPL(-1,rijpc_ep_old,N_part,vwf_data(i_wf)%u_ep,vwf_data(i_wf)%Uep)
 		CASE ('no_') 
 			vwf_data(i_wf)%Uep=0.d0
 		CASE DEFAULT
@@ -826,6 +830,17 @@ MODULE variational_calculations
 					END IF
 				END IF
 			END IF
+      CASE ('spl','spp')
+         IF (opt_A_Jep.OR.opt_F_Jep) THEN
+            IF (split_Aep.OR.split_Fep) THEN
+               CALL derivata_Jep_SPL(O(cont:cont+(Jsplep%Nknots+1)*(Jsplep%m+1)+&
+                  (Jsplep_ud%Nknots+1)*(Jsplep_ud%m+1),i_mc))
+               cont=cont+(Jsplep%Nknots+1)*(Jsplep%m+1)+(Jsplep_ud%Nknots+1)*(Jsplep_ud%m+1)
+            ELSE
+               CALL derivata_Jep_SPL(O(cont:cont+(Jsplep%Nknots+1)*(Jsplep%m+1),i_mc))
+               cont=cont+(Jsplep%Nknots+1)*(Jsplep%m+1)
+            END IF
+         END IF
 		CASE ('atm')
 			CALL derivata_Jep_ATM(O(cont:cont,i_mc))
 			cont=cont+1

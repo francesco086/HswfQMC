@@ -985,6 +985,60 @@ MODULE estimatori
 			DO j = 1, N_part, 1
 				lep=lep+DOT_PRODUCT(gep(1:3,j),gep(1:3,j))
 			END DO
+		CASE ('spl')
+			DO i = 1, N_part, 1
+				DO j = 1, N_part, 1
+               IF (split_Aep.OR.split_Fep) THEN
+                  IF (((i<=H_N_part).AND.(j<=H_N_part)).OR.((i>H_N_part).AND.(j>H_N_part))) THEN
+                     CALL MSPL_compute(SPL=Jsplep, DERIV=1, R=rij_ep_old(0,j,i), VAL=frf3)
+                     CALL MSPL_compute(SPL=Jsplep, DERIV=2, R=rij_ep_old(0,j,i), VAL=frf5)
+                  ELSE
+                     CALL MSPL_compute(SPL=Jsplep_ud, DERIV=1, R=rij_ep_old(0,j,i), VAL=frf3)
+                     CALL MSPL_compute(SPL=Jsplep_ud, DERIV=2, R=rij_ep_old(0,j,i), VAL=frf5)
+                  END IF
+               ELSE
+                  CALL MSPL_compute(SPL=Jsplep, DERIV=1, R=rij_ep_old(0,j,i), VAL=frf3)
+                  CALL MSPL_compute(SPL=Jsplep, DERIV=2, R=rij_ep_old(0,j,i), VAL=frf5)
+               END IF
+               frf1(1:3)=rij_ep_old(1:3,j,i)/rij_ep_old(0,j,i)
+               gep(1:3,j)=gep(1:3,j)-0.5d0*frf3*frf1(1:3)
+
+               lep=lep-0.5d0*( 2.d0*frf3/rij_ep_old(0,j,i) + frf5 )
+				END DO
+			END DO
+         DO j = 1, N_part, 1
+            lep=lep+DOT_PRODUCT(gep(1:3,j),gep(1:3,j))
+         END DO
+		CASE ('spp')
+         frf2(1:3)=PI/L(1:3)
+			DO i = 1, N_part, 1
+				DO j = 1, N_part, 1
+               IF (split_Aep.OR.split_Fep) THEN
+                  IF (((i<=H_N_part).AND.(j<=H_N_part)).OR.((i>H_N_part).AND.(j>H_N_part))) THEN
+                     CALL MSPL_compute(SPL=Jsplep, DERIV=1, R=rijpc_ep_old(0,j,i), VAL=frf3)
+                     CALL MSPL_compute(SPL=Jsplep, DERIV=2, R=rijpc_ep_old(0,j,i), VAL=frf5)
+                  ELSE
+                     CALL MSPL_compute(SPL=Jsplep_ud, DERIV=1, R=rijpc_ep_old(0,j,i), VAL=frf3)
+                     CALL MSPL_compute(SPL=Jsplep_ud, DERIV=2, R=rijpc_ep_old(0,j,i), VAL=frf5)
+                  END IF
+               ELSE
+                  CALL MSPL_compute(SPL=Jsplep, DERIV=1, R=rijpc_ep_old(0,j,i), VAL=frf3)
+                  CALL MSPL_compute(SPL=Jsplep, DERIV=2, R=rijpc_ep_old(0,j,i), VAL=frf5)
+               END IF
+               frf1(1:3)=DCOS(frf2(1:3)*rij_ep_old(1:3,j,i))*rijpc_ep_old(1:3,j,i)/rijpc_ep_old(0,j,i)
+               gep(1:3,j)=gep(1:3,j)-0.5d0*frf3*frf1(1:3)
+
+               lep=lep-0.5d0*( frf3*(   &
+                  DOT_PRODUCT(DCOS(rij_ep_old(1:3,j,i)*frf2(1:3)),DCOS(rij_ep_old(1:3,j,i)*frf2(1:3)))/rijpc_ep_old(0,j,i) &
+                     - DOT_PRODUCT(rijpc_ep_old(1:3,j,i)*DCOS(rij_ep_old(1:3,j,i)*frf2(1:3)), &
+                        rijpc_ep_old(1:3,j,i)*DCOS(rij_ep_old(1:3,j,i)*frf2(1:3)))/(rijpc_ep_old(0,j,i)**3) &
+                     - DOT_PRODUCT(rijpc_ep_old(1:3,j,i)*frf2(1:3),rijpc_ep_old(1:3,j,i)*frf2(1:3))/rijpc_ep_old(0,j,i) &
+                  ) + frf5*DOT_PRODUCT(frf1(1:3),frf1(1:3)) )
+				END DO
+         END DO
+         DO j = 1, N_part, 1
+            lep=lep+DOT_PRODUCT(gep(1:3,j),gep(1:3,j))
+         END DO
 		CASE ('atm')
 			DO i = 1, N_part, 1
 				uep1=-0.5d0*Fep_yuk/rij_ep_old(0,i,i)
@@ -2457,6 +2511,77 @@ MODULE estimatori
 		O=O*0.5d0
 		
 	END SUBROUTINE derivata_Jep_YUK
+!-----------------------------------------------------------------------
+   SUBROUTINE  derivata_Jep_SPL(O)
+      IMPLICIT NONE
+       REAL(KIND=8), DIMENSION(:) :: O(:)
+       INTEGER :: i, j
+       REAL(KIND=8) :: td(0:Jsplep%m,0:Jsplep%Nknots), td_ud(0:Jsplep_ud%m,0:Jsplep_ud%Nknots)
+
+       SELECT CASE(Jep_kind)
+       CASE('spl')
+          IF (split_Aep.OR.split_Fep) THEN
+             td=0.d0
+             td_ud=0.d0
+             DO j = 1, N_part, 1
+             DO i = 1, N_part, 1
+               IF ( (i<=H_N_part .AND. j<=H_N_part) .OR. (i>H_N_part .AND. j>H_N_part) ) THEN
+                  CALL MSPL_t_deriv(SPL=Jsplep,R=rij_ep_old(0,i,j),&
+                     T_DERIV=td(0:Jsplep%m,0:Jsplep%Nknots),RESET=.FALSE.)
+               ELSE
+                  CALL MSPL_t_deriv(SPL=Jsplep_ud,R=rij_ep_old(0,i,j),&
+                     T_DERIV=td_ud(0:Jsplep_ud%m,0:Jsplep_ud%Nknots),RESET=.FALSE.)
+               END IF
+             END DO
+             END DO
+             O(1:(Jsplep%m+1)*(Jsplep%Nknots+1))=&
+                -0.5d0*RESHAPE(td(0:Jsplep%m,0:Jsplep%Nknots),(/(Jsplep%m+1)*(Jsplep%Nknots+1)/))
+             O((Jsplep%m+1)*(Jsplep%Nknots+1)+1:(Jsplep%m+1)*(Jsplep%Nknots+1)+(Jsplep_ud%m+1)*(Jsplep_ud%Nknots+1))=&
+                -0.5d0*RESHAPE(td(0:Jsplep_ud%m,0:Jsplep_ud%Nknots),(/(Jsplep_ud%m+1)*(Jsplep_ud%Nknots+1)/))
+          ELSE
+             td=0.d0
+             DO j = 1, N_part, 1
+             DO i = 1, N_part, 1
+                CALL MSPL_t_deriv(SPL=Jsplep,R=rij_ep_old(0,i,j),&
+                   T_DERIV=td(0:Jsplep%m,0:Jsplep%Nknots),RESET=.FALSE.)
+             END DO
+             END DO
+             O(1:(Jsplep%m+1)*(Jsplep%Nknots+1))=&
+                -0.5d0*RESHAPE(td(0:Jsplep%m,0:Jsplep%Nknots),(/(Jsplep%m+1)*(Jsplep%Nknots+1)/))
+          END IF
+       CASE('spp')
+          IF (split_Aep.OR.split_Fep) THEN
+             td=0.d0
+             td_ud=0.d0
+             DO j = 1, N_part, 1
+             DO i = 1, N_part, 1
+               IF ( (i<=H_N_part .AND. j<=H_N_part) .OR. (i>H_N_part .AND. j>H_N_part) ) THEN
+                  CALL MSPL_t_deriv(SPL=Jsplep,R=rijpc_ep_old(0,i,j),&
+                     T_DERIV=td(0:Jsplep%m,0:Jsplep%Nknots),RESET=.FALSE.)
+               ELSE
+                  CALL MSPL_t_deriv(SPL=Jsplep_ud,R=rijpc_ep_old(0,i,j),&
+                     T_DERIV=td_ud(0:Jsplep_ud%m,0:Jsplep_ud%Nknots),RESET=.FALSE.)
+               END IF
+             END DO
+             END DO
+             O(1:(Jsplep%m+1)*(Jsplep%Nknots+1))=&
+                -0.5d0*RESHAPE(td(0:Jsplep%m,0:Jsplep%Nknots),(/(Jsplep%m+1)*(Jsplep%Nknots+1)/))
+             O((Jsplep%m+1)*(Jsplep%Nknots+1)+1:(Jsplep%m+1)*(Jsplep%Nknots+1)+(Jsplep_ud%m+1)*(Jsplep_ud%Nknots+1))=&
+                -0.5d0*RESHAPE(td(0:Jsplep_ud%m,0:Jsplep_ud%Nknots),(/(Jsplep_ud%m+1)*(Jsplep_ud%Nknots+1)/))
+          ELSE
+             td=0.d0
+             DO j = 1, N_part, 1
+             DO i = 1, N_part, 1
+                CALL MSPL_t_deriv(SPL=Jsplep,R=rijpc_ep_old(0,i,j),&
+                   T_DERIV=td(0:Jsplep%m,0:Jsplep%Nknots),RESET=.FALSE.)
+             END DO
+             END DO
+             O(1:(Jsplep%m+1)*(Jsplep%Nknots+1))=&
+                -0.5d0*RESHAPE(td(0:Jsplep%m,0:Jsplep%Nknots),(/(Jsplep%m+1)*(Jsplep%Nknots+1)/))
+          END IF
+       END SELECT
+      
+   END SUBROUTINE  derivata_Jep_SPL
 !-----------------------------------------------------------------------
 SUBROUTINE derivata_Jep_ATM(O)
 	IMPLICIT NONE

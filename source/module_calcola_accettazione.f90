@@ -491,6 +491,11 @@ MODULE calcola_accettazione
 		CASE ('yup') 
 			CALL attiva_pc()
 			CALL valuta_Uep_YUK(-1,0,rijpc_ep_old,N_part,u_ep_old,Uep_old)
+      CASE ('spl')
+         CALL valuta_Uep_SPL(-1,rij_ep_old,N_part,u_ep_old,Uep_old)
+      CASE ('spp')
+         CALL attiva_pc()
+         CALL valuta_Uep_SPL(-1,rijpc_ep_old,N_part,u_ep_old,Uep_old)
 		CASE ('atm')
 			CALL valuta_Uep_ATM(-1,0,rij_ep_old,N_part,u_ep_old,Uep_old)
 		CASE ('atp') 
@@ -1177,6 +1182,7 @@ MODULE calcola_accettazione
 		REAL (KIND=8) :: M(1:H_N_part,1:H_N_part), work(1:3*H_N_part), detM
 				
 		contatore_interno=contatore_interno+1
+      !PRINT *, 'inizio valuta_accettazione', contatore_interno 
 		
 		flag_coppie=.FALSE.
 		IF (num_mc/=num_mc_old) THEN
@@ -1283,6 +1289,11 @@ MODULE calcola_accettazione
 					ELSE IF (tipo=='p__') THEN
 						CALL valuta_Uep_YUK(num,2,rijpc_ep_new,N_part,u_ep_new,Uep_new)
 					END IF
+				CASE ('spl')
+					CALL valuta_Uep_SPL(num,rij_ep_new,N_part,u_ep_new,Uep_new)
+				CASE ('spp')
+					CALL calcola_nuove_distanze_pc(tipo,num,'e_p_')
+					CALL valuta_Uep_SPL(num,rijpc_ep_new,N_part,u_ep_new,Uep_new)
 				CASE ('atm')
 					IF ((tipo=='all') .OR. (tipo=='e__')) THEN
 						CALL valuta_Uep_ATM(num,1,rij_ep_new,N_part,u_ep_new,Uep_new)
@@ -1662,6 +1673,11 @@ MODULE calcola_accettazione
 					ELSE IF (tipo=='p__') THEN
 						CALL valuta_Uep_YUK(num,2,rijpc_ep_new,N_part,u_ep_new,Uep_new)
 					END IF
+				CASE ('spl')
+					CALL valuta_Uep_SPL(num,rij_ep_new,N_part,u_ep_new,Uep_new)
+				CASE ('spp')
+					CALL calcola_nuove_distanze_pc(tipo,num,'e_p_')
+					CALL valuta_Uep_SPL(num,rijpc_ep_new,N_part,u_ep_new,Uep_new)
 				CASE ('atm')
 					IF ((tipo=='e__') .OR. (tipo=='tre')) THEN
 						CALL valuta_Uep_ATM(num,1,rij_ep_new,N_part,u_ep_new,Uep_new)

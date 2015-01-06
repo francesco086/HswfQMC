@@ -101,16 +101,17 @@ MODULE dati_mc
 !-----------------------------------------------------------------------
 
 	SUBROUTINE change_step(rapp_step,quale)
+      USE dati_fisici
 		IMPLICIT NONE
 		REAL (KIND=8), INTENT(IN) :: rapp_step
 		CHARACTER(LEN=3) :: quale
 		SELECT CASE (quale)
 		CASE ('e__')
-			step_e=step_e+step_e*rapp_step
+			step_e=MIN(step_e+step_e*rapp_step,MAXVAL(L))
 		CASE ('p__')
-			step_p=step_p+step_p*rapp_step
+			step_p=MIN(step_p+step_p*rapp_step,MAXVAL(L))
 		CASE ('se_')
-			step_se=step_se+step_se*rapp_step
+			step_se=MIN(step_se+step_se*rapp_step,MAXVAL(L))
 		END SELECT
 	END SUBROUTINE change_step
 !-----------------------------------------------------------------------

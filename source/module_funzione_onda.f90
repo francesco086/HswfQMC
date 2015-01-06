@@ -59,7 +59,7 @@ MODULE funzione_onda
 		REAL (KIND=8), ALLOCATABLE :: dummy(:,:,:)
 		NAMELIST /dati_funzione_onda/ SDe_kind, Jee_kind, Jep_kind, Jpp_kind, SDse_kind, Jse_kind, &
 		  Kse_kind, Jsesp_kind, split_Aee, split_Aep, split_Asese, split_Asesp, split_Fee, split_Fep, split_Fsese, &
-        split_Fsesp, m_Jsplee, nknots_Jsplee, cutoff_Jsplee, &
+        split_Fsesp, m_Jsplee, nknots_Jsplee, cutoff_Jsplee, m_Jsplep, nknots_Jsplep, cutoff_Jsplep, &
 		  Aee_yuk, Aee_ud_yuk, Fee_yuk, Fee_ud_yuk, Aep_yuk, Aep_ud_yuk, Fep_yuk, Fep_ud_yuk, &
 		  C_kern_e, Asese_yuk, Asese_ud_yuk, Fsese_yuk, Fsese_ud_yuk, Asesp_yuk, Asesp_ud_yuk, Fsesp_yuk, &
 		  Fsesp_ud_yuk, Gswf, C_atm, N_ritraccia_coppie, N_mc_relax_traccia_coppie, A_POT_se, D_POT_se, Gsesp, c_se, &
@@ -302,7 +302,7 @@ MODULE funzione_onda
          ELSE
             !IF (mpi_myrank==0) PRINT *, "I dati per la spline Jep non sono presenti. &
             !   Inizializzo fittando il Jastrow Yukawa."
-            CALL MSPL_fit_function(SPL=Jsplep,F=Jeeyuk)
+            CALL MSPL_fit_function(SPL=Jsplep,F=Jepyuk)
          END IF
 
          IF (split_Aee.OR.split_Fee) THEN
@@ -314,7 +314,7 @@ MODULE funzione_onda
             ELSE
                !IF (mpi_myrank==0) PRINT *, "I dati per la spline Jep_ud non sono presenti. &
                !   Inizializzo fittando il Jastrow Yukawa"
-               CALL MSPL_fit_function(SPL=Jsplep_ud,F=Jeeyuk_ud)
+               CALL MSPL_fit_function(SPL=Jsplep_ud,F=Jepyuk_ud)
             END IF
          END IF
       END IF
@@ -354,6 +354,7 @@ MODULE funzione_onda
 		iniz_funzione_onda=.TRUE.
 				
 	END SUBROUTINE inizializza_dati_funzione_onda
+
 !-----------------------------------------------------------------------
    FUNCTION Jeeyuk(i,x)
       USE dati_fisici
@@ -404,7 +405,56 @@ MODULE funzione_onda
 		      [ module_funzione_onda.f90 > Jeeyuk ]'
       END SELECT
    END FUNCTION Jeeyuk_ud
-
+!-----------------------------------------------------------------------
+   FUNCTION Jepyuk(i,x)
+      USE dati_fisici
+      IMPLICIT NONE
+      REAL(KIND=8) :: Jepyuk
+      INTEGER, INTENT(IN) :: i
+      REAL(KIND=8), INTENT(IN) :: x
+      REAL(KIND=8) :: y
+      IF (x<1.d-5) THEN
+         y=1.d-5
+      ELSE 
+         y=x
+      END IF
+      SELECT CASE(i)
+      CASE(0)
+         Jepyuk = Aep_yuk*(1.d0-DEXP(-Fep_yuk*y))/y
+      CASE(1)
+         Jepyuk = Aep_yuk*(1.d0 - DEXP(Fep_yuk*y) + Fep_yuk*y)/(DEXP(Fep_yuk*y)*(y*y)) 
+      CASE(2)
+         Jepyuk = (Aep_yuk*(-2.d0 + 2.d0* DEXP(Fep_yuk* y) - 2.d0* Fep_yuk* y - (Fep_yuk*y)**2))/(DEXP(Fep_yuk*y)*(y**3))
+      CASE DEFAULT
+		   STOP 'La spline richiede una derivata di ordine superiore al 2, che non e stata implementata &
+		      [ module_funzione_onda.f90 > Jeeyuk ]'
+      END SELECT
+   END FUNCTION Jepyuk
+!-----------------------------------------------------------------------
+   FUNCTION Jepyuk_ud(i,x)
+      USE dati_fisici
+      IMPLICIT NONE
+      REAL(KIND=8) :: Jepyuk_ud
+      INTEGER, INTENT(IN) :: i
+      REAL(KIND=8), INTENT(IN) :: x
+      REAL(KIND=8) :: y
+      IF (x<1.d-5) THEN
+         y=1.d-5
+      ELSE 
+         y=x
+      END IF
+      SELECT CASE(i)
+      CASE(0)
+         Jepyuk_ud = Aep_yuk*(1.d0-DEXP(-Fep_yuk*y))/y
+      CASE(1)
+         Jepyuk_ud = Aep_yuk*(1.d0 - DEXP(Fep_yuk*y) + Fep_yuk*y)/(DEXP(Fep_yuk*y)*(y*y)) 
+      CASE(2)
+         Jepyuk_ud = (Aep_yuk*(-2.d0 + 2.d0* DEXP(Fep_yuk* y) - 2.d0* Fep_yuk* y - (Fep_yuk*y)**2))/(DEXP(Fep_yuk*y)*(y**3))
+      CASE DEFAULT
+		   STOP 'La spline richiede una derivata di ordine superiore al 2, che non e stata implementata &
+		      [ module_funzione_onda.f90 > Jeeyuk ]'
+      END SELECT
+   END FUNCTION Jepyuk_ud
 !-----------------------------------------------------------------------
 
 	SUBROUTINE stampa_file_dati_funzione_onda(nome_file)
@@ -412,7 +462,7 @@ MODULE funzione_onda
 		CHARACTER(LEN=*) :: nome_file
 		NAMELIST /dati_funzione_onda/ SDe_kind, Jee_kind, Jep_kind, Jpp_kind, SDse_kind, Jse_kind, &
 		  Kse_kind, Jsesp_kind, split_Aee, split_Aep, split_Asese, split_Asesp, split_Fee, split_Fep, split_Fsese, &
-		  split_Fsesp, m_Jsplee, nknots_Jsplee, cutoff_Jsplee, &
+		  split_Fsesp, m_Jsplee, nknots_Jsplee, cutoff_Jsplee, m_Jsplep, nknots_Jsplep, cutoff_Jsplep, &
         Aee_yuk, Aee_ud_yuk, Fee_yuk, Fee_ud_yuk, Aep_yuk, Aep_ud_yuk, Fep_yuk, Fep_ud_yuk, &
 		  C_kern_e, Asese_yuk, Asese_ud_yuk, Fsese_yuk, Fsese_ud_yuk, Asesp_yuk, Asesp_ud_yuk, Fsesp_yuk, &
 		  Fsesp_ud_yuk, Gswf, C_atm, N_ritraccia_coppie, N_mc_relax_traccia_coppie, A_POT_se, D_POT_se, Gsesp, c_se, &
@@ -443,6 +493,11 @@ MODULE funzione_onda
       IF ((Jee_kind=='spl').OR.(Jee_kind=='spp')) THEN
          CALL MSPL_store(SPL=Jsplee,FILENAME=nome_file//"-Jsplee")
          IF (split_Aee.OR.split_Fee) CALL MSPL_store(SPL=Jsplee_ud,FILENAME=nome_file//"-Jsplee_ud")
+      END IF
+
+      IF ((Jep_kind=='spl').OR.(Jep_kind=='spp')) THEN
+         CALL MSPL_store(SPL=Jsplep,FILENAME=nome_file//"-Jsplep")
+         IF (split_Aep.OR.split_Fep) CALL MSPL_store(SPL=Jsplep_ud,FILENAME=nome_file//"-Jsplep_ud")
       END IF
 		
 	END SUBROUTINE stampa_file_dati_funzione_onda
@@ -618,6 +673,24 @@ MODULE funzione_onda
 						END IF
 					END IF
 				END IF
+         CASE ('spl','spp')
+            IF (opt_A_Jep.OR.opt_F_Jep) THEN
+               IF (split_Aep.OR.split_Fep) THEN
+                  Jsplep%t(0:Jsplep%m,0:Jsplep%Nknots)=&
+                     RESHAPE(nuovi_parametri(cont:cont+(Jsplep%m+1)*(Jsplep%Nknots+1)-1),&
+                     (/Jsplep%m+1,Jsplep%Nknots+1/))
+                  cont=cont+(Jsplep%m+1)*(Jsplep%Nknots+1)
+                  Jsplep_ud%t(0:Jsplep_ud%m,0:Jsplep_ud%Nknots)=&
+                     RESHAPE(nuovi_parametri(cont:cont+(Jsplep_ud%m+1)*(Jsplep_ud%Nknots+1)-1),&
+                     (/Jsplep_ud%m+1,Jsplep_ud%Nknots+1/))
+                  cont=cont+(Jsplep_ud%m+1)*(Jsplep_ud%Nknots+1)
+               ELSE
+                  Jsplep%t(0:Jsplep%m,0:Jsplep%Nknots)=&
+                     RESHAPE(nuovi_parametri(cont:cont+(Jsplep%m+1)*(Jsplep%Nknots+1)-1),&
+                     (/Jsplep%m+1,Jsplep%Nknots+1/))
+                  cont=cont+(Jsplep%m+1)*(Jsplep%Nknots+1)
+               END IF
+            END IF
 			CASE ('atm')
 				Fep_yuk=nuovi_parametri(cont)
 				cont=cont+1
@@ -626,6 +699,7 @@ MODULE funzione_onda
 				cont=cont+1
 			END SELECT
 		END IF
+
 		IF (Kse_kind/='no_') THEN
 			IF (opt_Kse) THEN
 				SELECT CASE (Kse_kind)
@@ -658,6 +732,7 @@ MODULE funzione_onda
 				END SELECT
 			END IF
 		END IF
+
 		IF (Jse_kind/='no_') THEN
 			IF (opt_Jse) THEN
 				SELECT CASE (Jse_kind)
@@ -945,14 +1020,7 @@ MODULE funzione_onda
 						                  'Fee_yuk=', Fee_yuk
 					END IF
 				END IF
-         CASE ('spl')
-            PRINT '(6X,A5,A3,A9,I1,5X,A7,I4,5X,A7,L1,5X,A11,L1)', &
-               'Jee: ', Jee_kind, '   -   m=', m_Jsplee,'nknots=',nknots_Jsplee,'cutoff=',cutoff_Jsplee,'spin-split=',(split_Aee&
-               .OR.split_Fee)
-            IF (flag_output)  WRITE(UNIT=7, FMT='(6X,A5,A3,A9,I1,5X,A7,I4,5X,A7,L1,5X,A11,L1)'), & 
-               'Jee: ', Jee_kind, '   -   m=', m_Jsplee,'nknots=',nknots_Jsplee,'cutoff=',cutoff_Jsplee,'spin-split=',(split_Aee&
-               .OR.split_Fee)
-         CASE ('spp')
+         CASE ('spl','spp')
             PRINT '(6X,A5,A3,A9,I1,5X,A7,I4,5X,A7,L1,5X,A11,L1)', &
                'Jee: ', Jee_kind, '   -   m=', m_Jsplee,'nknots=',nknots_Jsplee,'cutoff=',cutoff_Jsplee,'spin-split=',(split_Aee&
                .OR.split_Fee)
@@ -1016,6 +1084,13 @@ MODULE funzione_onda
 						  'Jep: ',Jep_kind,'   -   Aep_yuk=', Aep_yuk, 'Fep_yuk=', Fep_yuk
 					END IF
 				END IF
+         CASE ('spl','spp')
+            PRINT '(6X,A5,A3,A9,I1,5X,A7,I4,5X,A7,L1,5X,A11,L1)', &
+               'Jep: ', Jep_kind, '   -   m=', m_Jsplep,'nknots=',nknots_Jsplep,'cutoff=',cutoff_Jsplep,&
+               'spin-split=',(split_Aep.OR.split_Fep)
+            IF (flag_output)  WRITE(UNIT=7, FMT='(6X,A5,A3,A9,I1,5X,A7,I4,5X,A7,L1,5X,A11,L1)'), & 
+               'Jep: ', Jep_kind, '   -   m=', m_Jsplep,'nknots=',nknots_Jsplep,'cutoff=',cutoff_Jsplep,&
+               'spin-split=',(split_Aep.OR.split_Fep)
 			CASE ('atm')
 				PRINT '(6X,A5,A3,A15,1F9.3)', &
 				  'Jep: ',Jep_kind,'   -   Fep_yuk=', Fep_yuk
@@ -2218,7 +2293,7 @@ MODULE funzione_onda
 					IF ( (i<=H_N .AND. num<=H_N) .OR. (i>H_N .AND. num>H_N) ) THEN
                   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij(0,i,num), VAL=u_ee(i,num))
 					ELSE
-                  CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij(0,i,num), VAL=u_ee(i,num))
+                  CALL MSPL_compute(SPL=Jsplee_ud, DERIV=0, R=rij(0,i,num), VAL=u_ee(i,num))
 					END IF
 					Uee=Uee+u_ee(i,num)
 				END DO
@@ -2227,7 +2302,7 @@ MODULE funzione_onda
 					IF ( (i<=H_N .AND. num<=H_N) .OR. (i>H_N .AND. num>H_N) ) THEN
                   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij(0,num,i), VAL=u_ee(num,i))
 					ELSE
-                  CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij(0,num,i), VAL=u_ee(num,i))
+                  CALL MSPL_compute(SPL=Jsplee_ud, DERIV=0, R=rij(0,num,i), VAL=u_ee(num,i))
 					END IF
 					Uee=Uee+u_ee(num,i)
 				END DO
@@ -2394,7 +2469,6 @@ MODULE funzione_onda
 						  [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
 					END IF
 				ELSE
-					!PRINT * , 'qui2'
 					IF (eop==1) THEN
 						DO i = 1, N, 1
 							Uep=Uep-u_ep(num,i)
@@ -2420,6 +2494,67 @@ MODULE funzione_onda
 		
 		IF (verbose_mode) PRINT * , 'funzione_onda: Uep(yuk)=', Uep
 	END SUBROUTINE valuta_Uep_YUK
+!-----------------------------------------------------------------------
+	SUBROUTINE valuta_Uep_SPL(num,rij,N,u_ep,Uep)
+		IMPLICIT NONE
+		INTEGER, INTENT(IN) :: N, num
+		INTEGER :: i, j, H_N
+		REAL (KIND=8), INTENT(IN) :: rij(0:3,1:N,1:N)
+		REAL (KIND=8) :: u_ep(1:N,1:N), Uep
+		
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
+		  [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
+
+      !PRINT *, MAXVAL(rij(0,:,:))
+      !IF (MAXVAL(rij(0,:,:))>100.) STOP 
+	
+		H_N=N/2
+		IF (num==-1) THEN
+			Uep=0.d0
+			IF (split_Aep.OR.split_Fep) THEN
+				DO j = 1, N, 1
+					DO i = 1, N, 1
+						IF ( (i<=H_N .AND. j<=H_N) .OR. (i>H_N .AND. j>H_N) ) THEN
+                     CALL MSPL_compute(SPL=Jsplep, DERIV=0, R=rij(0,i,j), VAL=u_ep(i,j))
+						ELSE
+                     CALL MSPL_compute(SPL=Jsplep_ud, DERIV=0, R=rij(0,i,j), VAL=u_ep(i,j))
+						END IF
+						Uep=Uep+u_ep(i,j)
+					END DO
+				END DO
+			ELSE
+				DO j = 1, N, 1
+					DO i = 1, N, 1
+                  CALL MSPL_compute(SPL=Jsplep, DERIV=0, R=rij(0,i,j), VAL=u_ep(i,j))
+						Uep=Uep+u_ep(i,j)
+					END DO
+				END DO
+			END IF
+		ELSE IF ((num>0) .AND. (num<=N)) THEN
+			IF (split_Aep.OR.split_Fep) THEN
+				DO i = 1, N, 1
+					Uep=Uep-u_ep(num,i)
+					IF ( (i<=H_N .AND. num<=H_N) .OR. (i>H_N .AND. num>H_N) ) THEN
+                  CALL MSPL_compute(SPL=Jsplep, DERIV=0, R=rij(0,num,i), VAL=u_ep(num,i))
+					ELSE
+                  CALL MSPL_compute(SPL=Jsplep_ud, DERIV=0, R=rij(0,num,i), VAL=u_ep(num,i))
+					END IF
+					Uep=Uep+u_ep(num,i)
+				END DO
+			ELSE
+				DO i = 1, N, 1
+					Uep=Uep-u_ep(num,i)
+               CALL MSPL_compute(SPL=Jsplep, DERIV=0, R=rij(0,num,i), VAL=u_ep(num,i))
+					Uep=Uep+u_ep(num,i)
+				END DO
+			END IF
+		ELSE
+			STOP 'num non accettabile &
+			  [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
+		END IF
+		
+		IF (verbose_mode) PRINT * , 'funzione_onda: Uep(yuk)=', Uep
+	END SUBROUTINE valuta_Uep_SPL
 !-----------------------------------------------------------------------
 	SUBROUTINE valuta_Uep_ATM(num,eop,rij,N,u_ep,Uep)
 		IMPLICIT NONE
@@ -3336,6 +3471,10 @@ MODULE funzione_onda
       IF ((Jee_kind=='spl').OR.(Jee_kind=='spp')) THEN
          CALL MSPL_deallocate(SPL=Jsplee)
          IF (split_Aee.OR.split_Fee) CALL MSPL_deallocate(SPL=Jsplee_ud) 
+      END IF
+      IF ((Jep_kind=='spl').OR.(Jep_kind=='spp')) THEN
+         CALL MSPL_deallocate(SPL=Jsplep)
+         IF (split_Aep.OR.split_Fep) CALL MSPL_deallocate(SPL=Jsplep_ud) 
       END IF
 		IF ((Jsesp_kind=='bou') .OR. (Jsesp_kind=='ppb')) THEN
 			DEALLOCATE(coppie)
