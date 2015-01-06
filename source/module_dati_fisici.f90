@@ -6,7 +6,7 @@ MODULE dati_fisici
 	INTEGER, PROTECTED, SAVE :: N_part, H_N_part, N_cell_side
 	REAL (KIND=8), PARAMETER, PRIVATE :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
 	REAL (KIND=8), PARAMETER :: MASS_e=0.0005485899094d0, MASS_p=1.00727646677d0   !in uma
-	REAL (KIND=8), PROTECTED, SAVE :: r_s, L(1:3), H_L(1:3), L_cov_bond
+	REAL (KIND=8), PROTECTED, SAVE :: r_s, L(1:3), H_L(1:3), Lmaxdist, L_cov_bond
 	REAL (KIND=8), PROTECTED, SAVE :: hbar, K_coulomb, strecthing_cov_bond
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: r_crystal(:,:)
 	
@@ -74,13 +74,14 @@ MODULE dati_fisici
 			L(2)=L(2)*(((3.d0**3.d0)/(2.d0**5.d0))**(1.d0/6.d0))
 			L(3)=L(3)*((2.d0**(2.d0/3.d0))/(3**(1.d0/2.d0)))   *(1.58d0/DSQRT(8.d0/3.d0))
 		END IF
-		H_L=0.5d0*L
 		IF ( crystal_cell=='grp__' ) THEN
 			L(1:2)=r_s*DSQRT(PI*N_part)
 			L(1)=L(1)*3.d0/DSQRT(DSQRT(27.d0))
 			L(2)=L(2)*DSQRT(3.d0)/DSQRT(DSQRT(27.d0))
 			L(3)=L(1)
 		END IF
+		H_L=0.5d0*L
+      Lmaxdist=DSQRT(DOT_PRODUCT(H_L,H_L))
 		
 		ALLOCATE(r_crystal(1:3,1:N_part),app(1:3,1:N_part))
 		IF ( crystal_cell=='bcc__' ) THEN

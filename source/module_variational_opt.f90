@@ -795,7 +795,7 @@ MODULE variational_opt
 		USE variational_calculations
 		IMPLICIT NONE
 		LOGICAL, INTENT(OUT) :: accettabile
-		CHARACTER(LEN=2) :: id
+		CHARACTER(LEN=*) :: id
 		INTEGER :: num, i
 		REAL (KIND=8) :: par(1:num), energia(1:2), par_pt(1:num,1)
 		
@@ -1181,7 +1181,7 @@ MODULE variational_opt
 		LOGICAL, INTENT(IN) :: auto_stop, AV_accu
 		INTEGER (KIND=4), INTENT(IN) :: N
 		LOGICAL :: flag_loop, loop_stop(1:6), accettabile, flag_file, flag_trovato_minimo, flag_freeze
-		CHARACTER(LEN=2) :: id
+		CHARACTER(LEN=6) :: id
 		CHARACTER(LEN=4) :: stringa, istring
 		INTEGER :: i, j, info, contatore, IO, i_orbit, AV_cont
       INTEGER :: lwork
@@ -1201,11 +1201,12 @@ MODULE variational_opt
 
 		lambda2=1.d0
 		lambda2_Rp=1.d0
-		id='SR'
 		i_orbit=1
 		AV_cont=0
 		AV_P=0.d0
 		contatore=0
+      WRITE (istring, '(I4.4)'), contatore
+      id='SR'//istring
       minE_AV=(/ 100.d0, 0.d0 /)
 		
       lwork=10*N
@@ -1271,6 +1272,8 @@ MODULE variational_opt
 				
 		DO WHILE (flag_loop)
 			contatore=contatore+1
+         WRITE (istring, '(I4.4)'), contatore
+         id='SR'//istring
 			CALL SR_campiona_wf_attuale(id,p0,N,energia,accettabile)
 
 			IF (mpi_myrank==0) WRITE (8, *), cont_step, energia(1:2)
@@ -1520,27 +1523,29 @@ MODULE variational_opt
 				DO i = 1, N, 1        !evita cambi di parametri troppo bruschi
 					IF ( i<=N-num_coord_Rp ) THEN
 						vec_app(i)=dp(i)*lambda*lambda2/p0(i)       
-						IF (DABS(vec_app(i))>MAX_VAR_ACC) THEN
-							IF (mpi_myrank==0) PRINT '(A46,I3,A12,F9.3,A3,F9.3)', &
-							  'VAR_OPT: lambda2 troppo grande per parametro ', i, '. Riduco da ', lambda2, ' a ', &
-							  DABS(p0(i)*MAX_VAR_ACC/(dp(i)*lambda))
-							IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, '(A46,I3,A12,F9.3,A3,F9.3)'), &
-							  'VAR_OPT: lambda2 troppo grande per parametro ', i, '. Riduco da ', lambda2, ' a ', &
-							  DABS(p0(i)*MAX_VAR_ACC/(dp(i)*lambda))
-							lambda2=DABS(p0(i)*MAX_VAR_ACC/(dp(i)*lambda))
-						END IF
+                  !!riduce lambda2 in modo da non cambiare mai i parametri piu' di MAX_VAR_ACC
+						!IF (DABS(vec_app(i))>MAX_VAR_ACC) THEN
+						!	IF (mpi_myrank==0) PRINT '(A46,I3,A12,F9.3,A3,F9.3)', &
+						!	  'VAR_OPT: lambda2 troppo grande per parametro ', i, '. Riduco da ', lambda2, ' a ', &
+						!	  DABS(p0(i)*MAX_VAR_ACC/(dp(i)*lambda))
+						!	IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, '(A46,I3,A12,F9.3,A3,F9.3)'), &
+						!	  'VAR_OPT: lambda2 troppo grande per parametro ', i, '. Riduco da ', lambda2, ' a ', &
+						!	  DABS(p0(i)*MAX_VAR_ACC/(dp(i)*lambda))
+						!	lambda2=DABS(p0(i)*MAX_VAR_ACC/(dp(i)*lambda))
+						!END IF
 						IF ((DABS(vec_app(i))>MIN_VAR_NEC).AND.(i<=N-num_coord_Rp)) flag_loop=.TRUE.
 					ELSE          !evita cambi di Rp troppo bruschi
 						vec_app(i)=dp(i)*lambda_Rp*lambda2_Rp/MINVAL(L)   
-						IF (DABS(vec_app(i))>MAX_VAR_PROT) THEN
-							IF (mpi_myrank==0) PRINT '(A49,I3,A12,F9.3,A3,F9.3)', &
-							  'VAR_OPT: lambda2_Rp troppo grande per parametro ', i, '. Riduco da ', lambda2_Rp, ' a ', &
-							  DABS(MINVAL(L)*MAX_VAR_PROT/(dp(i)*lambda_Rp))
-							IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, '(A49,I3,A12,F9.3,A3,F9.3)'), &
-							  'VAR_OPT: lambda2_Rp troppo grande per parametro ', i, '. Riduco da ', lambda2_Rp, ' a ', &
-							  DABS(MINVAL(L)*MAX_VAR_PROT/(dp(i)*lambda_Rp))
-							lambda2_Rp=DABS(MINVAL(L)*MAX_VAR_PROT/(dp(i)*lambda_Rp))
-						END IF
+                  !!riduce lambda2 in modo da non cambiare mai i parametri piu' di MAX_VAR_ACC
+						!IF (DABS(vec_app(i))>MAX_VAR_PROT) THEN
+						!	IF (mpi_myrank==0) PRINT '(A49,I3,A12,F9.3,A3,F9.3)', &
+						!	  'VAR_OPT: lambda2_Rp troppo grande per parametro ', i, '. Riduco da ', lambda2_Rp, ' a ', &
+						!	  DABS(MINVAL(L)*MAX_VAR_PROT/(dp(i)*lambda_Rp))
+						!	IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, '(A49,I3,A12,F9.3,A3,F9.3)'), &
+						!	  'VAR_OPT: lambda2_Rp troppo grande per parametro ', i, '. Riduco da ', lambda2_Rp, ' a ', &
+						!	  DABS(MINVAL(L)*MAX_VAR_PROT/(dp(i)*lambda_Rp))
+						!	lambda2_Rp=DABS(MINVAL(L)*MAX_VAR_PROT/(dp(i)*lambda_Rp))
+						!END IF
 						IF ((DABS(vec_app(i))>MIN_VAR_NEC).AND.(i<=N-num_coord_Rp)) flag_loop=.TRUE.
 					END IF
 				END DO
@@ -1652,8 +1657,16 @@ MODULE variational_opt
 				CALL inizializza_dati_funzione_onda()
 				CALL setta_parametri(p0,N)
 				IF (mpi_myrank==0) CALL stampa_file_dati_funzione_onda('ottimizzazione/SR_wf.d')
-				IF ((mpi_myrank==0).AND.(opt_Rp)) WRITE (istring, '(I4.4)'), contatore
+				IF (mpi_myrank==0) WRITE (istring, '(I4.4)'), contatore
 				IF ((mpi_myrank==0).AND.(opt_Rp)) CALL stampa_file_Rp('reticolo/SR_Rp-'//istring//'.d')
+            IF ((Jee_kind=='spl').OR.(Jee_kind=='spp')) THEN
+               IF (mpi_myrank==0) THEN
+                  CALL MSPL_print_on_file(SPL=Jsplee, DERIV=0, FILENAME='ottimizzazione/splines/Jsplee'//istring//'.d',&
+                     NPOINTS=INT(N_hist,4) ) 
+                  IF (split_Aee.OR.split_Fee) CALL MSPL_print_on_file(SPL=Jsplee_ud, DERIV=0,&
+                     FILENAME='ottimizzazione/splines/Jsplee_ud.'//istring, NPOINTS=INT(N_hist,4) )
+               END IF
+            END IF
 				CALL chiudi_dati_fisici()
 				CALL chiudi_dati_mc()
 				CALL chiudi_walkers()

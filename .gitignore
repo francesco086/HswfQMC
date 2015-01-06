@@ -64,3 +64,4 @@ source/*.mod
 HswfQMC*
 source/HswfQMC*
 lapack_lib
+markuspline

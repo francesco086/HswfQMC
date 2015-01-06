@@ -56,7 +56,7 @@ do
 			;;
 		set_dir)
 			echo "Make the current folder a working folder (with all necessary input files and folders)"
-			mkdir estimatori estimatori/gradiente ottimizzazione posizioni reticolo
+			mkdir estimatori estimatori/gradiente ottimizzazione ottimizzazione/splines posizioni reticolo
 			cp ${pilot_PATH}/input_templates/* .
 			PATHRANDOM="${pilot_PATH}/random_seed"
 			sed -i.sedbak "s|RANDOM_SEED_FOLDER|${PATHRANDOM}|" dati_mc.d
@@ -176,6 +176,7 @@ do
 				mkdir -v posizioni
 				mkdir -v estimatori/gradiente
 				mkdir -v ottimizzazione
+            mkdir -v ottimizzazione/splines
 			else
 				echo "Aborted"
 			fi

@@ -253,12 +253,31 @@ MODULE funzione_onda
 
       !Costruisce spline per il Jee
       IF ((Jee_kind=='spl').OR.(Jee_kind=='spp')) THEN
-         CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=MINVAL(L) , SPL=Jsplee, CUTOFF=cutoff_Jsplee )
-         CALL MSPL_fit_function(SPL=Jsplee,F=Jeeyuk)
-         IF ((split_Aee).OR.(split_Fee)) THEN
-            CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=MINVAL(L) , SPL=Jsplee_ud, CUTOFF=cutoff_Jsplee ) 
-            CALL MSPL_fit_function(SPL=Jsplee_ud,F=Jeeyuk_ud)
+         
+         CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=Lmaxdist , SPL=Jsplee, &
+            CUTOFF=cutoff_Jsplee )
+         INQUIRE(FILE=path_dati_funzione_onda//"-Jsplee",EXIST=flag_file)
+         IF (flag_file) THEN
+            CALL MSPL_load(SPL=Jsplee,FILENAME=path_dati_funzione_onda//"-Jsplee")
+         ELSE
+            !IF (mpi_myrank==0) PRINT *, "I dati per la spline Jee non sono presenti. &
+            !   Inizializzo fittando il Jastrow Yukawa."
+            CALL MSPL_fit_function(SPL=Jsplee,F=Jeeyuk)
          END IF
+
+         IF (split_Aee.OR.split_Fee) THEN
+            CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=Lmaxdist , SPL=Jsplee_ud, &
+               CUTOFF=cutoff_Jsplee ) 
+            INQUIRE(FILE=path_dati_funzione_onda//"-Jsplee_ud",EXIST=flag_file)
+            IF (flag_file) THEN
+               CALL MSPL_load(SPL=Jsplee_ud,FILENAME=path_dati_funzione_onda//"-Jsplee_ud")
+            ELSE
+               !IF (mpi_myrank==0) PRINT *, "I dati per la spline Jee_ud non sono presenti. &
+               !   Inizializzo fittando il Jastrow Yukawa"
+               CALL MSPL_fit_function(SPL=Jsplee_ud,F=Jeeyuk_ud)
+            END IF
+         END IF
+
       END IF
 		                                                         
 		IF ((Jsesp_kind=='bou') .OR. (Jsesp_kind=='ppb')) THEN   
@@ -298,6 +317,7 @@ MODULE funzione_onda
 	END SUBROUTINE inizializza_dati_funzione_onda
 !-----------------------------------------------------------------------
    FUNCTION Jeeyuk(i,x)
+      USE dati_fisici
       IMPLICIT NONE
       REAL(KIND=8) :: Jeeyuk
       INTEGER, INTENT(IN) :: i
@@ -322,6 +342,7 @@ MODULE funzione_onda
    END FUNCTION Jeeyuk
 !-----------------------------------------------------------------------
    FUNCTION Jeeyuk_ud(i,x)
+      USE dati_fisici
       IMPLICIT NONE
       REAL(KIND=8) :: Jeeyuk_ud
       INTEGER, INTENT(IN) :: i
@@ -379,6 +400,11 @@ MODULE funzione_onda
 			WRITE (2, *), c_eff_dnfH
 			CLOSE(2)
 		END IF
+
+      IF ((Jee_kind=='spl').OR.(Jee_kind=='spp')) THEN
+         CALL MSPL_store(SPL=Jsplee,FILENAME=nome_file//"-Jsplee")
+         IF (split_Aee.OR.split_Fee) CALL MSPL_store(SPL=Jsplee_ud,FILENAME=nome_file//"-Jsplee_ud")
+      END IF
 		
 	END SUBROUTINE stampa_file_dati_funzione_onda
 !-----------------------------------------------------------------------
