@@ -6,9 +6,9 @@ MODULE funzione_onda
 	INTEGER, SAVE :: num_chiamata_twist_lda
 	COMPLEX (KIND=8), SAVE, ALLOCATABLE :: c_eff_dnfH(:,:)
 	REAL (KIND=8), SAVE :: Aee_yuk, Aee_ud_yuk, Fee_yuk, Fee_ud_yuk                      !per gli pseudopotenziali di Yukawa
-   TYPE(MSPLINE) :: Jsplee, Jsplee_ud
-   INTEGER :: m_Jsplee, nknots_Jsplee
-   LOGICAL :: cutoff_Jsplee
+   TYPE(MSPLINE) :: Jsplee, Jsplee_ud, Jsplep, Jsplep_ud
+   INTEGER :: m_Jsplee, nknots_Jsplee, m_Jsplep, nknots_Jsplep
+   LOGICAL :: cutoff_Jsplee, cutoff_Jsplep
 	REAL (KIND=8), SAVE :: Aep_yuk, Aep_ud_yuk, Fep_yuk, Fep_ud_yuk
 	REAL (KIND=8), SAVE :: C_kern_e                                             !per il kernel
 	REAL (KIND=8), SAVE :: alpha0_kern_e, alpha1_kern_e, beta0_kern_e, beta1_kern_e
@@ -55,7 +55,7 @@ MODULE funzione_onda
 		LOGICAL :: flag_file
 		CHARACTER(LEN=4) :: istring
 		INTEGER :: M, i, j, max_num_pw, i1, i_twist, ios
-		REAL (KIND=8) :: dummy1
+		REAL (KIND=8) :: dummy1, JL
 		REAL (KIND=8), ALLOCATABLE :: dummy(:,:,:)
 		NAMELIST /dati_funzione_onda/ SDe_kind, Jee_kind, Jep_kind, Jpp_kind, SDse_kind, Jse_kind, &
 		  Kse_kind, Jsesp_kind, split_Aee, split_Aep, split_Asese, split_Asesp, split_Fee, split_Fep, split_Fsese, &
@@ -253,8 +253,14 @@ MODULE funzione_onda
 
       !Costruisce spline per il Jee
       IF ((Jee_kind=='spl').OR.(Jee_kind=='spp')) THEN
-         
-         CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=Lmaxdist , SPL=Jsplee, &
+         SELECT CASE(Jee_kind)
+         CASE('spl')
+            JL=DSQRT(DOT_PRODUCT(H_L,H_L))
+         CASE('spp')
+            JL=MAXVAL(L)*DSQRT(3.d0)/PI
+         END SELECT
+
+         CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=JL , SPL=Jsplee, &
             CUTOFF=cutoff_Jsplee )
          INQUIRE(FILE=path_dati_funzione_onda//"-Jsplee",EXIST=flag_file)
          IF (flag_file) THEN
@@ -266,7 +272,7 @@ MODULE funzione_onda
          END IF
 
          IF (split_Aee.OR.split_Fee) THEN
-            CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=Lmaxdist , SPL=Jsplee_ud, &
+            CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=JL , SPL=Jsplee_ud, &
                CUTOFF=cutoff_Jsplee ) 
             INQUIRE(FILE=path_dati_funzione_onda//"-Jsplee_ud",EXIST=flag_file)
             IF (flag_file) THEN
@@ -277,7 +283,40 @@ MODULE funzione_onda
                CALL MSPL_fit_function(SPL=Jsplee_ud,F=Jeeyuk_ud)
             END IF
          END IF
+      END IF
 
+      !Costruisce spline per il Jee
+      IF ((Jep_kind=='spl').OR.(Jep_kind=='spp')) THEN
+         SELECT CASE(Jep_kind)
+         CASE('spl')
+            JL=DSQRT(DOT_PRODUCT(H_L,H_L))
+         CASE('spp')
+            JL=MAXVAL(L)*DSQRT(3.d0)/PI
+         END SELECT
+
+         CALL MSPL_new(M=m_Jsplep , NKNOTS=nknots_Jsplep , LA=0.d0 , LB=JL , SPL=Jsplep, &
+            CUTOFF=cutoff_Jsplep )
+         INQUIRE(FILE=path_dati_funzione_onda//"-Jsplep",EXIST=flag_file)
+         IF (flag_file) THEN
+            CALL MSPL_load(SPL=Jsplep,FILENAME=path_dati_funzione_onda//"-Jsplep")
+         ELSE
+            !IF (mpi_myrank==0) PRINT *, "I dati per la spline Jep non sono presenti. &
+            !   Inizializzo fittando il Jastrow Yukawa."
+            CALL MSPL_fit_function(SPL=Jsplep,F=Jeeyuk)
+         END IF
+
+         IF (split_Aee.OR.split_Fee) THEN
+            CALL MSPL_new(M=m_Jsplep , NKNOTS=nknots_Jsplep , LA=0.d0 , LB=JL , SPL=Jsplep_ud, &
+               CUTOFF=cutoff_Jsplep ) 
+            INQUIRE(FILE=path_dati_funzione_onda//"-Jsplep_ud",EXIST=flag_file)
+            IF (flag_file) THEN
+               CALL MSPL_load(SPL=Jsplep_ud,FILENAME=path_dati_funzione_onda//"-Jsplep_ud")
+            ELSE
+               !IF (mpi_myrank==0) PRINT *, "I dati per la spline Jep_ud non sono presenti. &
+               !   Inizializzo fittando il Jastrow Yukawa"
+               CALL MSPL_fit_function(SPL=Jsplep_ud,F=Jeeyuk_ud)
+            END IF
+         END IF
       END IF
 		                                                         
 		IF ((Jsesp_kind=='bou') .OR. (Jsesp_kind=='ppb')) THEN   

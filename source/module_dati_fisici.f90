@@ -6,7 +6,7 @@ MODULE dati_fisici
 	INTEGER, PROTECTED, SAVE :: N_part, H_N_part, N_cell_side
 	REAL (KIND=8), PARAMETER, PRIVATE :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
 	REAL (KIND=8), PARAMETER :: MASS_e=0.0005485899094d0, MASS_p=1.00727646677d0   !in uma
-	REAL (KIND=8), PROTECTED, SAVE :: r_s, L(1:3), H_L(1:3), Lmaxdist, L_cov_bond
+	REAL (KIND=8), PROTECTED, SAVE :: r_s, L(1:3), H_L(1:3), L_cov_bond
 	REAL (KIND=8), PROTECTED, SAVE :: hbar, K_coulomb, strecthing_cov_bond
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: r_crystal(:,:)
 	
@@ -81,7 +81,6 @@ MODULE dati_fisici
 			L(3)=L(1)
 		END IF
 		H_L=0.5d0*L
-      Lmaxdist=DSQRT(DOT_PRODUCT(H_L,H_L))
 		
 		ALLOCATE(r_crystal(1:3,1:N_part),app(1:3,1:N_part))
 		IF ( crystal_cell=='bcc__' ) THEN
