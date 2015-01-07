@@ -257,7 +257,7 @@ MODULE funzione_onda
          CASE('spl')
             JL=DSQRT(DOT_PRODUCT(H_L,H_L))
          CASE('spp')
-            JL=MAXVAL(L)*DSQRT(3.d0)/PI
+            JL=DSQRT(DOT_PRODUCT(L,L))/PI
          END SELECT
 
          CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=JL , SPL=Jsplee, &
@@ -291,7 +291,7 @@ MODULE funzione_onda
          CASE('spl')
             JL=DSQRT(DOT_PRODUCT(H_L,H_L))
          CASE('spp')
-            JL=MAXVAL(L)*DSQRT(3.d0)/PI
+            JL=DSQRT(DOT_PRODUCT(L,L))/PI
          END SELECT
 
          CALL MSPL_new(M=m_Jsplep , NKNOTS=nknots_Jsplep , LA=0.d0 , LB=JL , SPL=Jsplep, &
