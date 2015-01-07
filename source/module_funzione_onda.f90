@@ -9,6 +9,9 @@ MODULE funzione_onda
    TYPE(MSPLINE) :: Jsplee, Jsplee_ud, Jsplep, Jsplep_ud
    INTEGER :: m_Jsplee, nknots_Jsplee, m_Jsplep, nknots_Jsplep
    LOGICAL :: cutoff_Jsplee, cutoff_Jsplep
+   TYPE(MSPLINE) :: Bsplep
+   INTEGER :: m_Bsplep, nknots_Bsplep
+   LOGICAL :: cutoff_Bsplep
 	REAL (KIND=8), SAVE :: Aep_yuk, Aep_ud_yuk, Fep_yuk, Fep_ud_yuk
 	REAL (KIND=8), SAVE :: C_kern_e                                             !per il kernel
 	REAL (KIND=8), SAVE :: alpha0_kern_e, alpha1_kern_e, beta0_kern_e, beta1_kern_e
@@ -55,11 +58,12 @@ MODULE funzione_onda
 		LOGICAL :: flag_file
 		CHARACTER(LEN=4) :: istring
 		INTEGER :: M, i, j, max_num_pw, i1, i_twist, ios
-		REAL (KIND=8) :: dummy1, JL
+		REAL (KIND=8) :: dummy1, SL
 		REAL (KIND=8), ALLOCATABLE :: dummy(:,:,:)
 		NAMELIST /dati_funzione_onda/ SDe_kind, Jee_kind, Jep_kind, Jpp_kind, SDse_kind, Jse_kind, &
 		  Kse_kind, Jsesp_kind, split_Aee, split_Aep, split_Asese, split_Asesp, split_Fee, split_Fep, split_Fsese, &
-        split_Fsesp, m_Jsplee, nknots_Jsplee, cutoff_Jsplee, m_Jsplep, nknots_Jsplep, cutoff_Jsplep, &
+        split_Fsesp, m_Bsplep, nknots_Bsplep, cutoff_Bsplep, &
+        m_Jsplee, nknots_Jsplee, cutoff_Jsplee, m_Jsplep, nknots_Jsplep, cutoff_Jsplep, &
 		  Aee_yuk, Aee_ud_yuk, Fee_yuk, Fee_ud_yuk, Aep_yuk, Aep_ud_yuk, Fep_yuk, Fep_ud_yuk, &
 		  C_kern_e, Asese_yuk, Asese_ud_yuk, Fsese_yuk, Fsese_ud_yuk, Asesp_yuk, Asesp_ud_yuk, Fsesp_yuk, &
 		  Fsesp_ud_yuk, Gswf, C_atm, N_ritraccia_coppie, N_mc_relax_traccia_coppie, A_POT_se, D_POT_se, Gsesp, c_se, &
@@ -67,6 +71,8 @@ MODULE funzione_onda
 		
 		IF (iniz_funzione_onda) STOP 'funzione_onda é giá inizializzato &
 		  [ module_funzione_onda.f90 > inizializza_dati_funzione_onda ]'
+
+      CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
 				
 		OPEN (2, FILE=path_dati_funzione_onda,STATUS='OLD')
 		READ (2,NML=dati_funzione_onda)
@@ -249,18 +255,30 @@ MODULE funzione_onda
 				END DO
 			END DO
 			CALL chiudi_dnfH()
+
+      ELSE IF (SDe_kind=='spb') THEN
+         !costruisce spline per backflow
+         SL=DSQRT(DOT_PRODUCT(H_L,H_L))
+         CALL MSPL_new(M=m_Bsplep , NKNOTS=nknots_Bsplep , LA=0.d0 , LB=SL , SPL=Bsplep, &
+            CUTOFF=cutoff_Bsplep )
+         INQUIRE(FILE=TRIM(path_dati_funzione_onda)//"-Bsplep",EXIST=flag_file)
+         IF (flag_file) THEN
+            CALL MSPL_load(SPL=Bsplep,FILENAME=TRIM(path_dati_funzione_onda)//"-Bsplep")
+         ELSE
+            CALL MSPL_fit_function(SPL=Bsplep,F=Bep1s)
+         END IF
 		END IF
 
       !Costruisce spline per il Jee
       IF ((Jee_kind=='spl').OR.(Jee_kind=='spp')) THEN
          SELECT CASE(Jee_kind)
          CASE('spl')
-            JL=DSQRT(DOT_PRODUCT(H_L,H_L))
+            SL=DSQRT(DOT_PRODUCT(H_L,H_L))
          CASE('spp')
-            JL=DSQRT(DOT_PRODUCT(L,L))/PI
+            SL=DSQRT(DOT_PRODUCT(L,L))/PI
          END SELECT
 
-         CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=JL , SPL=Jsplee, &
+         CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=SL , SPL=Jsplee, &
             CUTOFF=cutoff_Jsplee )
          INQUIRE(FILE=TRIM(path_dati_funzione_onda)//"-Jsplee",EXIST=flag_file)
          IF (flag_file) THEN
@@ -272,7 +290,7 @@ MODULE funzione_onda
          END IF
 
          IF (split_Aee.OR.split_Fee) THEN
-            CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=JL , SPL=Jsplee_ud, &
+            CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=SL , SPL=Jsplee_ud, &
                CUTOFF=cutoff_Jsplee ) 
             INQUIRE(FILE=TRIM(path_dati_funzione_onda)//"-Jsplee_ud",EXIST=flag_file)
             IF (flag_file) THEN
@@ -285,16 +303,16 @@ MODULE funzione_onda
          END IF
       END IF
 
-      !Costruisce spline per il Jee
+      !Costruisce spline per il Jep
       IF ((Jep_kind=='spl').OR.(Jep_kind=='spp')) THEN
          SELECT CASE(Jep_kind)
          CASE('spl')
-            JL=DSQRT(DOT_PRODUCT(H_L,H_L))
+            SL=DSQRT(DOT_PRODUCT(H_L,H_L))
          CASE('spp')
-            JL=DSQRT(DOT_PRODUCT(L,L))/PI
+            SL=DSQRT(DOT_PRODUCT(L,L))/PI
          END SELECT
 
-         CALL MSPL_new(M=m_Jsplep , NKNOTS=nknots_Jsplep , LA=0.d0 , LB=JL , SPL=Jsplep, &
+         CALL MSPL_new(M=m_Jsplep , NKNOTS=nknots_Jsplep , LA=0.d0 , LB=SL , SPL=Jsplep, &
             CUTOFF=cutoff_Jsplep )
          INQUIRE(FILE=TRIM(path_dati_funzione_onda)//"-Jsplep",EXIST=flag_file)
          IF (flag_file) THEN
@@ -306,7 +324,7 @@ MODULE funzione_onda
          END IF
 
          IF (split_Aee.OR.split_Fee) THEN
-            CALL MSPL_new(M=m_Jsplep , NKNOTS=nknots_Jsplep , LA=0.d0 , LB=JL , SPL=Jsplep_ud, &
+            CALL MSPL_new(M=m_Jsplep , NKNOTS=nknots_Jsplep , LA=0.d0 , LB=SL , SPL=Jsplep_ud, &
                CUTOFF=cutoff_Jsplep ) 
             INQUIRE(FILE=TRIM(path_dati_funzione_onda)//"-Jsplep_ud",EXIST=flag_file)
             IF (flag_file) THEN
@@ -456,13 +474,31 @@ MODULE funzione_onda
       END SELECT
    END FUNCTION Jepyuk_ud
 !-----------------------------------------------------------------------
+   FUNCTION Bep1s(i,x)
+      IMPLICIT NONE
+      REAL(KIND=8) :: Bep1s
+      INTEGER, INTENT(IN) :: i
+      REAL(KIND=8), INTENT(IN) :: x
+
+      SELECT CASE(i)
+      CASE(0)
+         Bep1s=C_atm*x
+      CASE(1)
+         Bep1s=C_atm
+      CASE DEFAULT
+         Bep1s=0.d0
+      END SELECT
+   
+   END FUNCTION Bep1s
+!-----------------------------------------------------------------------
 
 	SUBROUTINE stampa_file_dati_funzione_onda(nome_file)
 		IMPLICIT NONE
 		CHARACTER(LEN=*) :: nome_file
 		NAMELIST /dati_funzione_onda/ SDe_kind, Jee_kind, Jep_kind, Jpp_kind, SDse_kind, Jse_kind, &
 		  Kse_kind, Jsesp_kind, split_Aee, split_Aep, split_Asese, split_Asesp, split_Fee, split_Fep, split_Fsese, &
-		  split_Fsesp, m_Jsplee, nknots_Jsplee, cutoff_Jsplee, m_Jsplep, nknots_Jsplep, cutoff_Jsplep, &
+		  split_Fsesp, m_Bsplep, nknots_Bsplep, cutoff_Bsplep, m_Jsplee, nknots_Jsplee, &
+        cutoff_Jsplee, m_Jsplep, nknots_Jsplep, cutoff_Jsplep, &
         Aee_yuk, Aee_ud_yuk, Fee_yuk, Fee_ud_yuk, Aep_yuk, Aep_ud_yuk, Fep_yuk, Fep_ud_yuk, &
 		  C_kern_e, Asese_yuk, Asese_ud_yuk, Fsese_yuk, Fsese_ud_yuk, Asesp_yuk, Asesp_ud_yuk, Fsesp_yuk, &
 		  Fsesp_ud_yuk, Gswf, C_atm, N_ritraccia_coppie, N_mc_relax_traccia_coppie, A_POT_se, D_POT_se, Gsesp, c_se, &
@@ -950,6 +986,10 @@ MODULE funzione_onda
 				PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 				IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
 				  'SDe: ', SDe_kind,'  -  C_atm=', C_atm
+			CASE ('atp')
+				PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
+				IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
+				  'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 	  		CASE ('bat')
 	  			PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
@@ -959,10 +999,11 @@ MODULE funzione_onda
                'A_POT_se=', A_POT_se, 'D_POT_se=', D_POT_se
 	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3,2(5X,A9,F9.3))'), &
 	  			  'SDe: ', SDe_kind,'  -  C_atm=', C_atm, 'A_POT_se=', A_POT_se, 'D_POT_se=', D_POT_se
-			CASE ('atp')
-				PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
-				IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
-				  'SDe: ', SDe_kind,'  -  C_atm=', C_atm
+         CASE ('spb')
+	  			PRINT '(6X,A5,A3,A9,I1,5X,A7,I4,5X,A7,L1)' , 'SDe: ', SDe_kind,'   -   m=', m_Bsplep, &
+               'nknots=', nknots_Bsplep, 'cutoff=', cutoff_Bsplep
+	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A7,I1,5X,A7,I4,5X,A7,L1)'), &
+	  			  'SDe: ', SDe_kind,'  -  m=', m_Bsplep, 'nknots=', nknots_Bsplep, 'cutoff=', cutoff_Bsplep
 			END SELECT
 		END IF
 
@@ -1852,12 +1893,12 @@ MODULE funzione_onda
 				!Calcolo i termini matriciali di SD_new
 				DO j = 1, N, 1
 					DO i = 1, N, 1
-                  		q(1:3)=re(1:3,i+iadd)
-                  		DO ip = 1, N+N, 1
-                     		q(1:3)=q(1:3)-rp(1:3,ip)/(1.d0+DEXP(A_POT_se*(rij(j+iadd,ip)-D_POT_se)))
-                  		END DO
-                  		q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
-                  		q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
+                  q(1:3)=re(1:3,i+iadd)
+                  DO ip = 1, N+N, 1
+                  	q(1:3)=q(1:3)-rp(1:3,ip)/(1.d0+DEXP(A_POT_se*(rij(j+iadd,ip)-D_POT_se)))
+                  END DO
+                  q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
+                  q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
 						SD(i,j)=(1.d0,0.d0)*norm*DEXP(-C_atm*q(0))
 						ISD(i,j)=SD(i,j)
 					END DO
@@ -1905,6 +1946,92 @@ MODULE funzione_onda
 				
 		END SUBROUTINE valuta_SD_1s_backflow	
 	
+!-----------------------------------------------------------------------
+
+	SUBROUTINE valuta_SD_SPL_backflow(num,updw,L,re,rp,rij,N,SD,detSD,ISD,pvt,ISD_old,detSD_old)
+		USE generic_tools
+		IMPLICIT NONE
+		REAL (KIND=8), PARAMETER :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
+      CHARACTER (LEN=2) :: updw
+		INTEGER, INTENT(IN) :: N, num   !num e' compreso fra 1 e 2*N
+      REAL(KIND=8), INTENT(IN) :: L(1:3)
+		REAL (KIND=8), INTENT(IN) :: re(1:3,1:N+N), rp(1:3,1:N+N), rij(1:N+N,1:N+N)
+		COMPLEX (KIND=8), INTENT(IN) :: ISD_old(1:N,1:N), detSD_old
+		INTEGER :: i, j, ip, info, perm, iadd
+		INTEGER, INTENT(OUT) :: pvt(1:N)
+		REAL (KIND=8) :: norm
+		COMPLEX (KIND=8) :: SD(1:N,1:N), ISD(1:N,1:N), detSD
+      COMPLEX (KIND=8) :: ISD_now(1:N,1:N), detSD_now
+      REAL(KIND=8) :: q(0:3), dist(0:3), cspl
+	
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
+		  [ module_funzione_onda.f90 > valuta_SD_1s_backflow ]'
+	
+		norm=1.d0 !/DSQRT(PI)
+		
+      IF (updw=='up') iadd=0
+      IF (updw=='dw') iadd=N
+
+		IF (num==-1) THEN
+			!Calcolo i termini matriciali di SD_new
+			DO j = 1, N, 1
+				DO i = 1, N, 1
+               q(1:3)=re(1:3,i+iadd)
+               DO ip = 1, N+N, 1
+               	q(1:3)=q(1:3)-rp(1:3,ip)/(1.d0+DEXP(A_POT_se*(rij(j+iadd,ip)-D_POT_se)))
+               END DO
+               q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
+               q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
+               CALL MSPL_compute(SPL=Bsplep, DERIV=0, R=q(0), VAL=cspl)
+					SD(i,j)=(1.d0,0.d0)*norm*DEXP(-cspl)
+					ISD(i,j)=SD(i,j)
+				END DO
+			END DO
+			!Calcolo il determinante di SD_new
+			CALL ZGETRF( N, N, ISD, N, pvt, info )
+			IF (info/=0) STOP 'ERRORE NELLA DECOMPOSIZIONE LU'
+			perm=0
+			detSD=(1.d0,0.d0)
+			DO  i = 1, N, 1
+				IF (pvt(i) /= i) perm=perm+1
+			END DO
+			IF (MOD(perm,2) == 1 ) detSD=-detSD
+			DO  i = 1, N, 1
+				detSD=detSD*ISD(i,i)
+			END DO
+		ELSE IF ((num>0) .AND. (num<=N+N)) THEN
+			DO i = 1+iadd, N+iadd, 1
+            q(1:3)=re(1:3,num+iadd)
+            DO ip = 1, N+N, 1
+               q(1:3)=q(1:3)-rp(1:3,ip)/(1.d0+DEXP(A_POT_se*(rij(i,ip)-D_POT_se)))
+            END DO
+            q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
+            q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
+            CALL MSPL_compute(SPL=Bsplep, DERIV=0, R=q(0), VAL=cspl)
+				SD(num,i-iadd)=(1.d0,0.d0)*norm*DEXP(-cspl)
+			END DO
+			CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD_now)  !aggiorna det
+         CALL aggiorna_matrice_inversa_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD_now,ISD_now) !aggiorna ISD
+			DO i = 1+iadd, N+iadd, 1
+            q(1:3)=re(1:3,i)
+            DO ip = 1, N+N, 1
+               q(1:3)=q(1:3)-rp(1:3,ip)/(1.d0+DEXP(A_POT_se*(rij(num+iadd,ip)-D_POT_se)))
+            END DO
+            q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
+            q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
+            CALL MSPL_compute(SPL=Bsplep, DERIV=0, R=q(0), VAL=cspl)
+				SD(i-iadd,num)=(1.d0,0.d0)*norm*DEXP(-cspl)
+			END DO
+         CALL aggiorna_determinante_C_col_1ppt(N,num,ISD_now,detSD_now,SD,detSD)
+		ELSE
+			STOP 'num non accettabile &
+			  [ module_funzione_onda.f90 > valuta_SD_1s_backflow ]'
+		END IF
+			
+		IF (verbose_mode) PRINT * , 'funzione_onda: detSD(gss)=', detSD
+			
+	END SUBROUTINE valuta_SD_SPL_backflow	
+
 !-----------------------------------------------------------------------
 
 	SUBROUTINE valuta_SD_gem(num,rij,N,SD,detSD,ISD,pvt,ISD_old,detSD_old)
@@ -3467,6 +3594,8 @@ MODULE funzione_onda
 				DEALLOCATE(c_eff_dnfH)
 			END IF
 			DEALLOCATE(autoenergie_dnfH)
+      ELSE IF (SDe_kind=='spb') THEN
+         CALL MSPL_deallocate(SPL=Bsplep)
 		END IF
       IF ((Jee_kind=='spl').OR.(Jee_kind=='spp')) THEN
          CALL MSPL_deallocate(SPL=Jsplee)
