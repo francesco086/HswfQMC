@@ -262,21 +262,21 @@ MODULE funzione_onda
 
          CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=JL , SPL=Jsplee, &
             CUTOFF=cutoff_Jsplee )
-         INQUIRE(FILE=path_dati_funzione_onda//"-Jsplee",EXIST=flag_file)
+         INQUIRE(FILE=TRIM(path_dati_funzione_onda)//"-Jsplee",EXIST=flag_file)
          IF (flag_file) THEN
-            CALL MSPL_load(SPL=Jsplee,FILENAME=path_dati_funzione_onda//"-Jsplee")
+            CALL MSPL_load(SPL=Jsplee,FILENAME=TRIM(path_dati_funzione_onda)//"-Jsplee")
          ELSE
             !IF (mpi_myrank==0) PRINT *, "I dati per la spline Jee non sono presenti. &
-            !   Inizializzo fittando il Jastrow Yukawa."
+            !   Inizializzo fittando il Jastrow Yukawa. ", TRIM(TRIM(path_dati_funzione_onda))//"-Jsplee"
             CALL MSPL_fit_function(SPL=Jsplee,F=Jeeyuk)
          END IF
 
          IF (split_Aee.OR.split_Fee) THEN
             CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=JL , SPL=Jsplee_ud, &
                CUTOFF=cutoff_Jsplee ) 
-            INQUIRE(FILE=path_dati_funzione_onda//"-Jsplee_ud",EXIST=flag_file)
+            INQUIRE(FILE=TRIM(path_dati_funzione_onda)//"-Jsplee_ud",EXIST=flag_file)
             IF (flag_file) THEN
-               CALL MSPL_load(SPL=Jsplee_ud,FILENAME=path_dati_funzione_onda//"-Jsplee_ud")
+               CALL MSPL_load(SPL=Jsplee_ud,FILENAME=TRIM(path_dati_funzione_onda)//"-Jsplee_ud")
             ELSE
                !IF (mpi_myrank==0) PRINT *, "I dati per la spline Jee_ud non sono presenti. &
                !   Inizializzo fittando il Jastrow Yukawa"
@@ -296,21 +296,21 @@ MODULE funzione_onda
 
          CALL MSPL_new(M=m_Jsplep , NKNOTS=nknots_Jsplep , LA=0.d0 , LB=JL , SPL=Jsplep, &
             CUTOFF=cutoff_Jsplep )
-         INQUIRE(FILE=path_dati_funzione_onda//"-Jsplep",EXIST=flag_file)
+         INQUIRE(FILE=TRIM(path_dati_funzione_onda)//"-Jsplep",EXIST=flag_file)
          IF (flag_file) THEN
-            CALL MSPL_load(SPL=Jsplep,FILENAME=path_dati_funzione_onda//"-Jsplep")
+            CALL MSPL_load(SPL=Jsplep,FILENAME=TRIM(path_dati_funzione_onda)//"-Jsplep")
          ELSE
             !IF (mpi_myrank==0) PRINT *, "I dati per la spline Jep non sono presenti. &
-            !   Inizializzo fittando il Jastrow Yukawa."
+            !   Inizializzo fittando il Jastrow Yukawa. ", TRIM(path_dati_funzione_onda)//"-Jsplep"
             CALL MSPL_fit_function(SPL=Jsplep,F=Jepyuk)
          END IF
 
          IF (split_Aee.OR.split_Fee) THEN
             CALL MSPL_new(M=m_Jsplep , NKNOTS=nknots_Jsplep , LA=0.d0 , LB=JL , SPL=Jsplep_ud, &
                CUTOFF=cutoff_Jsplep ) 
-            INQUIRE(FILE=path_dati_funzione_onda//"-Jsplep_ud",EXIST=flag_file)
+            INQUIRE(FILE=TRIM(path_dati_funzione_onda)//"-Jsplep_ud",EXIST=flag_file)
             IF (flag_file) THEN
-               CALL MSPL_load(SPL=Jsplep_ud,FILENAME=path_dati_funzione_onda//"-Jsplep_ud")
+               CALL MSPL_load(SPL=Jsplep_ud,FILENAME=TRIM(path_dati_funzione_onda)//"-Jsplep_ud")
             ELSE
                !IF (mpi_myrank==0) PRINT *, "I dati per la spline Jep_ud non sono presenti. &
                !   Inizializzo fittando il Jastrow Yukawa"
