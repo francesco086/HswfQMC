@@ -996,6 +996,9 @@ MODULE variational_calculations
 			CASE ('1sb')
 				CALL derivata_SDe_1sb(O(cont:cont+2,i_mc))
 				cont=cont+3
+         CASE ('spb')
+            CALL derivata_SDe_1sb(O(cont:cont+(Bsplep%m+1)*(Bsplep%nknots+1)+1,i_mc))
+            cont=cont+(Bsplep%m+1)*(Bsplep%nknots+1)+2
 			CASE ('atp')
 				CALL derivata_SDe_atp(O(cont,i_mc))
 				cont=cont+1

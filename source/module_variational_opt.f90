@@ -214,6 +214,8 @@ MODULE variational_opt
 					num_par_var=num_par_var+1
 				CASE ('1sb')
 					num_par_var=num_par_var+3
+				CASE ('spb')
+					num_par_var=num_par_var+(Bsplep%m+1)*(Bsplep%nknots+1)+2
 				CASE ('atp')
 					num_par_var=num_par_var+1
 				END SELECT
@@ -572,6 +574,14 @@ MODULE variational_opt
 				CASE ('1sb')
 					parametri_var(cont)=C_atm
 					cont=cont+1
+					parametri_var(cont)=A_POT_se
+					cont=cont+1
+					parametri_var(cont)=D_POT_se
+					cont=cont+1
+				CASE ('spb')
+					parametri_var(cont:cont+(Bsplep%m+1)*(Bsplep%nknots+1)-1)=&
+                  RESHAPE(Bsplep%t(0:Bsplep%m,0:Bsplep%nknots),(/(Bsplep%m+1)*(Bsplep%nknots+1)/))
+					cont=cont+(Bsplep%m+1)*(Bsplep%nknots+1)
 					parametri_var(cont)=A_POT_se
 					cont=cont+1
 					parametri_var(cont)=D_POT_se
@@ -3209,26 +3219,26 @@ MODULE variational_opt
       
       !Operazioni che deve eseguire solo il master
       IF (mpi_myrank==0) THEN
-      !Divido per i numeri di termini accumulati per avere la media
-      dummy1(1)=1.d0/REAL(N_mc*mpi_nprocs,8)
-      E=E*dummy1(1)
-      Oi=Oi*dummy1(1)
-      OiE=OiE*dummy1(1)
-      OiOj=OiOj*dummy1(1)
+         !Divido per i numeri di termini accumulati per avere la media
+         dummy1(1)=1.d0/REAL(N_mc*mpi_nprocs,8)
+         E=E*dummy1(1)
+         Oi=Oi*dummy1(1)
+         OiE=OiE*dummy1(1)
+         OiOj=OiOj*dummy1(1)
 
-      !IF (mpi_myrank==0)  PRINT *, Oi
-      !CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
-      !STOP 
-      
-      !Costruisco la matrice s_kl e il vettore f_k
-		   DO j = 1, num_par_var, 1
-		   	DO i = 1, num_par_var, 1
-		   		s_kl(i,j)=OiOj(i,j)-Oi(i)*Oi(j)
-		   	END DO
-		   END DO
-		   DO i = 1, num_par_var, 1
-		   	f_k(i)=Oi(i)*E-OiE(i)
-		   END DO
+         !IF (mpi_myrank==0)  PRINT *, Oi
+         !CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
+         !STOP 
+         
+         !Costruisco la matrice s_kl e il vettore f_k
+		      DO j = 1, num_par_var, 1
+		      	DO i = 1, num_par_var, 1
+		      		s_kl(i,j)=OiOj(i,j)-Oi(i)*Oi(j)
+		      	END DO
+		      END DO
+		      DO i = 1, num_par_var, 1
+		      	f_k(i)=Oi(i)*E-OiE(i)
+		      END DO
       END IF
       
       !Distribuisco s_kl e f_k a tutti i processori

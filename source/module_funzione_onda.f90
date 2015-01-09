@@ -259,6 +259,7 @@ MODULE funzione_onda
       ELSE IF (SDe_kind=='spb') THEN
          !costruisce spline per backflow
          SL=DSQRT(DOT_PRODUCT(H_L,H_L))
+         IF (crystal_cell=='mol__') SL=MIN(SL,DSQRT(3.d0*20.d0))
          CALL MSPL_new(M=m_Bsplep , NKNOTS=nknots_Bsplep , LA=0.d0 , LB=SL , SPL=Bsplep, &
             CUTOFF=cutoff_Bsplep )
          INQUIRE(FILE=TRIM(path_dati_funzione_onda)//"-Bsplep",EXIST=flag_file)
@@ -274,8 +275,10 @@ MODULE funzione_onda
          SELECT CASE(Jee_kind)
          CASE('spl')
             SL=DSQRT(DOT_PRODUCT(H_L,H_L))
+            IF (crystal_cell=='mol__') SL=MIN(SL,DSQRT(3.d0*20.d0))
          CASE('spp')
             SL=DSQRT(DOT_PRODUCT(L,L))/PI
+            IF (crystal_cell=='mol__') SL=MIN(SL,DSQRT(3.d0*40.d0)/PI)
          END SELECT
 
          CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=SL , SPL=Jsplee, &
@@ -308,8 +311,10 @@ MODULE funzione_onda
          SELECT CASE(Jep_kind)
          CASE('spl')
             SL=DSQRT(DOT_PRODUCT(H_L,H_L))
+            IF (crystal_cell=='mol__') SL=MIN(SL,DSQRT(3.d0*20.d0))
          CASE('spp')
             SL=DSQRT(DOT_PRODUCT(L,L))/PI
+            IF (crystal_cell=='mol__') SL=MIN(SL,DSQRT(3.d0*40.d0)/PI)
          END SELECT
 
          CALL MSPL_new(M=m_Jsplep , NKNOTS=nknots_Jsplep , LA=0.d0 , LB=SL , SPL=Jsplep, &
@@ -525,6 +530,10 @@ MODULE funzione_onda
 			WRITE (2, *), c_eff_dnfH
 			CLOSE(2)
 		END IF
+
+      IF (SDe_kind=='spb') THEN
+         CALL MSPL_store(SPL=Bsplep,FILENAME=nome_file//"-Bsplep")
+      END IF
 
       IF ((Jee_kind=='spl').OR.(Jee_kind=='spp')) THEN
          CALL MSPL_store(SPL=Jsplee,FILENAME=nome_file//"-Jsplee")
@@ -924,6 +933,16 @@ MODULE funzione_onda
 					D_POT_se=nuovi_parametri(cont)
 					cont=cont+1
 				END IF
+			ELSE IF (SDe_kind=='spb') THEN
+				IF ( opt_SDe ) THEN
+					Bsplep%t(0:Bsplep%m,0:Bsplep%nknots)=&
+                  RESHAPE(nuovi_parametri(cont:cont+(Bsplep%m+1)*(Bsplep%nknots+1)),(/Bsplep%m+1,Bsplep%nknots+1/))
+					cont=cont+1
+					A_POT_se=nuovi_parametri(cont)
+					cont=cont+1
+					D_POT_se=nuovi_parametri(cont)
+					cont=cont+1
+				END IF
 			END IF
 		END IF
 		IF ( SDse_kind/='no_' ) THEN
@@ -1000,10 +1019,11 @@ MODULE funzione_onda
 	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3,2(5X,A9,F9.3))'), &
 	  			  'SDe: ', SDe_kind,'  -  C_atm=', C_atm, 'A_POT_se=', A_POT_se, 'D_POT_se=', D_POT_se
          CASE ('spb')
-	  			PRINT '(6X,A5,A3,A9,I1,5X,A7,I4,5X,A7,L1)' , 'SDe: ', SDe_kind,'   -   m=', m_Bsplep, &
-               'nknots=', nknots_Bsplep, 'cutoff=', cutoff_Bsplep
-	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A7,I1,5X,A7,I4,5X,A7,L1)'), &
-	  			  'SDe: ', SDe_kind,'  -  m=', m_Bsplep, 'nknots=', nknots_Bsplep, 'cutoff=', cutoff_Bsplep
+	  			PRINT '(6X,A5,A3,A9,I1,5X,A7,I4,5X,A7,L1,2(5X,A9,F9.3))' , 'SDe: ', SDe_kind,'   -   m=', m_Bsplep, &
+               'nknots=', nknots_Bsplep, 'cutoff=', cutoff_Bsplep, 'A_POT_se=', A_POT_se, 'D_POT_se=', D_POT_se
+	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A7,I1,5X,A7,I4,5X,A7,L1,2(5X,A9,F9.3))'), &
+	  			  'SDe: ', SDe_kind,'  -  m=', m_Bsplep, 'nknots=', nknots_Bsplep, 'cutoff=', cutoff_Bsplep,&
+              'A_POT_se=', A_POT_se, 'D_POT_se=', D_POT_se
 			END SELECT
 		END IF
 

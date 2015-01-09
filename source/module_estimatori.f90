@@ -1883,7 +1883,7 @@ MODULE estimatori
 	             END DO
 	             deriv=deriv*C_atm/q(0)
 		         phi2(i,j)=deriv*norm*DEXP(-C_atm*q(0))
-		         !derivata di A_POT_se
+		         !derivata di D_POT_se
 		         deriv=0.d0
 	             DO ip = 1, N_part, 1
 					sigm=DEXP(A_POT_se*(rij_ep_old(0,j+iadd,ip)-D_POT_se))
@@ -1917,6 +1917,91 @@ MODULE estimatori
 		END DO
 				
 	END SUBROUTINE derivata_SDe_1sb
+
+!-----------------------------------------------------------------------
+
+	SUBROUTINE derivata_SDe_spb(O)
+		USE walkers
+		IMPLICIT NONE
+		INTEGER :: i, j, ip, iadd, beta, ispl
+		REAL (KIND=8) :: O(1:(Bsplep%m+1)*(Bsplep%nknots+1)+2)
+		REAL(KIND=8) :: phi1(1:(Bsplep%m+1)*(Bsplep%nknots+1),1:H_N_part,1:H_N_part) !per derivata C_atm
+		REAL(KIND=8) :: td(0:Bsplep%m,0:Bsplep%nknots)
+      REAL(KIND=8) :: phi2(1:H_N_part,1:H_N_part) !per derivata A_POT_se
+		REAL(KIND=8) :: phi3(1:H_N_part,1:H_N_part) !per derivata D_POT_se
+		REAL(KIND=8) :: norm, q(0:3), sigm, deriv
+		
+		norm=1.d0
+		O=0.d0
+      ispl=(Bsplep%m+1)*(Bsplep%nknots+1)
+		
+		DO iadd = 0, H_N_part, H_N_part
+		   DO j = 1, H_N_part, 1
+		      DO i = 1, H_N_part, 1
+	             q(1:3)=re_old(1:3,i+iadd)
+	             DO ip = 1, N_part, 1
+	                sigm=1.d0/(1.d0+DEXP(A_POT_se*(rij_ep_old(0,j+iadd,ip)-D_POT_se)))
+	                q(1:3)=q(1:3)-rp_old(1:3,ip)*sigm
+	             END DO
+	             q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
+	             q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
+	             !derivata della spline
+			      deriv=-q(0)
+               CALL MSPL_t_deriv(SPL=Bsplep,R=q(0),T_DERIV=td)
+               IF (iadd==0) THEN
+                  phi1(1:ispl,i,j)= &
+                     -RESHAPE(td(0:Bsplep%m,0:Bsplep%nknots),(/ispl/)) &
+                     *REAL(SDe_up_old(i,j),8)
+               ELSE
+                  phi1(1:ispl,i,j)= &
+                     -RESHAPE(td(0:Bsplep%m,0:Bsplep%nknots),(/ispl/)) &
+                     *REAL(SDe_dw_old(i,j),8)
+               END IF
+		         !derivata di A_POT_se
+		         deriv=0.d0
+	             DO ip = 1, N_part, 1
+					sigm=DEXP(A_POT_se*(rij_ep_old(0,j+iadd,ip)-D_POT_se))
+	                DO beta = 1, 3, 1
+	                   deriv=deriv+q(beta)*rp_old(beta,ip)* &
+	                      (- sigm * (rij_ep_old(0,j+iadd,ip)-D_POT_se) / ((1.d0 + sigm)**2) )
+	                END DO
+	             END DO
+	             deriv=deriv*C_atm/q(0)
+		         phi2(i,j)=deriv*norm*DEXP(-C_atm*q(0))
+		         !derivata di D_POT_se
+		         deriv=0.d0
+	             DO ip = 1, N_part, 1
+					sigm=DEXP(A_POT_se*(rij_ep_old(0,j+iadd,ip)-D_POT_se))
+	                DO beta = 1, 3, 1
+	                   deriv=deriv+q(beta)*rp_old(beta,ip)* &
+	                      ( sigm * A_POT_se / ((1.d0 + sigm)**2) )
+	                END DO
+	             END DO
+	             deriv=deriv*C_atm/q(0)
+		         phi3(i,j)=deriv*norm*DEXP(-C_atm*q(0))
+		      END DO
+		   END DO
+		   
+		   IF (iadd==0) THEN
+		      DO j = 1, H_N_part, 1
+		         DO i = 1, H_N_part, 1
+		            O(1:ispl)=O(1:ispl)+phi1(1:ispl,i,j)*ISDe_up_old(j,i)
+		            O(ispl+1)=O(ispl+1)+phi2(i,j)*ISDe_up_old(j,i)
+		            O(ispl+2)=O(ispl+2)+phi3(i,j)*ISDe_up_old(j,i)
+		         END DO
+		      END DO
+		   ELSE IF (iadd==H_N_part) THEN
+		      DO j = 1, H_N_part, 1
+		         DO i = 1, H_N_part, 1
+		            O(1:ispl)=O(1:ispl)+phi1(1:ispl,i,j)*ISDe_dw_old(j,i)
+		            O(ispl+1)=O(ispl+1)+phi2(i,j)*ISDe_dw_old(j,i)
+		            O(ispl+2)=O(ispl+2)+phi3(i,j)*ISDe_dw_old(j,i)
+		         END DO
+		      END DO
+		   END IF
+		END DO
+				
+	END SUBROUTINE derivata_SDe_spb
 	
 !-----------------------------------------------------------------------
 

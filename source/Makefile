@@ -1,5 +1,5 @@
 #compile for debugging (useful for finding arrays overflow)
-DEBUG=false
+DEBUG=true
 #compile without optimization or debugging flags, for quick compiling
 QUICK_COMPILE=false
 #standard executable name
@@ -88,7 +88,7 @@ module_VMC.o: module_stati_eccitati.o module_walkers.o module_calcola_accettazio
 	$(FC) $(FFLAGS) -c module_VMC.f90 
 
 module_estimatori.o: module_calcola_accettazione.o module_momenta.o module_funzione_onda.o module_dati_mc.o module_dati_fisici.o module_walkers.o module_generic_tools.o module_estimatori.f90
-	$(FC) $(FFLAGS) -c module_estimatori.f90 
+	$(FC) $(FFLAGS) -c module_estimatori.f90
 
 module_calcola_accettazione.o: module_walkers.o module_dati_mc.o module_dati_fisici.o module_funzione_onda.o module_momenta.o module_calcola_accettazione.f90
 	$(FC) $(FFLAGS) -c module_calcola_accettazione.f90
