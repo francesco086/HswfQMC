@@ -11,7 +11,7 @@ MODULE walkers
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rijpc_se1_new(:,:,:), rijpc_se1_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_se2_new(:,:,:), rij_se2_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rijpc_se2_new(:,:,:), rijpc_se2_old(:,:,:)
-	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_ep_new(:,:,:), rij_ep_old(:,:,:)
+	REAL (KIND=8), ALLOCATABLE, SAVE :: rij_ep_new(:,:,:), rij_ep_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rijpc_ep_new(:,:,:), rijpc_ep_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_ese1_new(:,:,:), rij_ese1_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_ese2_new(:,:,:), rij_ese2_old(:,:,:)

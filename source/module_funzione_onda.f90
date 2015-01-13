@@ -259,7 +259,6 @@ MODULE funzione_onda
       ELSE IF (SDe_kind=='spb') THEN
          !costruisce spline per backflow
          SL=DSQRT(DOT_PRODUCT(H_L,H_L))
-         IF (crystal_cell=='mol__') SL=MIN(SL,DSQRT(3.d0*20.d0))
          CALL MSPL_new(M=m_Bsplep , NKNOTS=nknots_Bsplep , LA=0.d0 , LB=SL , SPL=Bsplep, &
             CUTOFF=cutoff_Bsplep )
          INQUIRE(FILE=TRIM(path_dati_funzione_onda)//"-Bsplep",EXIST=flag_file)
@@ -268,6 +267,8 @@ MODULE funzione_onda
          ELSE
             CALL MSPL_fit_function(SPL=Bsplep,F=Bep1s)
          END IF
+         !CALL MSPL_print_on_file(SPL=Bsplep,DERIV=0,FILENAME="prova.d",NPOINTS=1000)
+         !STOP
 		END IF
 
       !Costruisce spline per il Jee
@@ -275,10 +276,9 @@ MODULE funzione_onda
          SELECT CASE(Jee_kind)
          CASE('spl')
             SL=DSQRT(DOT_PRODUCT(H_L,H_L))
-            IF (crystal_cell=='mol__') SL=MIN(SL,DSQRT(3.d0*20.d0))
+            !IF (crystal_cell=='mol__') SL=MIN(SL,DSQRT(3.d0*20.d0))
          CASE('spp')
             SL=DSQRT(DOT_PRODUCT(L,L))/PI
-            IF (crystal_cell=='mol__') SL=MIN(SL,DSQRT(3.d0*40.d0)/PI)
          END SELECT
 
          CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=SL , SPL=Jsplee, &
@@ -287,8 +287,8 @@ MODULE funzione_onda
          IF (flag_file) THEN
             CALL MSPL_load(SPL=Jsplee,FILENAME=TRIM(path_dati_funzione_onda)//"-Jsplee")
          ELSE
-            !IF (mpi_myrank==0) PRINT *, "I dati per la spline Jee non sono presenti. &
-            !   Inizializzo fittando il Jastrow Yukawa. ", TRIM(TRIM(path_dati_funzione_onda))//"-Jsplee"
+            !IF (mpi_myrank==0) PRINT *, "Dati spline Jee non presenti. Fitto il Jastrow Yukawa ",&
+            !   TRIM(TRIM(path_dati_funzione_onda))//"-Jsplee"
             CALL MSPL_fit_function(SPL=Jsplee,F=Jeeyuk)
          END IF
 
@@ -299,8 +299,8 @@ MODULE funzione_onda
             IF (flag_file) THEN
                CALL MSPL_load(SPL=Jsplee_ud,FILENAME=TRIM(path_dati_funzione_onda)//"-Jsplee_ud")
             ELSE
-               !IF (mpi_myrank==0) PRINT *, "I dati per la spline Jee_ud non sono presenti. &
-               !   Inizializzo fittando il Jastrow Yukawa"
+               !IF (mpi_myrank==0) PRINT *, "Dati spline Jee_ud non presenti. Fitto il Jastrow Yukawa ",&
+               !   TRIM(TRIM(path_dati_funzione_onda))//"-Jsplee_ud"
                CALL MSPL_fit_function(SPL=Jsplee_ud,F=Jeeyuk_ud)
             END IF
          END IF
@@ -311,10 +311,9 @@ MODULE funzione_onda
          SELECT CASE(Jep_kind)
          CASE('spl')
             SL=DSQRT(DOT_PRODUCT(H_L,H_L))
-            IF (crystal_cell=='mol__') SL=MIN(SL,DSQRT(3.d0*20.d0))
+            !IF (crystal_cell=='mol__') SL=MIN(SL,DSQRT(3.d0*20.d0))
          CASE('spp')
             SL=DSQRT(DOT_PRODUCT(L,L))/PI
-            IF (crystal_cell=='mol__') SL=MIN(SL,DSQRT(3.d0*40.d0)/PI)
          END SELECT
 
          CALL MSPL_new(M=m_Jsplep , NKNOTS=nknots_Jsplep , LA=0.d0 , LB=SL , SPL=Jsplep, &
@@ -323,8 +322,8 @@ MODULE funzione_onda
          IF (flag_file) THEN
             CALL MSPL_load(SPL=Jsplep,FILENAME=TRIM(path_dati_funzione_onda)//"-Jsplep")
          ELSE
-            !IF (mpi_myrank==0) PRINT *, "I dati per la spline Jep non sono presenti. &
-            !   Inizializzo fittando il Jastrow Yukawa. ", TRIM(path_dati_funzione_onda)//"-Jsplep"
+            !IF (mpi_myrank==0) PRINT *, "Dati spline Jep non presenti. Fitto il Jastrow Yukawa ",&
+            !   TRIM(TRIM(path_dati_funzione_onda))//"-Jsplep"
             CALL MSPL_fit_function(SPL=Jsplep,F=Jepyuk)
          END IF
 
@@ -335,8 +334,8 @@ MODULE funzione_onda
             IF (flag_file) THEN
                CALL MSPL_load(SPL=Jsplep_ud,FILENAME=TRIM(path_dati_funzione_onda)//"-Jsplep_ud")
             ELSE
-               !IF (mpi_myrank==0) PRINT *, "I dati per la spline Jep_ud non sono presenti. &
-               !   Inizializzo fittando il Jastrow Yukawa"
+               !IF (mpi_myrank==0) PRINT *, "Dati spline Jep_ud non presenti. Fitto il Jastrow Yukawa ",&
+               !   TRIM(TRIM(path_dati_funzione_onda))//"-Jsplep_ud"
                CALL MSPL_fit_function(SPL=Jsplep_ud,F=Jepyuk_ud)
             END IF
          END IF
@@ -867,6 +866,7 @@ MODULE funzione_onda
 				END SELECT
 			END IF
 		END IF
+
 		IF (SDe_kind/='no_') THEN
 			IF ((SDe_kind=='prf').OR.(SDe_kind=='fre')) THEN
 				IF (opt_c_eff_dnfH) THEN
@@ -936,8 +936,8 @@ MODULE funzione_onda
 			ELSE IF (SDe_kind=='spb') THEN
 				IF ( opt_SDe ) THEN
 					Bsplep%t(0:Bsplep%m,0:Bsplep%nknots)=&
-                  RESHAPE(nuovi_parametri(cont:cont+(Bsplep%m+1)*(Bsplep%nknots+1)),(/Bsplep%m+1,Bsplep%nknots+1/))
-					cont=cont+1
+                  RESHAPE(nuovi_parametri(cont:cont+(Bsplep%m+1)*(Bsplep%nknots+1)-1),(/Bsplep%m+1,Bsplep%nknots+1/))
+					cont=cont+(Bsplep%m+1)*(Bsplep%nknots+1)
 					A_POT_se=nuovi_parametri(cont)
 					cont=cont+1
 					D_POT_se=nuovi_parametri(cont)
@@ -1968,7 +1968,7 @@ MODULE funzione_onda
 	
 !-----------------------------------------------------------------------
 
-	SUBROUTINE valuta_SD_SPL_backflow(num,updw,L,re,rp,rij,N,SD,detSD,ISD,pvt,ISD_old,detSD_old)
+	SUBROUTINE valuta_SD_spl_backflow(num,updw,L,re,rp,rij,N,SD,detSD,ISD,pvt,ISD_old,detSD_old)
 		USE generic_tools
 		IMPLICIT NONE
 		REAL (KIND=8), PARAMETER :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
@@ -2050,7 +2050,7 @@ MODULE funzione_onda
 			
 		IF (verbose_mode) PRINT * , 'funzione_onda: detSD(gss)=', detSD
 			
-	END SUBROUTINE valuta_SD_SPL_backflow	
+	END SUBROUTINE valuta_SD_spl_backflow	
 
 !-----------------------------------------------------------------------
 

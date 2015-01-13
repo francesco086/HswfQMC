@@ -1,5 +1,5 @@
 #compile for debugging (useful for finding arrays overflow)
-DEBUG=true
+DEBUG=false
 #compile without optimization or debugging flags, for quick compiling
 QUICK_COMPILE=false
 #standard executable name
@@ -14,16 +14,16 @@ FFLAGS=-O3 -march=native
 #standard: append _exe to the executable name
 EXEC1=$(EXEC2)_dev
 
-#debug compiling mode
-ifeq ($(DEBUG),true)
-  	FFLAGS=-O0 -g -fbounds-check
-	EXEC1=$(EXEC2)_debug
-endif
-
 #quick compile compiling mode
 ifeq ($(QUICK_COMPILE),true)
 	FFLAGS=-O0
 	EXEC1=$(EXEC2)_qc
+endif
+
+#debug compiling mode
+ifeq ($(DEBUG),true)
+  	FFLAGS=-O0 -g -fbounds-check
+	EXEC1=$(EXEC2)_debug
 endif
 
 

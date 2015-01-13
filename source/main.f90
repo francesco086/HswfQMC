@@ -71,8 +71,6 @@ PROGRAM main
 		CALL minimizza_energia(accuracy_energy,task_to_perform)
 	CASE('stocrec')
 		CALL minimizza_energia(accuracy_energy,task_to_perform)
-	CASE('pure_sr')
-		CALL minimizza_energia(accuracy_energy,task_to_perform)
 	CASE('stoc_ns')
 		CALL minimizza_energia(accuracy_energy,task_to_perform)
 	CASE('stoc_av')

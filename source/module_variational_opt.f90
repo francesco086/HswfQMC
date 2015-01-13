@@ -6,6 +6,7 @@ MODULE variational_opt
 	REAL (KIND=8) :: E_min(1:2), liv_precisione
 	REAL (KIND=8), ALLOCATABLE, SAVE :: parametri_var(:)
 	REAL (KIND=8), ALLOCATABLE :: s_kl(:,:), f_k(:)
+   LOGICAL, ALLOCATABLE :: used_par(:)
 	
 	CONTAINS
 
@@ -647,8 +648,6 @@ MODULE variational_opt
 			CALL orthogonal_basis_search(parametri_var,num_par_var,E_min)
 		CASE('stocrec')
 			CALL stochastic_reconfiguration(parametri_var,num_par_var,.TRUE.,.FALSE.)
-		CASE('pure_sr')
-			CALL pure_stochastic_reconfiguration(parametri_var,num_par_var,.TRUE.)
 		CASE('stoc_ns')   !SR senza fermarsi
 			CALL stochastic_reconfiguration(parametri_var,num_par_var,.FALSE.,.FALSE.)
 		CASE('stoc_av')   !SR senza fermarsi accumulando AV_wf.d
@@ -658,15 +657,15 @@ MODULE variational_opt
 			WRITE (stringa, '(I4.4)'), num_par_var
 			PRINT * , '    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # '
 			PRINT * , 'VAR_OPT: Ottimizzazione terminata.'
-			PRINT * , 'Optimal parameters: '
-			PRINT '('//stringa//'(F9.3,1X))' , parametri_var
+			!PRINT * , 'Optimal parameters: '
+			!PRINT '('//stringa//'(F9.3,1X))' , parametri_var
 			PRINT '(11x,A9,F9.6,A6,F9.6)' , 'Energia: ', E_min(1), '  +-  ', E_min(2)
 			PRINT * , '    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # '
 			IF (flag_output) THEN
 				WRITE (7, *) , '    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # '
 				WRITE (7, *) , 'VAR_OPT: Ottimizzazione terminata.'
-				WRITE (7, *) , 'Optimal parameters: '
-				WRITE (7, '('//stringa//'(F9.3,1X))') , parametri_var
+				!WRITE (7, *) , 'Optimal parameters: '
+				!WRITE (7, '('//stringa//'(F9.3,1X))') , parametri_var
 				WRITE (7, '(11X,A9,F9.6,A6,F9.6)') , 'Energia: ', E_min(1), '  +-  ', E_min(2)
 				WRITE (7, *) , '    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # '
 			END IF
@@ -840,13 +839,13 @@ MODULE variational_opt
 		CALL valuta_step_mc(accettabile)
 		IF (accettabile) THEN
 			CALL sampling(.FALSE.)
-			CALL inizializza_variational_calculations(num,par_pt,1)
-			CALL sampling(.TRUE.)
+         CALL inizializza_variational_calculations(num,par_pt,1)
+         CALL sampling(.TRUE.)
          CALL trascrivi_dati()
          CALL restituisci_energia(energia)
-			CALL estrai_s_kl_e_f_k()
-			CALL chiudi_VMC()
-			CALL chiudi_variational_calculations()
+         CALL estrai_s_kl_e_f_k()
+         CALL chiudi_VMC()
+         CALL chiudi_variational_calculations()
 		ELSE
 			CALL chiudi_VMC()
 		END IF
@@ -1219,7 +1218,7 @@ MODULE variational_opt
 		CHARACTER(LEN=4) :: stringa, istring
 		INTEGER :: i, j, info, contatore, IO, i_orbit, AV_cont
       INTEGER :: lwork
-		REAL (KIND=8) :: lambda, eps, lambda2, lambda3, boundd, dummy(1:4), dummy2(0:N)
+		REAL (KIND=8) :: lambda, eps, lambda2, lambda3, boundd, dummy(1:4), dummy2(0:N), foo
 		REAL (KIND=8) :: lambda_Rp, lambda2_Rp, flambda2_Rp
 		REAL (KIND=8) :: p0(1:N), dp_iniz(1:N), AV_P(1:N)
 		REAL (KIND=8) :: dp(1:N), Is_kl(1:N,1:N), pvt(1:N), cont_step
@@ -1273,6 +1272,28 @@ MODULE variational_opt
 				CALL inizializza_dati_funzione_onda()
 				IF (mpi_myrank==0) WRITE (istring, '(I4.4)'), contatore
 				IF (mpi_myrank==0) CALL stampa_file_Rp('reticolo/SR_Rp-'//istring//'.d')
+            IF (((Jee_kind=='spl').OR.(Jee_kind=='spp')).AND.(opt_A_Jee.OR.opt_F_Jee)) THEN
+               IF (mpi_myrank==0) THEN
+                  CALL MSPL_print_on_file(SPL=Jsplee, DERIV=0, FILENAME='ottimizzazione/splines/Jsplee'//istring//'.d',&
+                     NPOINTS=INT(N_hist,4) ) 
+                  IF (split_Aee.OR.split_Fee) CALL MSPL_print_on_file(SPL=Jsplee_ud, DERIV=0,&
+                     FILENAME='ottimizzazione/splines/Jsplee_ud.'//istring, NPOINTS=INT(N_hist,4) )
+               END IF
+            END IF
+            IF (((Jep_kind=='spl').OR.(Jep_kind=='spp')).AND.(opt_A_Jep.OR.opt_F_Jep)) THEN
+               IF (mpi_myrank==0) THEN
+                  CALL MSPL_print_on_file(SPL=Jsplep, DERIV=0, FILENAME='ottimizzazione/splines/Jsplep'//istring//'.d',&
+                     NPOINTS=INT(N_hist,4) ) 
+                  IF (split_Aep.OR.split_Fep) CALL MSPL_print_on_file(SPL=Jsplep_ud, DERIV=0,&
+                     FILENAME='ottimizzazione/splines/Jsplep_ud.'//istring, NPOINTS=INT(N_hist,4) )
+               END IF
+            END IF
+            IF (((SDe_kind=='spb')).AND.(opt_SDe)) THEN
+               IF (mpi_myrank==0) THEN
+                  CALL MSPL_print_on_file(SPL=Bsplep, DERIV=0, FILENAME='ottimizzazione/splines/Bsplep'//istring//'.d',&
+                     NPOINTS=INT(N_hist,4) ) 
+               END IF
+            END IF
 				CALL chiudi_dati_funzione_onda()
 				CALL chiudi_walkers()
 				CALL chiudi_dati_mc()
@@ -1289,10 +1310,10 @@ MODULE variational_opt
 			END IF
 		END IF
 		
-		ALLOCATE(s_kl(1:N,1:N), f_k(1:N))
+		ALLOCATE(s_kl(1:N,1:N), f_k(1:N),used_par(1:N))
 		
-		IF (N-num_coord_Rp>0) lambda2=lambda2*DSQRT((DOT_PRODUCT(p0(1:N-num_coord_Rp),p0(1:N-num_coord_Rp)))/REAL(N-num_coord_Rp,8))
-		IF (num_coord_Rp>0) lambda2_Rp=lambda2_Rp*DSQRT(num_coord_Rp*MINVAL(L)*0.01d0)
+		!IF (N-num_coord_Rp>0) lambda2=lambda2*DSQRT((DOT_PRODUCT(p0(1:N-num_coord_Rp),p0(1:N-num_coord_Rp)))/REAL(N-num_coord_Rp,8))
+		!IF (num_coord_Rp>0) lambda2_Rp=lambda2_Rp*DSQRT(num_coord_Rp*MINVAL(L)*0.01d0)
 		old_step=0.d0
 		old_p0(1:N,1)=p0(1:N)
 		old_p0(1:N,2)=p0(1:N)
@@ -1309,6 +1330,23 @@ MODULE variational_opt
          WRITE (istring, '(I4.4)'), contatore
          id='SR'//istring
 			CALL SR_campiona_wf_attuale(id,p0,N,energia,accettabile)
+
+         !inizializzo lambda2
+         IF (contatore==1) THEN
+             IF (N-num_coord_Rp>0) THEN
+                foo=0.d0
+                dummy(1)=0.d0
+                DO i = 1, N-num_coord_Rp, 1
+                  IF (used_par(i)) THEN
+                     foo=foo+p0(i)*p0(i)
+                     dummy(1)=dummy(1)+1.d0
+                  END IF
+                END DO
+                dummy(1)=MAX(dummy(1),1.d0)
+                lambda2=lambda2*DSQRT(foo)/dummy(1)
+             END IF
+		      IF (num_coord_Rp>0) lambda2_Rp=lambda2_Rp*DSQRT(num_coord_Rp*MINVAL(L)*0.01d0)
+         END IF
 
 			IF (mpi_myrank==0) WRITE (8, *), cont_step, energia(1:2)
 			IF (mpi_myrank==0) CLOSE (8)
@@ -1346,7 +1384,18 @@ MODULE variational_opt
 			ELSE
 				flag_trovato_minimo=.FALSE.
 			END IF
+
+         !Stampo il numero effettivo di parametri variazionali
+         j=0
+         DO i = 1, N-num_coord_Rp, 1
+            IF (used_par(i)) j=j+1
+         END DO
+         IF (j/=num_par_var) THEN
+            IF (mpi_myrank==0) PRINT * , 'VAR_OPT: Numero parametri variazionali effettivi: ', j
+            IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: Numero parametri variazionali effettivi: ', j
+         END IF
 			
+         !Calcolo la direzione in cui muoversi usando s_kl e f_k
 			IF ((flag_disk .AND. mpi_myrank==0) .OR. (.NOT. flag_disk)) THEN
             !!!Is_kl=s_kl
 				!!!!!! per evitare ill-conditions
@@ -1595,7 +1644,7 @@ MODULE variational_opt
 				IF (.NOT. auto_stop) flag_loop=.TRUE.
 												
             !lambda2=1.d0
-				!determino e stampo lo spostamento variazionale
+				!determino (*e stampo* eliminato) lo spostamento variazionale
 				IF (flag_loop) THEN
 					IF ( N-num_coord_Rp>0 ) THEN
 						cont_step=cont_step+lambda*lambda2*DSQRT(DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp)))
@@ -1623,29 +1672,29 @@ MODULE variational_opt
 					END IF
 					
 					IF ((mpi_myrank==0).AND.(N-num_coord_Rp>0)) THEN
-						PRINT '(A54,F9.3,A2)', ' VAR_OPT: seguendo SR, cambio i parametri:   (lambda2=',lambda2,') '!'  (lambda3=', lambda3,')'
+						PRINT '(A54,F9.3,A2)', ' VAR_OPT: seguendo SR, cambio i parametri    (lambda2=',lambda2,') '!'  (lambda3=', lambda3,')'
 						WRITE (stringa, '(I4.4)'), N-num_coord_Rp
-						PRINT '(1X,'//stringa//'(F9.3,1X))' , p0(1:N-num_coord_Rp)
-						PRINT '(1X,'//stringa//'(F9.3,1X))' , p0(1:N-num_coord_Rp)+dp(1:N-num_coord_Rp)
+						!PRINT '(1X,'//stringa//'(F9.3,1X))' , p0(1:N-num_coord_Rp)
+						!PRINT '(1X,'//stringa//'(F9.3,1X))' , p0(1:N-num_coord_Rp)+dp(1:N-num_coord_Rp)
 						IF (flag_output) THEN
 							WRITE (7, '(A54,F9.3,A2)'), &
-							  ' VAR_OPT: seguendo SR, cambio i parametri:   (lambda2=',lambda2,') '!'  (lambda3=', lambda3,')'
-							WRITE (7, '(1X,'//stringa//'(F9.3,1X))'), p0(1:N-num_coord_Rp)
-							WRITE (7, '(1X,'//stringa//'(F9.3,1X))'), p0(1:N-num_coord_Rp)+dp(1:N-num_coord_Rp)
+							  ' VAR_OPT: seguendo SR, cambio i parametri    (lambda2=',lambda2,') '!'  (lambda3=', lambda3,')'
+							!WRITE (7, '(1X,'//stringa//'(F9.3,1X))'), p0(1:N-num_coord_Rp)
+							!WRITE (7, '(1X,'//stringa//'(F9.3,1X))'), p0(1:N-num_coord_Rp)+dp(1:N-num_coord_Rp)
 						END IF
 					END IF
 					IF ((mpi_myrank==0).AND.(num_coord_Rp>0)) THEN
-						PRINT '(A54,F9.3,A2)', ' VAR_OPT: seguendo SR, muovo i protoni:   (lambda2_Rp=',lambda2_Rp,') '!'  (lambda3=', lambda3,')'
+						PRINT '(A54,F9.3,A2)', ' VAR_OPT: seguendo SR, muovo i protoni    (lambda2_Rp=',lambda2_Rp,') '!'  (lambda3=', lambda3,')'
 						WRITE (stringa, '(I4.4)'), num_coord_Rp
-						DO i = 1, N_part, 1
-							PRINT '(1X,A8,I3.3,10X,3(F9.3,5X))' , 'Protone ', i, dp(N-num_coord_Rp+i*3-2:N-num_coord_Rp+i*3)
-						END DO
+						!DO i = 1, N_part, 1
+						!	PRINT '(1X,A8,I3.3,10X,3(F9.3,5X))' , 'Protone ', i, dp(N-num_coord_Rp+i*3-2:N-num_coord_Rp+i*3)
+						!END DO
 						IF (flag_output) THEN
 							WRITE (7, '(A54,F9.3,A2)'), &
-							  ' VAR_OPT: seguendo SR, muovo i protoni:   (lambda2_Rp=',lambda2_Rp,') '!'  (lambda3=', lambda3,')'
-							DO i = 1, N_part, 1
-								WRITE (7, '(1X,A8,I3.3,10X,3(F9.3,5X))'), 'Protone ', i, dp(N-num_coord_Rp+i*3-2:N-num_coord_Rp+i*3)
-							END DO
+							  ' VAR_OPT: seguendo SR, muovo i protoni    (lambda2_Rp=',lambda2_Rp,') '!'  (lambda3=', lambda3,')'
+							!DO i = 1, N_part, 1
+							!	WRITE (7, '(1X,A8,I3.3,10X,3(F9.3,5X))'), 'Protone ', i, dp(N-num_coord_Rp+i*3-2:N-num_coord_Rp+i*3)
+							!END DO
 						END IF
 					END IF
 				END IF
@@ -1683,6 +1732,8 @@ MODULE variational_opt
 			old_p0(1:N,2)=old_p0(1:N,1)
 			old_p0(1:N,1)=p0(1:N)
 			
+         CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
+
 			!stampa gli ultimi dati variazionali SR
 			IF (stampa_dati_funzione_onda) THEN
 				CALL inizializza_dati_fisici()
@@ -1709,10 +1760,17 @@ MODULE variational_opt
                      FILENAME='ottimizzazione/splines/Jsplep_ud.'//istring, NPOINTS=INT(N_hist,4) )
                END IF
             END IF
+            IF (((SDe_kind=='spb')).AND.(opt_SDe)) THEN
+               IF (mpi_myrank==0) THEN
+                  CALL MSPL_print_on_file(SPL=Bsplep, DERIV=0, FILENAME='ottimizzazione/splines/Bsplep'//istring//'.d',&
+                     NPOINTS=INT(N_hist,4) ) 
+               END IF
+            END IF
 				CALL chiudi_dati_fisici()
 				CALL chiudi_dati_mc()
 				CALL chiudi_walkers()
 				CALL chiudi_dati_funzione_onda()
+            CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
 			END IF
 			
 
@@ -1738,6 +1796,7 @@ MODULE variational_opt
 				CALL chiudi_dati_mc()
 				CALL chiudi_walkers()
 				CALL chiudi_dati_funzione_onda()
+            CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
 			END IF
 			
 			!accumulo la g(r) di Rp e la trascrivo
@@ -1761,275 +1820,11 @@ MODULE variational_opt
 		E_min(1:2)=old_Emin(1:2)
 		parametri_var=p0_minimo
 		IF (mpi_myrank==0) CLOSE (8)
-		DEALLOCATE(s_kl, f_k)
+		DEALLOCATE(s_kl, f_k, used_par)
       DEALLOCATE(work)
 
 	END SUBROUTINE stochastic_reconfiguration
 
-	SUBROUTINE pure_stochastic_reconfiguration(p0,N,auto_stop)
-		USE VMC
-		USE dati_fisici
-		USE funzione_onda
-		IMPLICIT NONE
-		REAL (KIND=8), PARAMETER :: MIN_VAR_NEC=0.025, MIN_LAMBDA2=0.5, MIN_VAR_ACC=0.001, MAX_VAR_ACC=0.25
-		LOGICAL, INTENT(IN) :: auto_stop
-		INTEGER (KIND=4), INTENT(IN) :: N
-		LOGICAL :: flag_loop, loop_stop(1:6), accettabile, flag_file, flag_trovato_minimo, flag_freeze
-		CHARACTER(LEN=2) :: id, ida, idb, idc
-		CHARACTER(LEN=4) :: stringa
-		INTEGER :: i, j, info, contatore, IO, i_orbit, AV_cont
-		REAL (KIND=8) :: lambda, eps, boundd, dummy(1:4), dummy2(0:N)
-		REAL (KIND=8) :: p0(1:N), dp_iniz(1:N), AV_P(1:N)
-		REAL (KIND=8) :: dp(1:N), Is_kl(1:N,1:N), pvt(1:N), cont_step
-		REAL (KIND=8) :: work(1:3*N), D_tr(1:N), E_tr(1:N-1), TAU_tr(1:N-1)
-		REAL (KIND=8) :: energia(1:2), vec_app(1:N), vec_app_old(1:N), flambda2
-		REAL (KIND=8) :: old_step(1:5), old_p0(1:N,1:5), old_E(1:2,1:5), derivE(1:4)
-		REAL (KIND=8) :: dist_poss, dist_perc, dist_poss_5, dist_perc_5, av_errore, derE, nextdE
-		REAL (KIND=8) :: old_Emin(1:2), p0_minimo(1:N), Pdist_min(1:5)
-		REAL (KIND=8) :: a, Ea(1:2), b, Eb(1:2), c, Ec(1:2), first_step
-		id='SR'
-				
-		INQUIRE(FILE='ottimizzazione/SR_energies.dat',EXIST=flag_file)
-		IF ((flag_file).AND.(mpi_myrank==0)) THEN
-			OPEN (UNIT=8, FILE='ottimizzazione/SR_energies.dat', STATUS='OLD')
-			IO=0
-			DO WHILE (IO>=0)
-				READ (8, *, IOSTAT = IO), dummy(1:3)
-				IF (IO>=0) dummy(4)=dummy(1) 
-			END DO
-			cont_step=dummy(4)
-			CLOSE(8)
-			OPEN (UNIT=8, FILE='ottimizzazione/SR_energies.dat', STATUS='OLD', POSITION='APPEND')
-			IF (mpi_myrank==0) PRINT * , 'VAR_OPT: esisteva giá un file, parto da ', cont_step, '.'
-		ELSE IF (mpi_myrank==0) THEN
-			OPEN (UNIT=8, FILE='ottimizzazione/SR_energies.dat', STATUS='NEW')
-			cont_step=0.d0
-			IF (mpi_myrank==0) PRINT * , 'VAR_OPT: parto da zero.'
-		END IF
-		
-		OPEN (UNIT=9, FILE='ottimizzazione/SR_var_parameters.dat', STATUS='UNKNOWN', POSITION='APPEND')
-		
-		ALLOCATE(s_kl(1:N,1:N), f_k(1:N))
-		contatore=0
-		lambda=-666.d0
-		old_step=0.d0
-		old_p0(1:N,1)=p0(1:N)
-		old_p0(1:N,2)=p0(1:N)
-		old_p0(1:N,3)=p0(1:N)
-		old_p0(1:N,4)=p0(1:N)
-		old_p0(1:N,5)=p0(1:N)
-		old_E=0.d0
-		Pdist_min=0.d0
-		flag_loop=.TRUE.
-		loop_stop=.FALSE.
-		DO WHILE (flag_loop)
-			contatore=contatore+1
-			IF (stampa_dati_funzione_onda) THEN
-				CALL inizializza_dati_fisici()
-				CALL inizializza_dati_funzione_onda()
-				CALL setta_parametri(p0,N)
-				CALL stampa_file_dati_funzione_onda('ottimizzazione/SR_wf.d')
-				CALL chiudi_dati_fisici()
-				CALL chiudi_dati_funzione_onda()
-			END IF
-			CALL SR_campiona_wf_attuale(id,p0,N,energia,accettabile)
-			IF (mpi_myrank==0) WRITE (8, *), cont_step, energia(1:2)
-			IF (mpi_myrank==0) CLOSE (8)
-			IF (mpi_myrank==0) OPEN (UNIT=8, FILE='ottimizzazione/SR_energies.dat', STATUS='OLD', POSITION='APPEND')
-			IF (mpi_myrank==0) WRITE (9, *), p0
-			IF (mpi_myrank==0) CLOSE (9)
-			IF (mpi_myrank==0) OPEN (UNIT=9, FILE='ottimizzazione/SR_var_parameters.dat', STATUS='OLD', POSITION='APPEND')
-			IF ((.NOT. accettabile).AND.(mpi_myrank==0)) STOP 'Campionamento non accettabile &
-			  [ module_variational_opt.f90 > stochastic_reconfiguration ]'
-			DO i = 5, 2, -1
-				old_E(1:2,i)=old_E(1:2,i-1)
-			END DO
-			old_E(1:2,1)=energia(1:2)
-			IF ((energia(1)<old_Emin(1)).OR.(contatore==1)) THEN
-				old_Emin(1:2)=energia(1:2)
-				p0_minimo(1:N)=p0(1:N)
-				flag_trovato_minimo=.TRUE.
-				IF (mpi_myrank==0) PRINT * , 'VAR_OPT: Trovato un nuovo minimo assoluto.'
-				IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: Trovato un nuovo minimo assoluto.'
-				IF (stampa_dati_funzione_onda) THEN
-					CALL inizializza_dati_fisici()
-					CALL inizializza_dati_funzione_onda()
-					CALL setta_parametri(p0,N)
-					CALL stampa_file_dati_funzione_onda('ottimizzazione/OPT_wf.d')
-					CALL chiudi_dati_fisici()
-					CALL chiudi_dati_funzione_onda()
-				END IF
-				!contatore=1
-			ELSE
-				flag_trovato_minimo=.FALSE.
-			END IF
-			
-			Is_kl=s_kl
-			CALL DGETRF( N, N, Is_kl, N, pvt, info )
-			CALL DGETRI( N, Is_kl, N, pvt, work, 3*N, info )
-			CALL DSYTRD( 'U', N, s_kl, N, D_tr, E_tr, TAU_tr, work, 3*N, info )
-			CALL DSTERF( N, D_tr, E_tr, info )
-			eps=0.d0
-			DO i = 1, N, 1
-				eps=MAX(D_tr(i),eps)
-			END DO
-			eps=eps*0.001
-			DO i = 1, N, 1
-				s_kl(i,i)=s_kl(i,i)+eps
-			END DO			
-			dp=0.d0
-			DO j = 1, N, 1
-				DO i = 1, N, 1
-					dp(j)=dp(j)+Is_kl(j,i)*f_k(i)
-				END DO
-			END DO
-			!vec_app=dp/DSQRT(DOT_PRODUCT(dp,dp))
-			
-			IF ( contatore==1 ) THEN
-				dp_iniz=dp
-			END IF
-			
-			IF (contatore>5) THEN
-				DO i = 1, 4, 1
-					derivE(i)=((old_E(1,i)-old_E(1,i+1)))/old_step(i)
-					dummy(1)=derivE(i)-DSIGN(1.d0,derivE(i))*(old_E(2,i)+old_E(2,i+1))/old_step(i)
-					IF (derivE(i)>0) THEN
-						derivE(i)=MAX(dummy(1),0.d0)
-					ELSE
-						derivE(i)=MIN(dummy(1),0.d0)
-					END IF
-					derivE(i)=REAL(5-i,8)*derivE(i)
-				END DO
-			END IF
-			IF (contatore>5) THEN
-				av_errore=SUM(old_E(2,1:3))/3.d0
-				derE=SUM(derivE(1:2))/7.d0
-				nextdE=DABS(DABS(derE)-av_errore)
-				flambda2=MIN(1.10d0,MAX(0.900d0,nextdE/av_errore))
-				IF (flambda2>1.d0) THEN
-					loop_stop(4)=.FALSE.
-				ELSE
-					loop_stop(4)=.TRUE.
-				END IF
-			END IF
-			IF (contatore>5) THEN
-				av_errore=SUM(old_E(2,1:5))/5.d0
-				derE=SUM(derivE(1:4))/10.d0
-				nextdE=DABS(DABS(derE)-av_errore)
-				flambda2=MIN(1.150d0,MAX(0.85d0,nextdE/av_errore))
-				IF (flambda2>1.d0) THEN
-					loop_stop(5)=.FALSE.
-				ELSE
-					loop_stop(5)=.TRUE.
-				END IF
-			END IF
-			IF (contatore>5) THEN
-				av_errore=SUM(old_E(2,1:5))/5.d0
-				derE=0.5d0*(old_E(1,1)+old_E(1,2)-old_E(1,5)-old_E(1,4)) / &
-				  DSQRT(DOT_PRODUCT(old_p0(1:N,1)-old_p0(1:N,5),old_p0(1:N,1)-old_p0(1:N,5)))
-				nextdE=2.d0*DABS(derE*DSQRT(DOT_PRODUCT(old_p0(1:N,1)-old_p0(1:N,5),old_p0(1:N,1)-old_p0(1:N,5)))*0.2d0)
-				flambda2=MIN(1.5d0,MAX(0.5d0,nextdE/av_errore))
-				IF (flambda2>1.d0) THEN
-					loop_stop(6)=.FALSE.
-				ELSE
-					loop_stop(6)=.TRUE.
-				END IF
-			END IF
-			IF (contatore>5) THEN
-				IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [DER] Possibile fermarsi? ', loop_stop(4:6)
-				IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [DER] Possibile fermarsi? ', loop_stop(4:6)
-			END IF
-			
-			IF (lambda==-666.d0) THEN
-				CALL cambia_verbosity_VMC(.FALSE.)
-				first_step=0.1d0
-				CALL bracket_min_multidim(N,p0,dp,first_step,a,Ea,ida,b,Eb,idb,c,Ec,idc)
-				CALL parabgold_search_multidim(N,p0,dp,a,Ea,ida,b,Eb,idb,c,Ec,idc)
-				lambda=b
-				IF ( mpi_myrank==0 ) PRINT * , 'VAR_OPT: LAMBDA= ', lambda
-				IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: LAMBDA= ', lambda
-				CALL cambia_verbosity_VMC(.TRUE.)
-			END IF
-							
-			!controllo se posso uscire dal loop
-			flag_loop=.TRUE.
-			IF (loop_stop(4).AND.(loop_stop(5)).AND.(loop_stop(6))) flag_loop=.FALSE.
-			DO i = 1, N, 1
-				vec_app(i)=dp(i)*lambda/p0(i)        !!!!DA RIPRISTINARE!!!!!!
-				IF (DABS(vec_app(i))>MIN_VAR_NEC) flag_loop=.TRUE.
-			END DO
-			IF (flag_loop) THEN       !nel caso le derivate non facciano fermare ma i parametri siano quasi congelati
-				flag_freeze=.TRUE.
-				DO i = 1, N, 1
-					IF (DABS(vec_app(i))>MIN_VAR_ACC) flag_freeze=.FALSE.
-				END DO
-				flag_loop=(.NOT. flag_freeze)
-			END IF
-			IF (contatore<=5) flag_loop=.TRUE.
-			
-			IF (.NOT. auto_stop) flag_loop=.TRUE. 
-			
-			!determino e stampo lo spostamento variazionale
-			IF (flag_loop) THEN
-				cont_step=cont_step+lambda*DSQRT(DOT_PRODUCT(dp,dp))
-				old_step(5)=old_step(4)
-				old_step(4)=old_step(3)
-				old_step(3)=old_step(2)
-				old_step(2)=old_step(1)
-				old_step(1)=DSQRT(DOT_PRODUCT(dp,dp))
-				IF (mpi_myrank==0) PRINT * , 'VAR_OPT: fattore dp: ', DSQRT(DOT_PRODUCT(dp,dp)/DOT_PRODUCT(dp_iniz,dp_iniz))
-				
-				IF (mpi_myrank==0) THEN
-					!OPEN(UNIT=44, FILE='ottimizzazione/SR_lambda.d', STATUS='UNKNOWN', POSITION='APPEND')
-					!WRITE(UNIT=44, FMT=*) lambda, DSQRT(DOT_PRODUCT(dp,dp)), lambda*DSQRT(DOT_PRODUCT(dp,dp))
-					!CLOSE(44)
-					PRINT '(A54,F9.3,A13,F9.3,A1)', ' VAR_OPT: seguendo SR, cambio i parametri:'
-					WRITE (stringa, '(I4.4)'), N
-					PRINT '(1X,'//stringa//'(F9.3,1X))' , p0
-					PRINT '(1X,'//stringa//'(F9.3,1X))' , p0+lambda*dp
-					IF (flag_output) THEN
-						WRITE (7, '(A54,F9.3,A13,F9.3,A1)'), &
-						  ' VAR_OPT: seguendo SR, cambio i parametri:'
-						WRITE (7, '(1X,'//stringa//'(F9.3,1X))'), p0
-						WRITE (7, '(1X,'//stringa//'(F9.3,1X))'), p0+lambda*dp
-					END IF
-				END IF
-			END IF
-			!CALL MPI_BCAST(dp(1:N),N,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
-			!CALL MPI_BCAST(flag_loop,1,MPI_LOGICAL,0,MPI_COMM_WORLD,mpi_ierr)
-			IF (flag_loop) THEN
-				p0=p0+lambda*dp
-				IF ((loop_stop(4)).AND.(loop_stop(5)).AND.(loop_stop(6))) THEN
-					AV_cont=AV_cont+1
-					AV_P=AV_P+p0
-				ELSE
-					AV_cont=0
-					AV_P=0.d0
-				END IF
-			END IF
-			old_p0(1:N,5)=old_p0(1:N,4)
-			old_p0(1:N,4)=old_p0(1:N,3)
-			old_p0(1:N,3)=old_p0(1:N,2)
-			old_p0(1:N,2)=old_p0(1:N,1)
-			old_p0(1:N,1)=p0(1:N)
-		END DO
-		
-		IF (stampa_dati_funzione_onda) THEN
-			CALL inizializza_dati_fisici()
-			CALL inizializza_dati_funzione_onda()
-			AV_P=AV_P/REAL(AV_cont,8)
-			CALL setta_parametri(AV_P,N)
-			CALL stampa_file_dati_funzione_onda('ottimizzazione/AV_wf.d')
-			CALL chiudi_dati_fisici()
-			CALL chiudi_dati_funzione_onda()
-		END IF
-		
-		E_min(1:2)=old_Emin(1:2)
-		parametri_var=p0_minimo
-		IF (mpi_myrank==0) CLOSE (8)
-		DEALLOCATE(s_kl, f_k)
-
-	END SUBROUTINE pure_stochastic_reconfiguration
 
 	SUBROUTINE bracket_min_multidim(N,r0,dir,first_step,a,fa,ida,b,fb,idb,c,fc,idc)
 		IMPLICIT NONE
@@ -3183,38 +2978,50 @@ MODULE variational_opt
 		INTEGER (KIND=8) :: i_mc
 		REAL (KIND=8) :: E, Oi(1:num_par_var), OiOj(1:num_par_var,1:num_par_var), OiE(1:num_par_var)
 		REAL (KIND=8) :: media, errore, estimatore(1:2), dummy1(1:N_mc)
-		
+      REAL(KIND=8) :: O_fast(1:N_mc,1:num_par_var)
+      LOGICAL :: mask(1:num_par_var)
+
 		s_kl=0.d0
 		f_k=0.d0
-      
-      !Calcolo E
-      DO i_mc = 1, N_mc, 1
-         dummy1(i_mc)=E_tot(i_mc)*w(i_mc)
+
+      DO j = 1, N_mc, 1
+      DO i = 1, num_par_var, 1
+         O_fast(j,i)=O(i,j)
       END DO
-      dummy1(1)=SUM(dummy1(1:N_mc))
+      END DO
+      
+      !!!Calcolo E
+      dummy1(1)=SUM(E_tot(1:N_mc)*w(1:N_mc))
       CALL MPI_REDUCE(dummy1(1),E,1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+
+      CALL MPI_REDUCE(mask_O,mask,num_par_var,MPI_LOGICAL,MPI_LAND,0,MPI_COMM_WORLD,mpi_ierr)
+      IF (mpi_myrank==0) mask_O=mask
+      CALL MPI_BCAST(mask_O,num_par_var,MPI_LOGICAL,0,MPI_COMM_WORLD,mpi_ierr)
+      used_par=.NOT.mask_O
+      
+      OiOj=0.d0
       DO j = 1, num_par_var, 1
-         !Calcolo i termini Oi
-         DO i_mc = 1, N_mc, 1
-            dummy1(i_mc)=O(j,i_mc)*w(i_mc)
-         END DO
-         dummy1(1)=SUM(dummy1(1:N_mc))
-         CALL MPI_REDUCE(dummy1(1),Oi(j),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
-         !Calcolo i termini OiE
-         DO i_mc = 1, N_mc, 1
-            dummy1(i_mc)=E_tot(i_mc)*O(j,i_mc)*w(i_mc)
-         END DO
-         dummy1(1)=SUM(dummy1(1:N_mc))
-         CALL MPI_REDUCE(dummy1(1),OiE(j),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
-         !Calcolo i termini OiOj
-         DO i = j, num_par_var, 1
-             DO i_mc = 1, N_mc, 1
-               dummy1(i_mc)=O(i,i_mc)*O(j,i_mc)*w(i_mc)
-             END DO
-             dummy1(1)=SUM(dummy1(1:N_mc))
-             CALL MPI_REDUCE(dummy1(1),OiOj(i,j),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
-             OiOj(j,i)=OiOj(i,j)
-         END DO
+         IF (mask_O(j)) THEN
+            Oi(j)=0.d0
+            OiE(j)=0.d0
+         ELSE
+            !!!Calcolo i termini Oi
+            dummy1(1)=SUM(O_fast(1:N_mc,j)*w(1:N_mc))
+            CALL MPI_REDUCE(dummy1(1),Oi(j),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+
+            !!!Calcolo i termini OiE
+            dummy1(1)=SUM(E_tot(1:N_mc)*O_fast(1:N_mc,j)*w(1:N_mc))
+            CALL MPI_REDUCE(dummy1(1),OiE(j),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+
+            !!!Calcolo i termini OiOj
+            DO i = j, num_par_var, 1
+               IF (.NOT. mask_O(i)) THEN
+                  dummy1(1)=SUM(O_fast(1:N_mc,i)*O_fast(1:N_mc,j)*w(1:N_mc))
+                  CALL MPI_REDUCE(dummy1(1),OiOj(i,j),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+                  OiOj(j,i)=OiOj(i,j)
+               END IF
+            END DO
+         END IF
       END DO
       
       !Operazioni che deve eseguire solo il master
@@ -3226,10 +3033,6 @@ MODULE variational_opt
          OiE=OiE*dummy1(1)
          OiOj=OiOj*dummy1(1)
 
-         !IF (mpi_myrank==0)  PRINT *, Oi
-         !CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
-         !STOP 
-         
          !Costruisco la matrice s_kl e il vettore f_k
 		      DO j = 1, num_par_var, 1
 		      	DO i = 1, num_par_var, 1
@@ -3240,7 +3043,7 @@ MODULE variational_opt
 		      	f_k(i)=Oi(i)*E-OiE(i)
 		      END DO
       END IF
-      
+
       !Distribuisco s_kl e f_k a tutti i processori
 		CALL MPI_BCAST(s_kl,num_par_var*num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
       CALL MPI_BCAST(f_k,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)

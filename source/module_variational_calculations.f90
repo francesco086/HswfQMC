@@ -58,12 +58,13 @@ MODULE variational_calculations
 	LOGICAL, PRIVATE, SAVE :: iniz_variational_calculations=.FALSE., verbose_mode=.FALSE.
 	REAL (KIND=8), ALLOCATABLE :: parametri_var(:,:)
 	REAL (KIND=8), ALLOCATABLE :: O(:,:)
+   LOGICAL, ALLOCATABLE :: mask_O(:) !machera per O: T da mascherare perche' non contribuisce, F da considerare
 	
 	CONTAINS
 	
 	SUBROUTINE inizializza_variational_calculations(num,par_pt,num_pt)
 		IMPLICIT NONE
-		INTEGER, INTENT(IN) :: num_pt, num                  !num_pt=numero punti da considerare per il gradiente (generalmente = num), num=numero di parametri variazionali
+		INTEGER, INTENT(IN) :: num_pt, num    !num_pt=numero punti da considerare per il gradiente (generalmente = num), num=numero di parametri variazionali
 		REAL (KIND=8) :: par_pt(1:num,0:num_pt)
 		INTEGER :: i
 		
@@ -199,6 +200,8 @@ MODULE variational_calculations
 		ELSE IF ((what_to_do=='stocrec').OR.(what_to_do=='stoc_ns').OR.(what_to_do=='stoc_av').OR.(what_to_do=='pure_sr')) THEN
 			flag_derivate_var=.TRUE.
 			ALLOCATE(O(1:num_par,1:N_mc))
+         ALLOCATE(mask_O(1:num_par))
+         mask_O=.TRUE.
 		END IF
 		
 		iniz_variational_calculations=.TRUE.
@@ -997,7 +1000,7 @@ MODULE variational_calculations
 				CALL derivata_SDe_1sb(O(cont:cont+2,i_mc))
 				cont=cont+3
          CASE ('spb')
-            CALL derivata_SDe_1sb(O(cont:cont+(Bsplep%m+1)*(Bsplep%nknots+1)+1,i_mc))
+            CALL derivata_SDe_spb(O(cont:cont+(Bsplep%m+1)*(Bsplep%nknots+1)+1,i_mc))
             cont=cont+(Bsplep%m+1)*(Bsplep%nknots+1)+2
 			CASE ('atp')
 				CALL derivata_SDe_atp(O(cont,i_mc))
@@ -1025,6 +1028,13 @@ MODULE variational_calculations
 			!END DO
 			cont=cont+3*N_part
 		END IF
+
+      !aggiorno maschera per O
+      DO i = 1, num_par, 1
+         IF (mask_O(i)) THEN
+            IF (O(i,i_mc)/=0) mask_O(i)=.FALSE.
+         END IF
+      END DO
 		
 	END SUBROUTINE calcola_termini_derivate_variazionali
 !-----------------------------------------------------------------------
@@ -1144,7 +1154,7 @@ MODULE variational_calculations
 			flag_gradiente=.FALSE.
 		ELSE IF ((what_to_do=='stocrec').OR.(what_to_do=='stoc_ns').OR.(what_to_do=='stoc_av').OR.(what_to_do=='pure_sr')) THEN
 			flag_derivate_var=.FALSE.
-			DEALLOCATE(O)
+			DEALLOCATE(O,mask_O)
 		END IF
 		
 	END SUBROUTINE chiudi_variational_calculations

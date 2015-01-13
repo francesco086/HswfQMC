@@ -437,7 +437,7 @@ MODULE calcola_accettazione
       CASE ('1sb')
          CALL valuta_SD_1s_backflow(-1,'up',L,re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
             SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,ISDe_up_new,detSDe_up_new)
-         CALL valuta_SD_1s_backflow(-1,'up',L,re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
+         CALL valuta_SD_1s_backflow(-1,'dw',L,re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
             SDe_dw_old,detSDe_dw_old,ISDe_dw_old,pvte_dw_old,ISDe_dw_new,detSDe_dw_new)
 			CALL ZGETRI( H_N_part, ISDe_up_old, H_N_part, pvte_up_old, work, 3*H_N_part, info )
 			IF (info/=0) THEN
@@ -450,9 +450,9 @@ MODULE calcola_accettazione
 				STOP
 			END IF
       CASE ('spb')
-         CALL valuta_SD_SPL_backflow(-1,'up',L,re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
+         CALL valuta_SD_spl_backflow(-1,'up',L,re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
             SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,ISDe_up_new,detSDe_up_new)
-         CALL valuta_SD_SPL_backflow(-1,'up',L,re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
+         CALL valuta_SD_spl_backflow(-1,'dw',L,re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
             SDe_dw_old,detSDe_dw_old,ISDe_dw_old,pvte_dw_old,ISDe_dw_new,detSDe_dw_new)
 			CALL ZGETRI( H_N_part, ISDe_up_old, H_N_part, pvte_up_old, work, 3*H_N_part, info )
 			IF (info/=0) THEN

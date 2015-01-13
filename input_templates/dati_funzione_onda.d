@@ -42,11 +42,11 @@ ASESP_UD_YUK= -0.45833583582447029     ,
 FSESP_YUK=  3.8627648124100249     ,
 FSESP_UD_YUK= 3.8228039597443910     ,
 GSWF=1.                           !For SDse='gss'/'gsd'
-C_ATM=1.d0                       !For SDse='atm'
+C_ATM=1.                          !For SDse='atm'
 N_ritraccia_coppie=1000           !(DEPRECATED) if < 0 the molecular pairs are not tracked
 N_mc_relax_traccia_coppie=10      !(DEPRECATED)
-A_POT_se=1.                       !For SDe_kind='1sb'
-D_POT_se=0.5                      
+A_POT_se=3.                       !For SDe_kind='1sb'
+D_POT_se=1.                      
 Gsesp=1.                          !For Jsesp='gss'/'gsd'
 c_se=1.    !1.1d0                 !(DEPRECATED) for the Jse
 B_se=-1.4d0                       !(DEPRECATED)
