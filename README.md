@@ -28,6 +28,12 @@ Follow these steps:
 
   and follow the instructions. If you prefer using the system library or your own version, you can skip this step.
   
+* Install the markuspline library (developed by myself). This can be accomplished by running
+
+  `pilot-HswfQMC.sh install_markuspline
+
+  and by following the instructions.
+
 * Set the Makefile. The Makefile is located in source/Makefile. We reccomend to set it with `pilot` by running
   
  `pilot-HswfQMC.sh set_makefile`
