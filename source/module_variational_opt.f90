@@ -2978,51 +2978,69 @@ MODULE variational_opt
 		INTEGER (KIND=8) :: i_mc
 		REAL (KIND=8) :: E, Oi(1:num_par_var), OiOj(1:num_par_var,1:num_par_var), OiE(1:num_par_var)
 		REAL (KIND=8) :: media, errore, estimatore(1:2), dummy1(1:N_mc)
-      REAL(KIND=8) :: O_fast(1:N_mc,1:num_par_var)
+      REAL(KIND=8), ALLOCATABLE :: O_fast(:,:)
       LOGICAL :: mask(1:num_par_var)
 
 		s_kl=0.d0
 		f_k=0.d0
-
-      DO j = 1, N_mc, 1
-      DO i = 1, num_par_var, 1
-         O_fast(j,i)=O(i,j)
-      END DO
-      END DO
       
       !!!Calcolo E
       dummy1(1)=SUM(E_tot(1:N_mc)*w(1:N_mc))
       CALL MPI_REDUCE(dummy1(1),E,1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
 
-      CALL MPI_REDUCE(mask_O,mask,num_par_var,MPI_LOGICAL,MPI_LAND,0,MPI_COMM_WORLD,mpi_ierr)
-      IF (mpi_myrank==0) mask_O=mask
-      CALL MPI_BCAST(mask_O,num_par_var,MPI_LOGICAL,0,MPI_COMM_WORLD,mpi_ierr)
-      used_par=.NOT.mask_O
-      
+      !!!Metto insieme i flag_O di tutti i processori
+      CALL MPI_REDUCE(flag_O,mask,num_par_var,MPI_LOGICAL,MPI_LOR,0,MPI_COMM_WORLD,mpi_ierr)
+      IF (mpi_myrank==0) flag_O=mask
+      CALL MPI_BCAST(flag_O,num_par_var,MPI_LOGICAL,0,MPI_COMM_WORLD,mpi_ierr)
+      used_par=flag_O
+
+      Oi=0.d0
+      OiE=0.d0
       OiOj=0.d0
-      DO j = 1, num_par_var, 1
-         IF (mask_O(j)) THEN
-            Oi(j)=0.d0
-            OiE(j)=0.d0
-         ELSE
-            !!!Calcolo i termini Oi
-            dummy1(1)=SUM(O_fast(1:N_mc,j)*w(1:N_mc))
-            CALL MPI_REDUCE(dummy1(1),Oi(j),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
-
-            !!!Calcolo i termini OiE
-            dummy1(1)=SUM(E_tot(1:N_mc)*O_fast(1:N_mc,j)*w(1:N_mc))
-            CALL MPI_REDUCE(dummy1(1),OiE(j),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
-
-            !!!Calcolo i termini OiOj
-            DO i = j, num_par_var, 1
-               IF (.NOT. mask_O(i)) THEN
-                  dummy1(1)=SUM(O_fast(1:N_mc,i)*O_fast(1:N_mc,j)*w(1:N_mc))
-                  CALL MPI_REDUCE(dummy1(1),OiOj(i,j),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
-                  OiOj(j,i)=OiOj(i,j)
-               END IF
-            END DO
-         END IF
-      END DO
+      IF (OAV_ON_THE_FLY) THEN
+         DO j = 1, num_par_var, 1
+            IF (flag_O(j)) THEN
+               !!!Raccolgo i termini Oi
+               CALL MPI_REDUCE(Oi_av(j),Oi(j),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+               !!!Raccolgo i termini OiE
+               CALL MPI_REDUCE(OiE_av(j),OiE(j),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+               !!!Raccolgo i termini OiOj
+               DO i = 1, num_par_var, 1
+                  IF (flag_O(i)) THEN
+                     CALL MPI_REDUCE(OiOj_av(i,j),OiOj(i,j),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+                     OiOj(j,i)=OiOj(i,j)
+                  END IF
+               END DO
+            END IF
+         END DO
+      ELSE
+         ALLOCATE(O_fast(1:N_mc,1:num_par_var))
+         DO j = 1, N_mc, 1
+         DO i = 1, num_par_var, 1
+            O_fast(j,i)=O(i,j)
+         END DO
+         END DO
+         DO j = 1, num_par_var, 1
+            IF (flag_O(j)) THEN
+               !!!Calcolo i termini Oi
+               dummy1(1)=SUM(O_fast(1:N_mc,j)*w(1:N_mc))
+               CALL MPI_REDUCE(dummy1(1),Oi(j),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+               !!!Calcolo i termini OiE
+               dummy1(1)=SUM(E_tot(1:N_mc)*O_fast(1:N_mc,j)*w(1:N_mc))
+               CALL MPI_REDUCE(dummy1(1),OiE(j),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+               !!!Calcolo i termini OiOj
+               DO i = j, num_par_var, 1
+                  IF (flag_O(i)) THEN
+                     dummy1(1)=SUM(O_fast(1:N_mc,i)*O_fast(1:N_mc,j)*w(1:N_mc))
+                     CALL MPI_REDUCE(dummy1(1),OiOj(i,j),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+                     OiOj(j,i)=OiOj(i,j)
+                  END IF
+               END DO
+            END IF
+         END DO
+         DEALLOCATE(O_fast)
+      END IF
+      
       
       !Operazioni che deve eseguire solo il master
       IF (mpi_myrank==0) THEN

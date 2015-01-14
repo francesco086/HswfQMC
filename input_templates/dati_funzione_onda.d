@@ -17,7 +17,7 @@ split_Fsese=F         !Spin split for Fsese
 split_Fsesp=F         !Spin split for Fsesp
 m_Bsplep=1
 nknots_Bsplep=5
-cutoff_Bsplep=T
+cutoff_Bsplep=F
 m_Jsplee=1
 nknots_Jsplee=5
 cutoff_Jsplee=F
@@ -48,12 +48,12 @@ N_mc_relax_traccia_coppie=10      !(DEPRECATED)
 A_POT_se=3.                       !For SDe_kind='1sb'
 D_POT_se=1.                      
 Gsesp=1.                          !For Jsesp='gss'/'gsd'
-c_se=1.    !1.1d0                 !(DEPRECATED) for the Jse
-B_se=-1.4d0                       !(DEPRECATED)
-D_se=-0.7d0                       !(DEPRECATED) For the bounding in the Jse
+c_se=1.                           !(DEPRECATED) for the Jse
+B_se=-1.4                         !(DEPRECATED)
+D_se=-0.7                         !(DEPRECATED) For the bounding in the Jse
 C_sesp=1.                         !(DEPRECATED)
 lda_path='orbitals'               !Path to the file (or files, with TABC) that specifies the DFT orbitals generated with Quantum Espresso
-kf_coeff_dnfH=1.d0             !(DEPRECATED)
-flag_usa_coeff_dnfH=.FALSE.    !(DEPRECATED)
+kf_coeff_dnfH=1.                  !(DEPRECATED)
+flag_usa_coeff_dnfH=.FALSE.       !(DEPRECATED)
 /
 

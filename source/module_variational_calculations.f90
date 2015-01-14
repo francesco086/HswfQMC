@@ -5,6 +5,7 @@ MODULE variational_calculations
 	USE dati_fisici
 	USE dati_mc
 	IMPLICIT NONE
+   LOGICAL, PARAMETER :: OAV_ON_THE_FLY=.TRUE.  !If true will compute Oi, OiE, and OiOj (necessary for SR) on the fly, saving RAM
 	TYPE variational_wave_function
 		COMPLEX (KIND=8), ALLOCATABLE :: SDe_up(:,:), ISDe_up(:,:)
 		INTEGER, ALLOCATABLE :: pvte_up(:)
@@ -58,7 +59,9 @@ MODULE variational_calculations
 	LOGICAL, PRIVATE, SAVE :: iniz_variational_calculations=.FALSE., verbose_mode=.FALSE.
 	REAL (KIND=8), ALLOCATABLE :: parametri_var(:,:)
 	REAL (KIND=8), ALLOCATABLE :: O(:,:)
-   LOGICAL, ALLOCATABLE :: mask_O(:) !machera per O: T da mascherare perche' non contribuisce, F da considerare
+   REAL(KIND=8), ALLOCATABLE :: Onow(:)
+   REAL(KIND=8), ALLOCATABLE :: Oi_av(:), OiE_av(:), OiOj_av(:,:)
+   LOGICAL, ALLOCATABLE :: flag_O(:) !machera per O: T da usare, F da non considerare
 	
 	CONTAINS
 	
@@ -199,9 +202,17 @@ MODULE variational_calculations
 			END DO
 		ELSE IF ((what_to_do=='stocrec').OR.(what_to_do=='stoc_ns').OR.(what_to_do=='stoc_av').OR.(what_to_do=='pure_sr')) THEN
 			flag_derivate_var=.TRUE.
-			ALLOCATE(O(1:num_par,1:N_mc))
-         ALLOCATE(mask_O(1:num_par))
-         mask_O=.TRUE.
+         ALLOCATE(Onow(1:num_par))
+         IF (OAV_ON_THE_FLY) THEN
+            ALLOCATE(Oi_av(1:num_par),OiE_av(1:num_par),OiOj_av(1:num_par,1:num_par))
+            Oi_av=0.d0
+            OiE_av=0.d0
+            OiOj_av=0.d0
+         ELSE
+            ALLOCATE(O(1:num_par,1:N_mc))
+         END IF
+         ALLOCATE(flag_O(1:num_par))
+         flag_O=.FALSE.
 		END IF
 		
 		iniz_variational_calculations=.TRUE.
@@ -654,7 +665,7 @@ MODULE variational_calculations
 		USE estimatori
 		IMPLICIT NONE
 		INTEGER (KIND=8), INTENT(IN) :: i_mc
-		INTEGER :: cont, i
+		INTEGER :: cont, i, j
 		
 		cont=1
 		
@@ -664,37 +675,37 @@ MODULE variational_calculations
 				IF (opt_F_Jee) THEN
 					IF (split_Aee) THEN
 						IF (split_Fee) THEN
-							CALL derivata_Jee_YUK(O(cont:cont+3,i_mc))
+							CALL derivata_Jee_YUK(Onow(cont:cont+3))
 							cont=cont+4
 						ELSE
-							CALL derivata_Jee_YUK(O(cont:cont+2,i_mc))
+							CALL derivata_Jee_YUK(Onow(cont:cont+2))
 							cont=cont+3
 						END IF
 					ELSE
 						IF (split_Fee) THEN
-							CALL derivata_Jee_YUK(O(cont:cont+2,i_mc))
+							CALL derivata_Jee_YUK(Onow(cont:cont+2))
 							cont=cont+3
 						ELSE
-							CALL derivata_Jee_YUK(O(cont:cont+1,i_mc))
+							CALL derivata_Jee_YUK(Onow(cont:cont+1))
 							cont=cont+2
 						END IF
 					END IF
 				ELSE
 					IF (split_Aee) THEN
-						CALL derivata_Jee_YUK(O(cont:cont+1,i_mc))
+						CALL derivata_Jee_YUK(Onow(cont:cont+1))
 						cont=cont+2
 					ELSE
-						CALL derivata_Jee_YUK(O(cont:cont,i_mc))
+						CALL derivata_Jee_YUK(Onow(cont:cont))
 						cont=cont+1
 					END IF
 				END IF
 			ELSE
 				IF (opt_F_Jee) THEN
 					IF (split_Fee) THEN
-						CALL derivata_Jee_YUK(O(cont:cont+1,i_mc))
+						CALL derivata_Jee_YUK(Onow(cont:cont+1))
 						cont=cont+2
 					ELSE
-						CALL derivata_Jee_YUK(O(cont:cont,i_mc))
+						CALL derivata_Jee_YUK(Onow(cont:cont))
 						cont=cont+1
 					END IF
 				END IF
@@ -704,37 +715,37 @@ MODULE variational_calculations
 				IF (opt_F_Jee) THEN
 					IF (split_Aee) THEN
 						IF (split_Fee) THEN
-							CALL derivata_Jee_YUK(O(cont:cont+3,i_mc))
+							CALL derivata_Jee_YUK(Onow(cont:cont+3))
 							cont=cont+4
 						ELSE
-							CALL derivata_Jee_YUK(O(cont:cont+2,i_mc))
+							CALL derivata_Jee_YUK(Onow(cont:cont+2))
 							cont=cont+3
 						END IF
 					ELSE
 						IF (split_Fee) THEN
-							CALL derivata_Jee_YUK(O(cont:cont+2,i_mc))
+							CALL derivata_Jee_YUK(Onow(cont:cont+2))
 							cont=cont+3
 						ELSE
-							CALL derivata_Jee_YUK(O(cont:cont+1,i_mc))
+							CALL derivata_Jee_YUK(Onow(cont:cont+1))
 							cont=cont+2
 						END IF
 					END IF
 				ELSE
 					IF (split_Aee) THEN
-						CALL derivata_Jee_YUK(O(cont:cont+1,i_mc))
+						CALL derivata_Jee_YUK(Onow(cont:cont+1))
 						cont=cont+2
 					ELSE
-						CALL derivata_Jee_YUK(O(cont:cont,i_mc))
+						CALL derivata_Jee_YUK(Onow(cont:cont))
 						cont=cont+1
 					END IF
 				END IF
 			ELSE
 				IF (opt_F_Jee) THEN
 					IF (split_Fee) THEN
-						CALL derivata_Jee_YUK(O(cont:cont+1,i_mc))
+						CALL derivata_Jee_YUK(Onow(cont:cont+1))
 						cont=cont+2
 					ELSE
-						CALL derivata_Jee_YUK(O(cont:cont,i_mc))
+						CALL derivata_Jee_YUK(Onow(cont:cont))
 						cont=cont+1
 					END IF
 				END IF
@@ -742,11 +753,11 @@ MODULE variational_calculations
       CASE ('spl','spp')
          IF (opt_A_Jee.OR.opt_F_Jee) THEN
             IF (split_Aee.OR.split_Fee) THEN
-               CALL derivata_Jee_SPL(O(cont:cont+(Jsplee%Nknots+1)*(Jsplee%m+1)+&
-                  (Jsplee_ud%Nknots+1)*(Jsplee_ud%m+1),i_mc))
+               CALL derivata_Jee_SPL(Onow(cont:cont+(Jsplee%Nknots+1)*(Jsplee%m+1)+&
+                  (Jsplee_ud%Nknots+1)*(Jsplee_ud%m+1)))
                cont=cont+(Jsplee%Nknots+1)*(Jsplee%m+1)+(Jsplee_ud%Nknots+1)*(Jsplee_ud%m+1)
             ELSE
-               CALL derivata_Jee_SPL(O(cont:cont+(Jsplee%Nknots+1)*(Jsplee%m+1),i_mc))
+               CALL derivata_Jee_SPL(Onow(cont:cont+(Jsplee%Nknots+1)*(Jsplee%m+1)))
                cont=cont+(Jsplee%Nknots+1)*(Jsplee%m+1)
             END IF
          END IF
@@ -758,37 +769,37 @@ MODULE variational_calculations
 				IF (opt_F_Jep) THEN
 					IF (split_Aep) THEN
 						IF (split_Fep) THEN
-							CALL derivata_Jep_YUK(O(cont:cont+3,i_mc))
+							CALL derivata_Jep_YUK(Onow(cont:cont+3))
 							cont=cont+4
 						ELSE
-							CALL derivata_Jep_YUK(O(cont:cont+2,i_mc))
+							CALL derivata_Jep_YUK(Onow(cont:cont+2))
 							cont=cont+3
 						END IF
 					ELSE
 						IF (split_Fep) THEN
-							CALL derivata_Jep_YUK(O(cont:cont+2,i_mc))
+							CALL derivata_Jep_YUK(Onow(cont:cont+2))
 							cont=cont+3
 						ELSE
-							CALL derivata_Jep_YUK(O(cont:cont+1,i_mc))
+							CALL derivata_Jep_YUK(Onow(cont:cont+1))
 							cont=cont+2
 						END IF
 					END IF
 				ELSE
 					IF (split_Aep) THEN
-						CALL derivata_Jep_YUK(O(cont:cont+1,i_mc))
+						CALL derivata_Jep_YUK(Onow(cont:cont+1))
 						cont=cont+2
 					ELSE
-						CALL derivata_Jep_YUK(O(cont:cont,i_mc))
+						CALL derivata_Jep_YUK(Onow(cont:cont))
 						cont=cont+1
 					END IF
 				END IF
 			ELSE
 				IF (opt_F_Jep) THEN
 					IF (split_Fep) THEN
-						CALL derivata_Jep_YUK(O(cont:cont+1,i_mc))
+						CALL derivata_Jep_YUK(Onow(cont:cont+1))
 						cont=cont+2
 					ELSE
-						CALL derivata_Jep_YUK(O(cont:cont,i_mc))
+						CALL derivata_Jep_YUK(Onow(cont:cont))
 						cont=cont+1
 					END IF
 				END IF
@@ -798,37 +809,37 @@ MODULE variational_calculations
 				IF (opt_F_Jep) THEN
 					IF (split_Aep) THEN
 						IF (split_Fep) THEN
-							CALL derivata_Jep_YUK(O(cont:cont+3,i_mc))
+							CALL derivata_Jep_YUK(Onow(cont:cont+3))
 							cont=cont+4
 						ELSE
-							CALL derivata_Jep_YUK(O(cont:cont+2,i_mc))
+							CALL derivata_Jep_YUK(Onow(cont:cont+2))
 							cont=cont+3
 						END IF
 					ELSE
 						IF (split_Fep) THEN
-							CALL derivata_Jep_YUK(O(cont:cont+2,i_mc))
+							CALL derivata_Jep_YUK(Onow(cont:cont+2))
 							cont=cont+3
 						ELSE
-							CALL derivata_Jep_YUK(O(cont:cont+1,i_mc))
+							CALL derivata_Jep_YUK(Onow(cont:cont+1))
 							cont=cont+2
 						END IF
 					END IF
 				ELSE
 					IF (split_Aep) THEN
-						CALL derivata_Jep_YUK(O(cont:cont+1,i_mc))
+						CALL derivata_Jep_YUK(Onow(cont:cont+1))
 						cont=cont+2
 					ELSE
-						CALL derivata_Jep_YUK(O(cont:cont,i_mc))
+						CALL derivata_Jep_YUK(Onow(cont:cont))
 						cont=cont+1
 					END IF
 				END IF
 			ELSE
 				IF (opt_F_Jep) THEN
 					IF (split_Fep) THEN
-						CALL derivata_Jep_YUK(O(cont:cont+1,i_mc))
+						CALL derivata_Jep_YUK(Onow(cont:cont+1))
 						cont=cont+2
 					ELSE
-						CALL derivata_Jep_YUK(O(cont:cont,i_mc))
+						CALL derivata_Jep_YUK(Onow(cont:cont))
 						cont=cont+1
 					END IF
 				END IF
@@ -836,44 +847,44 @@ MODULE variational_calculations
       CASE ('spl','spp')
          IF (opt_A_Jep.OR.opt_F_Jep) THEN
             IF (split_Aep.OR.split_Fep) THEN
-               CALL derivata_Jep_SPL(O(cont:cont+(Jsplep%Nknots+1)*(Jsplep%m+1)+&
-                  (Jsplep_ud%Nknots+1)*(Jsplep_ud%m+1),i_mc))
+               CALL derivata_Jep_SPL(Onow(cont:cont+(Jsplep%Nknots+1)*(Jsplep%m+1)+&
+                  (Jsplep_ud%Nknots+1)*(Jsplep_ud%m+1)))
                cont=cont+(Jsplep%Nknots+1)*(Jsplep%m+1)+(Jsplep_ud%Nknots+1)*(Jsplep_ud%m+1)
             ELSE
-               CALL derivata_Jep_SPL(O(cont:cont+(Jsplep%Nknots+1)*(Jsplep%m+1),i_mc))
+               CALL derivata_Jep_SPL(Onow(cont:cont+(Jsplep%Nknots+1)*(Jsplep%m+1)))
                cont=cont+(Jsplep%Nknots+1)*(Jsplep%m+1)
             END IF
          END IF
 		CASE ('atm')
-			CALL derivata_Jep_ATM(O(cont:cont,i_mc))
+			CALL derivata_Jep_ATM(Onow(cont:cont))
 			cont=cont+1
 		CASE ('atp')
-			CALL derivata_Jep_ATM(O(cont:cont,i_mc))
+			CALL derivata_Jep_ATM(Onow(cont:cont))
 			cont=cont+1
 		END SELECT
 		
 		IF (opt_Kse) THEN
 			SELECT CASE (Kse_kind)
 			CASE ('gss')
-				CALL derivata_KERNese(O(cont,i_mc))
+				CALL derivata_KERNese(Onow(cont))
 				cont=cont+1
 			CASE ('gsc')
-				CALL derivata_KERNese(O(cont,i_mc))
+				CALL derivata_KERNese(Onow(cont))
 				cont=cont+1
 			CASE ('gsp')
-				CALL derivata_KERNese(O(cont,i_mc))
+				CALL derivata_KERNese(Onow(cont))
 				cont=cont+1
 			CASE ('gsd')
-				CALL derivata_KERNese(O(cont,i_mc))
+				CALL derivata_KERNese(Onow(cont))
 				cont=cont+1
 			CASE ('gdc')
-				CALL derivata_KERNese(O(cont,i_mc))
+				CALL derivata_KERNese(Onow(cont))
 				cont=cont+1
 			CASE ('gdp')
-				CALL derivata_KERNese(O(cont,i_mc))
+				CALL derivata_KERNese(Onow(cont))
 				cont=cont+1
 			CASE ('atm')
-				CALL derivata_atmKERNese(O(cont,i_mc))
+				CALL derivata_atmKERNese(Onow(cont))
 				cont=cont+1
 			END SELECT
 		END IF
@@ -881,7 +892,7 @@ MODULE variational_calculations
 		IF (opt_Jse) THEN
 			SELECT CASE (Jse_kind)
 			CASE ('pot')
-				CALL derivata_Jsese_POT(O(cont:cont+1,i_mc))
+				CALL derivata_Jsese_POT(Onow(cont:cont+1))
 				cont=cont+2
 			CASE ('bou')
 				STOP 'Jsese bou non ancora implementato per lo SR &
@@ -892,36 +903,36 @@ MODULE variational_calculations
 			CASE ('yuk')
 				IF (split_Asese) THEN
 					IF (split_Fsese) THEN
-						CALL derivata_Jsese_YUK(O(cont:cont+3,i_mc))
+						CALL derivata_Jsese_YUK(Onow(cont:cont+3))
 						cont=cont+4
 					ELSE
-						CALL derivata_Jsese_YUK(O(cont:cont+2,i_mc))
+						CALL derivata_Jsese_YUK(Onow(cont:cont+2))
 						cont=cont+3
 					END IF
 				ELSE
 					IF (split_Fsese) THEN
-						CALL derivata_Jsese_YUK(O(cont:cont+2,i_mc))
+						CALL derivata_Jsese_YUK(Onow(cont:cont+2))
 						cont=cont+3
 					ELSE
-						CALL derivata_Jsese_YUK(O(cont:cont+1,i_mc))
+						CALL derivata_Jsese_YUK(Onow(cont:cont+1))
 						cont=cont+2
 					END IF
 				END IF
 			CASE ('yup')
 				IF (split_Asese) THEN
 					IF (split_Fsese) THEN
-						CALL derivata_Jsese_YUK(O(cont:cont+3,i_mc))
+						CALL derivata_Jsese_YUK(Onow(cont:cont+3))
 						cont=cont+4
 					ELSE
-						CALL derivata_Jsese_YUK(O(cont:cont+2,i_mc))
+						CALL derivata_Jsese_YUK(Onow(cont:cont+2))
 						cont=cont+3
 					END IF
 				ELSE
 					IF (split_Fsese) THEN
-						CALL derivata_Jsese_YUK(O(cont:cont+2,i_mc))
+						CALL derivata_Jsese_YUK(Onow(cont:cont+2))
 						cont=cont+3
 					ELSE
-						CALL derivata_Jsese_YUK(O(cont:cont+1,i_mc))
+						CALL derivata_Jsese_YUK(Onow(cont:cont+1))
 						cont=cont+2
 					END IF
 				END IF
@@ -936,44 +947,44 @@ MODULE variational_calculations
 			CASE ('yuk')
 				IF (split_Asesp) THEN
 					IF (split_Fsesp) THEN
-						CALL derivata_Jsesp_YUK(O(cont:cont+3,i_mc))
+						CALL derivata_Jsesp_YUK(Onow(cont:cont+3))
 						cont=cont+4
 					ELSE
-						CALL derivata_Jsesp_YUK(O(cont:cont+2,i_mc))
+						CALL derivata_Jsesp_YUK(Onow(cont:cont+2))
 						cont=cont+3
 					END IF
 				ELSE
 					IF (split_Fsesp) THEN
-						CALL derivata_Jsesp_YUK(O(cont:cont+2,i_mc))
+						CALL derivata_Jsesp_YUK(Onow(cont:cont+2))
 						cont=cont+3
 					ELSE
-						CALL derivata_Jsesp_YUK(O(cont:cont+1,i_mc))
+						CALL derivata_Jsesp_YUK(Onow(cont:cont+1))
 						cont=cont+2
 					END IF
 				END IF
 			CASE ('yup')
 				IF (split_Asesp) THEN
 					IF (split_Fsesp) THEN
-						CALL derivata_Jsesp_YUK(O(cont:cont+3,i_mc))
+						CALL derivata_Jsesp_YUK(Onow(cont:cont+3))
 						cont=cont+4
 					ELSE
-						CALL derivata_Jsesp_YUK(O(cont:cont+2,i_mc))
+						CALL derivata_Jsesp_YUK(Onow(cont:cont+2))
 						cont=cont+3
 					END IF
 				ELSE
 					IF (split_Fsesp) THEN
-						CALL derivata_Jsesp_YUK(O(cont:cont+2,i_mc))
+						CALL derivata_Jsesp_YUK(Onow(cont:cont+2))
 						cont=cont+3
 					ELSE
-						CALL derivata_Jsesp_YUK(O(cont:cont+1,i_mc))
+						CALL derivata_Jsesp_YUK(Onow(cont:cont+1))
 						cont=cont+2
 					END IF
 				END IF
 			CASE ('gss')
-				CALL derivata_KERNsesp(O(cont,i_mc))
+				CALL derivata_KERNsesp(Onow(cont))
 				cont=cont+1
 			CASE ('gsd')
-				CALL derivata_KERNsesp(O(cont,i_mc))
+				CALL derivata_KERNsesp(Onow(cont))
 				cont=cont+1
 			END SELECT
 		END IF
@@ -982,28 +993,28 @@ MODULE variational_calculations
 			SELECT CASE (SDe_kind)
 			CASE ('prf')
 				IF (opt_c_eff_dnfH) THEN
-					CALL derivata_SDe_HAR(O(cont:cont+N_pw_lda*N_pw_lda-1,i_mc))
+					CALL derivata_SDe_HAR(Onow(cont:cont+N_pw_lda*N_pw_lda-1))
 					cont=cont+N_pw_lda*N_pw_lda
 				END IF
 			CASE ('fre')
 				IF (opt_c_eff_dnfH) THEN
-					CALL derivata_SDe_HAR(O(cont:cont+N_pw_lda*N_pw_lda-1,i_mc))
+					CALL derivata_SDe_HAR(Onow(cont:cont+N_pw_lda*N_pw_lda-1))
 					cont=cont+N_pw_lda*N_pw_lda
 				END IF
 			CASE ('atm')
-				CALL derivata_SDe_atm(O(cont,i_mc))
+				CALL derivata_SDe_atm(Onow(cont))
 				cont=cont+1
 			CASE ('bat')
-				CALL derivata_SDe_bat(O(cont,i_mc))
+				CALL derivata_SDe_bat(Onow(cont))
 				cont=cont+1
 			CASE ('1sb')
-				CALL derivata_SDe_1sb(O(cont:cont+2,i_mc))
+				CALL derivata_SDe_1sb(Onow(cont:cont+2))
 				cont=cont+3
          CASE ('spb')
-            CALL derivata_SDe_spb(O(cont:cont+(Bsplep%m+1)*(Bsplep%nknots+1)+1,i_mc))
+            CALL derivata_SDe_spb(Onow(cont:cont+(Bsplep%m+1)*(Bsplep%nknots+1)+1))
             cont=cont+(Bsplep%m+1)*(Bsplep%nknots+1)+2
 			CASE ('atp')
-				CALL derivata_SDe_atp(O(cont,i_mc))
+				CALL derivata_SDe_atp(Onow(cont))
 				cont=cont+1
 			END SELECT
 		END IF
@@ -1012,29 +1023,48 @@ MODULE variational_calculations
 			IF ( opt_SDse ) THEN
 				SELECT CASE (SDse_kind)
 				CASE ('atm')
-					CALL derivata_SDse_atm(O(cont,i_mc))
+					CALL derivata_SDse_atm(Onow(cont))
 					cont=cont+1
 				CASE ('atp')
-					CALL derivata_SDse_atp(O(cont,i_mc))
+					CALL derivata_SDse_atp(Onow(cont))
 					cont=cont+1
 				END SELECT
 			END IF
 		END IF
 		
 		IF ( opt_rp ) THEN
-			CALL derivata_psi_Rp(O(cont:cont+3*N_part-1,i_mc))
+			CALL derivata_psi_Rp(Onow(cont:cont+3*N_part-1))
 			!DO i = 1, N_part, 1
-			!	PRINT * , i, O(i*3-2:i*3,i_mc)
+			!	PRINT * , i, Onow(i*3-2:i*3)
 			!END DO
 			cont=cont+3*N_part
 		END IF
 
       !aggiorno maschera per O
       DO i = 1, num_par, 1
-         IF (mask_O(i)) THEN
-            IF (O(i,i_mc)/=0) mask_O(i)=.FALSE.
+         IF (.NOT.flag_O(i)) THEN
+            IF (Onow(i)/=0) flag_O(i)=.TRUE.
          END IF
       END DO
+
+      !accumulo i valori calcolati
+       IF (OAV_ON_THE_FLY) THEN
+          !Oi
+          DO i = 1, num_par, 1
+            IF (flag_O(i)) THEN
+               Oi_av(i)=Oi_av(i)+Onow(i)*w(i_mc)
+               OiE_av(i)=OiE_av(i)+Onow(i)*E_tot(i_mc)*w(i_mc)
+               DO j = i, num_par, 1
+                  IF (flag_O(j)) THEN
+                     OiOj_av(i,j)=OiOj_av(i,j)+Onow(i)*Onow(j)*w(i_mc)
+                     OiOj_av(j,i)=OiOj_av(i,j)
+                  END IF
+               END DO
+            END IF
+          END DO
+       ELSE
+         O(1:num_par,i_mc)=Onow(1:num_par)
+       END IF
 		
 	END SUBROUTINE calcola_termini_derivate_variazionali
 !-----------------------------------------------------------------------
@@ -1154,7 +1184,13 @@ MODULE variational_calculations
 			flag_gradiente=.FALSE.
 		ELSE IF ((what_to_do=='stocrec').OR.(what_to_do=='stoc_ns').OR.(what_to_do=='stoc_av').OR.(what_to_do=='pure_sr')) THEN
 			flag_derivate_var=.FALSE.
-			DEALLOCATE(O,mask_O)
+         DEALLOCATE(Onow)
+         IF (OAV_ON_THE_FLY) THEN
+            DEALLOCATE(Oi_av,OiE_av,OiOj_av)
+         ELSE
+            DEALLOCATE(O)
+         END IF
+			DEALLOCATE(flag_O)
 		END IF
 		
 	END SUBROUTINE chiudi_variational_calculations
