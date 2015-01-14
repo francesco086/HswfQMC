@@ -30,7 +30,7 @@ Follow these steps:
   
 * Install the markuspline library (developed by myself). This can be accomplished by running
 
-  `pilot-HswfQMC.sh install_markuspline
+  `pilot-HswfQMC.sh install_markuspline`
 
   and by following the instructions.
 
