@@ -832,6 +832,7 @@ MODULE variational_opt
 		INTEGER :: num, i
 		REAL (KIND=8) :: par(1:num), energia(1:2), par_pt(1:num,1)
 		
+      CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
 		CALL inizializza_VMC('opt'//id,CONTINUA=.FALSE.)
 
 		CALL setta_parametri(par,num)
@@ -1266,6 +1267,7 @@ MODULE variational_opt
 		OPEN (UNIT=9, FILE='ottimizzazione/SR_var_parameters.dat', STATUS='UNKNOWN', POSITION='APPEND')
 		IF ( num_coord_Rp>0 ) THEN   !stampo la configurazione Rp_0 nel file 
 			IF (stampa_dati_funzione_onda) THEN
+            CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
 				CALL inizializza_dati_fisici()
 				CALL inizializza_dati_mc()
 				CALL inizializza_walkers('opt_Rp')
@@ -1368,6 +1370,7 @@ MODULE variational_opt
 				IF (mpi_myrank==0) PRINT * , 'VAR_OPT: Trovato un nuovo minimo assoluto.'
 				IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: Trovato un nuovo minimo assoluto.'
 				IF (stampa_dati_funzione_onda) THEN
+               CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
 					CALL inizializza_dati_fisici()
 					CALL inizializza_dati_mc()
 					CALL inizializza_walkers('opt_Rp')
@@ -1736,6 +1739,7 @@ MODULE variational_opt
 
 			!stampa gli ultimi dati variazionali SR
 			IF (stampa_dati_funzione_onda) THEN
+            CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
 				CALL inizializza_dati_fisici()
 				CALL inizializza_dati_mc()
 				CALL inizializza_walkers('opt_Rp')
@@ -1776,6 +1780,7 @@ MODULE variational_opt
 
 			!stampa i dati variazionali AVERAGE
 			IF (stampa_dati_funzione_onda) THEN
+            CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
 				CALL inizializza_dati_fisici()
 				CALL inizializza_dati_mc()
 				CALL inizializza_walkers('opt_Rp')

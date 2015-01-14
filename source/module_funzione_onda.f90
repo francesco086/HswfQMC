@@ -6,6 +6,7 @@ MODULE funzione_onda
 	INTEGER, SAVE :: num_chiamata_twist_lda
 	COMPLEX (KIND=8), SAVE, ALLOCATABLE :: c_eff_dnfH(:,:)
 	REAL (KIND=8), SAVE :: Aee_yuk, Aee_ud_yuk, Fee_yuk, Fee_ud_yuk                      !per gli pseudopotenziali di Yukawa
+   TYPE(MSPLINE) :: foo_spl
    TYPE(MSPLINE) :: Jsplee, Jsplee_ud, Jsplep, Jsplep_ud
    INTEGER :: m_Jsplee, nknots_Jsplee, m_Jsplep, nknots_Jsplep
    LOGICAL :: cutoff_Jsplee, cutoff_Jsplep
@@ -263,7 +264,9 @@ MODULE funzione_onda
             CUTOFF=cutoff_Bsplep )
          INQUIRE(FILE=TRIM(path_dati_funzione_onda)//"-Bsplep",EXIST=flag_file)
          IF (flag_file) THEN
-            CALL MSPL_load(SPL=Bsplep,FILENAME=TRIM(path_dati_funzione_onda)//"-Bsplep")
+            CALL MSPL_load(SPL=foo_spl,FILENAME=TRIM(path_dati_funzione_onda)//"-Bsplep")
+            CALL MSPL_carbon_copy(ORIGINAL_SPL=foo_spl,CC_SPL=Bsplep)
+            CALL MSPL_deallocate(SPL=foo_spl)
          ELSE
             CALL MSPL_fit_function(SPL=Bsplep,F=Bep1s)
          END IF
@@ -285,7 +288,9 @@ MODULE funzione_onda
             CUTOFF=cutoff_Jsplee )
          INQUIRE(FILE=TRIM(path_dati_funzione_onda)//"-Jsplee",EXIST=flag_file)
          IF (flag_file) THEN
-            CALL MSPL_load(SPL=Jsplee,FILENAME=TRIM(path_dati_funzione_onda)//"-Jsplee")
+            CALL MSPL_load(SPL=foo_spl,FILENAME=TRIM(path_dati_funzione_onda)//"-Jsplee")
+            CALL MSPL_carbon_copy(ORIGINAL_SPL=foo_spl,CC_SPL=Jsplee)
+            CALL MSPL_deallocate(SPL=foo_spl)
          ELSE
             !IF (mpi_myrank==0) PRINT *, "Dati spline Jee non presenti. Fitto il Jastrow Yukawa ",&
             !   TRIM(TRIM(path_dati_funzione_onda))//"-Jsplee"
@@ -297,7 +302,9 @@ MODULE funzione_onda
                CUTOFF=cutoff_Jsplee ) 
             INQUIRE(FILE=TRIM(path_dati_funzione_onda)//"-Jsplee_ud",EXIST=flag_file)
             IF (flag_file) THEN
-               CALL MSPL_load(SPL=Jsplee_ud,FILENAME=TRIM(path_dati_funzione_onda)//"-Jsplee_ud")
+               CALL MSPL_load(SPL=foo_spl,FILENAME=TRIM(path_dati_funzione_onda)//"-Jsplee_ud")
+               CALL MSPL_carbon_copy(ORIGINAL_SPL=foo_spl,CC_SPL=Jsplee_ud)
+               CALL MSPL_deallocate(SPL=foo_spl)
             ELSE
                !IF (mpi_myrank==0) PRINT *, "Dati spline Jee_ud non presenti. Fitto il Jastrow Yukawa ",&
                !   TRIM(TRIM(path_dati_funzione_onda))//"-Jsplee_ud"
@@ -320,7 +327,9 @@ MODULE funzione_onda
             CUTOFF=cutoff_Jsplep )
          INQUIRE(FILE=TRIM(path_dati_funzione_onda)//"-Jsplep",EXIST=flag_file)
          IF (flag_file) THEN
-            CALL MSPL_load(SPL=Jsplep,FILENAME=TRIM(path_dati_funzione_onda)//"-Jsplep")
+            CALL MSPL_load(SPL=foo_spl,FILENAME=TRIM(path_dati_funzione_onda)//"-Jsplep")
+            CALL MSPL_carbon_copy(ORIGINAL_SPL=foo_spl,CC_SPL=Jsplep)
+            CALL MSPL_deallocate(SPL=foo_spl)
          ELSE
             !IF (mpi_myrank==0) PRINT *, "Dati spline Jep non presenti. Fitto il Jastrow Yukawa ",&
             !   TRIM(TRIM(path_dati_funzione_onda))//"-Jsplep"
@@ -332,7 +341,9 @@ MODULE funzione_onda
                CUTOFF=cutoff_Jsplep ) 
             INQUIRE(FILE=TRIM(path_dati_funzione_onda)//"-Jsplep_ud",EXIST=flag_file)
             IF (flag_file) THEN
-               CALL MSPL_load(SPL=Jsplep_ud,FILENAME=TRIM(path_dati_funzione_onda)//"-Jsplep_ud")
+               CALL MSPL_load(SPL=foo_spl,FILENAME=TRIM(path_dati_funzione_onda)//"-Jsplep_ud")
+               CALL MSPL_carbon_copy(ORIGINAL_SPL=foo_spl,CC_SPL=Jsplep_ud)
+               CALL MSPL_deallocate(SPL=foo_spl)
             ELSE
                !IF (mpi_myrank==0) PRINT *, "Dati spline Jep_ud non presenti. Fitto il Jastrow Yukawa ",&
                !   TRIM(TRIM(path_dati_funzione_onda))//"-Jsplep_ud"
