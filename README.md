@@ -36,7 +36,7 @@ Follow these steps:
 
 * Set the Makefile. The Makefile is located in source/Makefile. We reccomend to set it with `pilot` by running
   
- `pilot-HswfQMC.sh set_makefile`
+  `pilot-HswfQMC.sh set_makefile`
 
   If you prefer to set it by hand you can simply edit it by yourself.
 
