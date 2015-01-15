@@ -3,7 +3,7 @@ DEBUG=false
 #compile without optimization or debugging flags, for quick compiling
 QUICK_COMPILE=false
 #standard executable name
-EXEC2=HswfQMC-dev
+EXEC2=HswfQMC
 
 COMPUTER:=$(shell hostname)
 USERNAME:=$(shell whoami)
@@ -12,7 +12,7 @@ IDENTIFIER:=$(USERNAME)@$(COMPUTER)
 #set the flags for the compiler 
 FFLAGS=-O3 -march=native
 #standard: append _exe to the executable name
-EXEC1=$(EXEC2)_dev
+EXEC1=$(EXEC2)_exe
 
 #quick compile compiling mode
 ifeq ($(QUICK_COMPILE),true)
