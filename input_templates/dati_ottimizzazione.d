@@ -1,5 +1,7 @@
 &dati_ottimizzazione
 opt_SDe=T
+opt_orbital=T
+opt_dynamic_backflow=T
 opt_A_Jee=T
 opt_F_Jee=T
 opt_A_Jep=T

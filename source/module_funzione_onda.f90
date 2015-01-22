@@ -351,7 +351,7 @@ MODULE funzione_onda
             END IF
          END IF
       END IF
-		                                                         
+
 		IF ((Jsesp_kind=='bou') .OR. (Jsesp_kind=='ppb')) THEN   
 			M=fattoriale_doppio(N_part-1)
 			ALLOCATE(coppie(1:2,1:N_part/2,1:M))
@@ -937,22 +937,30 @@ MODULE funzione_onda
 				END IF
 			ELSE IF (SDe_kind=='1sb') THEN
 				IF ( opt_SDe ) THEN
-					C_atm=nuovi_parametri(cont)
-					cont=cont+1
-					A_POT_se=nuovi_parametri(cont)
-					cont=cont+1
-					D_POT_se=nuovi_parametri(cont)
-					cont=cont+1
+               IF (opt_orbital) THEN
+					   C_atm=nuovi_parametri(cont)
+					   cont=cont+1
+               END IF
+               IF (opt_dynamic_backflow) THEN
+					   A_POT_se=nuovi_parametri(cont)
+					   cont=cont+1
+					   D_POT_se=nuovi_parametri(cont)
+					   cont=cont+1
+               END IF
 				END IF
 			ELSE IF (SDe_kind=='spb') THEN
 				IF ( opt_SDe ) THEN
-					Bsplep%t(0:Bsplep%m,0:Bsplep%nknots)=&
-                  RESHAPE(nuovi_parametri(cont:cont+(Bsplep%m+1)*(Bsplep%nknots+1)-1),(/Bsplep%m+1,Bsplep%nknots+1/))
-					cont=cont+(Bsplep%m+1)*(Bsplep%nknots+1)
-					A_POT_se=nuovi_parametri(cont)
-					cont=cont+1
-					D_POT_se=nuovi_parametri(cont)
-					cont=cont+1
+               IF (opt_orbital) THEN
+					   Bsplep%t(0:Bsplep%m,0:Bsplep%nknots)=&
+                     RESHAPE(nuovi_parametri(cont:cont+(Bsplep%m+1)*(Bsplep%nknots+1)-1),(/Bsplep%m+1,Bsplep%nknots+1/))
+					   cont=cont+(Bsplep%m+1)*(Bsplep%nknots+1)
+               END IF
+               IF (opt_dynamic_backflow) THEN
+					   A_POT_se=nuovi_parametri(cont)
+					   cont=cont+1
+					   D_POT_se=nuovi_parametri(cont)
+					   cont=cont+1
+               END IF
 				END IF
 			END IF
 		END IF

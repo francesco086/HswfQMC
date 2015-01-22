@@ -5,7 +5,7 @@ MODULE variational_calculations
 	USE dati_fisici
 	USE dati_mc
 	IMPLICIT NONE
-   LOGICAL, PARAMETER :: OAV_ON_THE_FLY=.TRUE.  !If true will compute Oi, OiE, and OiOj (necessary for SR) on the fly, saving RAM
+   LOGICAL, PARAMETER :: OAV_ON_THE_FLY=.FALSE.  !If true will compute Oi, OiE, and OiOj (necessary for SR) on the fly, saving RAM
 	TYPE variational_wave_function
 		COMPLEX (KIND=8), ALLOCATABLE :: SDe_up(:,:), ISDe_up(:,:)
 		INTEGER, ALLOCATABLE :: pvte_up(:)
@@ -60,7 +60,7 @@ MODULE variational_calculations
 	REAL (KIND=8), ALLOCATABLE :: parametri_var(:,:)
 	REAL (KIND=8), ALLOCATABLE :: O(:,:)
    REAL(KIND=8), ALLOCATABLE :: Onow(:)
-   REAL(KIND=8), ALLOCATABLE :: Oi_av(:), OiE_av(:), OiOj_av(:,:)
+   REAL(KIND=8), ALLOCATABLE :: Oi_av(:), OiE_av(:), OiOj_av(:,:), OiE2_av(:)
    LOGICAL, ALLOCATABLE :: flag_O(:) !machera per O: T da usare, F da non considerare
 	
 	CONTAINS
@@ -205,6 +205,7 @@ MODULE variational_calculations
          ALLOCATE(Onow(1:num_par))
          IF (OAV_ON_THE_FLY) THEN
             ALLOCATE(Oi_av(1:num_par),OiE_av(1:num_par),OiOj_av(1:num_par,1:num_par))
+            ALLOCATE(OiE2_av(1:num_par))
             Oi_av=0.d0
             OiE_av=0.d0
             OiOj_av=0.d0
@@ -1004,18 +1005,34 @@ MODULE variational_calculations
 			CASE ('atm')
 				CALL derivata_SDe_atm(Onow(cont))
 				cont=cont+1
+			CASE ('atp')
+				CALL derivata_SDe_atp(Onow(cont))
+				cont=cont+1
 			CASE ('bat')
 				CALL derivata_SDe_bat(Onow(cont))
 				cont=cont+1
 			CASE ('1sb')
-				CALL derivata_SDe_1sb(Onow(cont:cont+2))
-				cont=cont+3
+            IF (opt_dynamic_backflow.AND.opt_orbital) THEN
+				   CALL derivata_SDe_1sb(Onow(cont:cont+2))
+				   cont=cont+3
+            ELSE IF (opt_orbital) THEN
+               CALL derivata_SDe_1sb(Onow(cont:cont))
+               cont=cont+1
+            ELSE IF (opt_dynamic_backflow) THEN
+               CALL derivata_SDe_1sb(Onow(cont:cont+1))
+               cont=cont+2
+            END IF
          CASE ('spb')
-            CALL derivata_SDe_spb(Onow(cont:cont+(Bsplep%m+1)*(Bsplep%nknots+1)+1))
-            cont=cont+(Bsplep%m+1)*(Bsplep%nknots+1)+2
-			CASE ('atp')
-				CALL derivata_SDe_atp(Onow(cont))
-				cont=cont+1
+            IF (opt_dynamic_backflow) THEN
+               CALL derivata_SDe_spb(Onow(cont:cont+(Bsplep%m+1)*(Bsplep%nknots+1)+1))
+               cont=cont+(Bsplep%m+1)*(Bsplep%nknots+1)+2
+            ELSE IF (opt_orbital) THEN
+               CALL derivata_SDe_spb(Onow(cont:cont+(Bsplep%m+1)*(Bsplep%nknots+1)-1))
+               cont=cont+(Bsplep%m+1)*(Bsplep%nknots+1)
+            ELSE IF (opt_dynamic_backflow) THEN
+               CALL derivata_SDe_spb(Onow(cont:cont+1))
+               cont=cont+2
+            END IF
 			END SELECT
 		END IF
 		
@@ -1054,6 +1071,7 @@ MODULE variational_calculations
             IF (flag_O(i)) THEN
                Oi_av(i)=Oi_av(i)+Onow(i)*w(i_mc)
                OiE_av(i)=OiE_av(i)+Onow(i)*E_tot(i_mc)*w(i_mc)
+               OiE2_av(i)=OiE_av(i)+Onow(i)*E_tot(i_mc)*E_tot(i_mc)*w(i_mc)
                DO j = i, num_par, 1
                   IF (flag_O(j)) THEN
                      OiOj_av(i,j)=OiOj_av(i,j)+Onow(i)*Onow(j)*w(i_mc)
@@ -1187,6 +1205,7 @@ MODULE variational_calculations
          DEALLOCATE(Onow)
          IF (OAV_ON_THE_FLY) THEN
             DEALLOCATE(Oi_av,OiE_av,OiOj_av)
+            DEALLOCATE(OiE2_av)
          ELSE
             DEALLOCATE(O)
          END IF

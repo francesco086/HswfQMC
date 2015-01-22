@@ -16,7 +16,7 @@ MODULE dati_mc
 	REAL (KIND=8), PROTECTED, SAVE :: step_e, step_p, step_se
 	REAL (KIND=8), PROTECTED, SAVE :: alpha_ewald, accuracy_energy_opt
 	LOGICAL, PROTECTED, SAVE :: opt_c_eff_dnfH, opt_A_Jee, opt_F_Jee, opt_A_Jep, opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp
-	LOGICAL, PROTECTED, SAVE :: opt_rp, opt_SDse, opt_SDe
+	LOGICAL, PROTECTED, SAVE :: opt_rp, opt_SDse, opt_SDe, opt_orbital, opt_dynamic_backflow
 	REAL (KIND=8), SAVE :: time_VMC_start
 	
 	CONTAINS
@@ -33,8 +33,9 @@ MODULE dati_mc
 		  flag_disk, flag_output, &
 		  quick_error, flag_random_file, random_seed_path
 		
-		NAMELIST /dati_ottimizzazione/ opt_SDe, opt_A_Jee, opt_F_Jee, opt_A_Jep, opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp, &
-		  opt_SDse, opt_c_eff_dnfH, opt_rp
+		NAMELIST /dati_ottimizzazione/ opt_SDe, opt_orbital, opt_dynamic_backflow, opt_A_Jee, opt_F_Jee, opt_A_Jep, &
+         opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp, &
+		   opt_SDse, opt_c_eff_dnfH, opt_rp
 		
 		CALL CPU_TIME(time_VMC_start)
 		
