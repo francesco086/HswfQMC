@@ -6,7 +6,6 @@ MODULE variational_opt
 	REAL (KIND=8) :: E_min(1:2), liv_precisione
 	REAL (KIND=8), ALLOCATABLE, SAVE :: parametri_var(:)
 	REAL (KIND=8), ALLOCATABLE :: s_kl(:,:), f_k(:)
-   REAL(KIND=8) :: beta_SR, beta_Rp_SR
    LOGICAL, ALLOCATABLE :: used_par(:)
 	
 	CONTAINS
@@ -856,23 +855,6 @@ MODULE variational_opt
          CALL sampling(.TRUE.)
          CALL trascrivi_dati()
          CALL restituisci_energia(energia)
-         !inizializzo beta_SR
-         IF (beta_SR==-1.d0) THEN
-             IF (num-num_coord_Rp>0) THEN
-                !foo1=0.d0
-                !foo2=0.d0
-                !DO i = 1, num-num_coord_Rp, 1
-                !  IF (used_par(i)) THEN
-                !     foo1=foo1+par(i)*par(i)
-                !     foo2=foo2+1.d0
-                !  END IF
-                !END DO
-                !foo2=MAX(foo2,1.d0)
-                !beta_SR=DSQRT(foo1)/foo2
-                beta_SR=0.3333333
-             END IF
-		      IF (num_coord_Rp>0) beta_Rp_SR=beta_Rp_SR*DSQRT(num_coord_Rp*MINVAL(L)*0.01d0)
-         END IF
          CALL estrai_s_kl_e_f_k()
          CALL chiudi_VMC()
          CALL chiudi_variational_calculations()
@@ -1241,7 +1223,7 @@ MODULE variational_opt
 		USE generic_tools
 		IMPLICIT NONE
 		REAL (KIND=8), PARAMETER :: MIN_VAR_NEC=0.025, MIN_LAMBDA2=0.5, MIN_VAR_ACC=0.001, MAX_VAR_ACC=0.25, MAX_VAR_PROT=0.1
-      REAL(KIND=8) :: SVD_MIN=0.00001
+      REAL(KIND=8) :: SVD_MIN=0.0000000001
 		LOGICAL, INTENT(IN) :: auto_stop, AV_accu
 		INTEGER (KIND=4), INTENT(IN) :: N
 		LOGICAL :: flag_loop, loop_stop(1:6), accettabile, flag_file, flag_trovato_minimo, flag_freeze
@@ -1249,13 +1231,13 @@ MODULE variational_opt
 		CHARACTER(LEN=4) :: stringa, istring
 		INTEGER :: i, j, info, contatore, IO, i_orbit, AV_cont
       INTEGER :: lwork
-		REAL (KIND=8) :: lambda, eps, lambda2, lambda3, boundd, dummy(1:4), dummy2(0:N), foo
-		REAL (KIND=8) :: lambda_Rp, lambda2_Rp, flambda2_Rp
+		REAL (KIND=8) :: lambda, flambda, eps, boundd, dummy(1:4), dummy2(0:N), foo
+		REAL (KIND=8) :: lambda_Rp, flambda_Rp
 		REAL (KIND=8) :: p0(1:N), dp_iniz(1:N), AV_P(1:N)
-		REAL (KIND=8) :: dp(1:N), Is_kl(1:N,1:N), pvt(1:N), cont_step
+		REAL (KIND=8) :: dp(1:N), dp_old(1:N), Is_kl(1:N,1:N), pvt(1:N), cont_step
       REAL(KIND=8), ALLOCATABLE :: work(:)
 		REAL (KIND=8) :: D_tr(1:N), E_tr(1:N-1), TAU_tr(1:N-1)
-		REAL (KIND=8) :: energia(1:2), minE_AV(1:2), vec_app(1:N), vec_app_old(1:N), flambda2
+		REAL (KIND=8) :: energia(1:2), minE_AV(1:2), vec_app(1:N), vec_app_old(1:N)
 		REAL (KIND=8) :: old_step(1:5), old_p0(1:N,1:5), old_E(1:2,1:5), derivE(1:4)
 		REAL (KIND=8) :: old_step_Rp(1:5)
 		REAL (KIND=8) :: dist_poss, dist_perc, dist_poss_5, dist_perc_5, av_errore, derE, nextdE
@@ -1263,10 +1245,8 @@ MODULE variational_opt
 		REAL (KIND=8), ALLOCATABLE :: gRpuu(:), gRpuu_new(:), gRpud(:), gRpud_new(:), x_gr(:)
       REAL(KIND=8) :: Usvd(1:N,1:N), VTsvd(1:N,1:N), Ssvd(1:N)
 
-		beta_SR=-1.d0
-		beta_Rp_SR=-1.d0
-      lambda2=-1.d0
-      lambda2_Rp=-1.d0
+      lambda=1.d0
+      lambda_Rp=1.d0
 		i_orbit=1
 		AV_cont=0
 		AV_P=0.d0
@@ -1413,6 +1393,7 @@ MODULE variational_opt
             IF (mpi_myrank==0) PRINT * , 'VAR_OPT: Numero parametri variazionali effettivi: ', j
             IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: Numero parametri variazionali effettivi: ', j
          END IF
+
 			
          !Calcolo la direzione in cui muoversi usando s_kl e f_k
 			IF ((flag_disk .AND. mpi_myrank==0) .OR. (.NOT. flag_disk)) THEN
@@ -1441,39 +1422,48 @@ MODULE variational_opt
 				END DO
 				vec_app=dp/DSQRT(DOT_PRODUCT(dp,dp))
 				
+            !salva il dp iniziale e il primo dp_old
 				IF ( contatore==1 ) THEN
 					dp_iniz=dp
-               lambda2=1.d0!beta_SR
-               lambda2_Rp=1.d0!beta_Rp_SR
-            ELSE
-               IF (DOT_PRODUCT(dp,dp)>DOT_PRODUCT(dp_iniz,dp_iniz)) THEN
-                  dp_iniz=dp
-               END IF
+               dp_old=dp
+            END IF
+
+            !se il dp aumenta, faccio diminuire lambda
+            IF (SR_lambda.AND.(DOT_PRODUCT(dp,dp)>DOT_PRODUCT(dp_old,dp_old))) THEN
+               lambda=lambda*DSQRT(DOT_PRODUCT(dp_old,dp_old))/DSQRT(DOT_PRODUCT(dp,dp))
+               IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [dp] dp e aumentato quindi riduco lambda di ', &
+               DSQRT(DOT_PRODUCT(dp_old,dp_old))/DSQRT(DOT_PRODUCT(dp,dp))
+               IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [dp] dp e aumentato quindi riduco lambda di ', &
+                  DSQRT(DOT_PRODUCT(dp_old,dp_old))/DSQRT(DOT_PRODUCT(dp,dp))
 				END IF
+            
+            !salvo il dp vecchio
+            dp_old=dp
 				
+            !regolo lambda a seconda di come sono stati gli ultimi spostamenti variazionali
 				IF ((contatore>2).AND.(N-num_coord_Rp>0)) THEN       !parametri variazionali wf
-					flambda2=(1.d0+0.1d0*DOT_PRODUCT(vec_app(1:N-num_coord_Rp),vec_app_old(1:N-num_coord_Rp)))
-					IF (contatore<5) flambda2=(1.d0+0.50d0*DOT_PRODUCT(vec_app(1:N-num_coord_Rp),vec_app_old(1:N-num_coord_Rp)))
-					!lambda2=lambda2*flambda2
-					IF (flambda2>1.d0) THEN
+					flambda=(1.d0+0.1d0*DOT_PRODUCT(vec_app(1:N-num_coord_Rp),vec_app_old(1:N-num_coord_Rp)))
+					IF (contatore<5) flambda=(1.d0+0.50d0*DOT_PRODUCT(vec_app(1:N-num_coord_Rp),vec_app_old(1:N-num_coord_Rp)))
+               IF (SR_lambda) lambda=lambda*flambda
+					IF (flambda>1.d0) THEN
 						loop_stop(1)=.FALSE.
 					ELSE
 						loop_stop(1)=.TRUE.
 					END IF
-					IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [PS] cambio lambda2 di', flambda2
-					IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [PS] cambio lambda2 di', flambda2
+					IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [PS] cambio lambda di', flambda
+					IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [PS] cambio lambda di', flambda
 				END IF
 				IF ((contatore>2).AND.(num_coord_Rp>0)) THEN       !parametri Rp
-					flambda2_Rp=(1.d0+0.1d0*DOT_PRODUCT(vec_app(N-num_coord_Rp+1:N),vec_app_old(N-num_coord_Rp+1:N)))
-					IF (contatore<5) flambda2_Rp=(1.d0+0.50d0*DOT_PRODUCT(vec_app(N-num_coord_Rp+1:N),vec_app_old(N-num_coord_Rp+1:N)))
-					!lambda2_Rp=lambda2_Rp*flambda2_Rp
-					IF (flambda2_Rp>1.d0) THEN
+					flambda_Rp=(1.d0+0.1d0*DOT_PRODUCT(vec_app(N-num_coord_Rp+1:N),vec_app_old(N-num_coord_Rp+1:N)))
+					IF (contatore<5) flambda_Rp=(1.d0+0.50d0*DOT_PRODUCT(vec_app(N-num_coord_Rp+1:N),vec_app_old(N-num_coord_Rp+1:N)))
+               IF (SR_lambda_Rp) lambda_Rp=lambda_Rp*flambda_Rp
+					IF (flambda_Rp>1.d0) THEN
 						loop_stop(1)=.FALSE.
 					ELSE
 						loop_stop(1)=.TRUE.
 					END IF
-					IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [PS] cambio lambda2_Rp di', flambda2_Rp
-					IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [PS] cambio lambda2_Rp di', flambda2_Rp
+					IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [PS] cambio lambda_Rp di', flambda_Rp
+					IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [PS] cambio lambda_Rp di', flambda_Rp
 				END IF
 				vec_app_old=vec_app
 				
@@ -1481,122 +1471,112 @@ MODULE variational_opt
 					dist_poss=SUM(old_step(1:3))
 					dist_perc=DSQRT(DOT_PRODUCT(old_p0(1:N-num_coord_Rp,1)-old_p0(1:N-num_coord_Rp,3), &
 					                            old_p0(1:N-num_coord_Rp,1)-old_p0(1:N-num_coord_Rp,3)))
-					flambda2=(0.85d0+0.3d0*dist_perc/dist_poss)
-					!lambda2=lambda2*flambda2
-					IF (flambda2>1.d0) THEN
+					flambda=(0.85d0+0.3d0*dist_perc/dist_poss)
+					IF (SR_lambda) lambda=lambda*flambda
+					IF (flambda>1.d0) THEN
 						loop_stop(2)=.FALSE.
 					ELSE
 						loop_stop(2)=.TRUE.
 					END IF
-					IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [DIST3] cambio lambda2 di', flambda2
-					IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [DIST3] cambio lambda2 di', flambda2
+					IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [DIST3] cambio lambda di', flambda
+					IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [DIST3] cambio lambda di', flambda
 				END IF
 				IF ((contatore>3).AND.(num_coord_Rp>0)) THEN       !parametri Rp
 					dist_poss=SUM(old_step_Rp(1:3))
 					dist_perc=DSQRT(DOT_PRODUCT(old_p0(N-num_coord_Rp+1:N,1)-old_p0(N-num_coord_Rp+1:N,3), &
 					                            old_p0(N-num_coord_Rp+1:N,1)-old_p0(N-num_coord_Rp+1:N,3)))
-					flambda2_Rp=(0.85d0+0.3d0*dist_perc/dist_poss)
-					!lambda2_Rp=lambda2_Rp*flambda2_Rp
-					IF (flambda2_Rp>1.d0) THEN
+					flambda_Rp=(0.85d0+0.3d0*dist_perc/dist_poss)
+               IF (SR_lambda_Rp) lambda_Rp=lambda_Rp*flambda_Rp
+					IF (flambda_Rp>1.d0) THEN
 						loop_stop(2)=.FALSE.
 					ELSE
 						loop_stop(2)=.TRUE.
 					END IF
-					IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [DIST3] cambio lambda2_Rp di', flambda2_Rp
-					IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [DIST3] cambio lambda2_Rp di', flambda2_Rp
+					IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [DIST3] cambio lambda_Rp di', flambda_Rp
+					IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [DIST3] cambio lambda_Rp di', flambda_Rp
 				END IF
 				
 				IF ((contatore>5).AND.(N-num_coord_Rp>0)) THEN          !parametri variazionali wf
 					dist_poss_5=SUM(old_step(1:5))
 					dist_perc_5=DSQRT(DOT_PRODUCT(old_p0(1:N-num_coord_Rp,1)-old_p0(1:N-num_coord_Rp,5), &
 					                              old_p0(1:N-num_coord_Rp,1)-old_p0(1:N-num_coord_Rp,5)))
-					flambda2=(0.75d0+0.50d0*dist_perc_5/dist_poss_5)
-					!lambda2=lambda2*flambda2
-					IF (flambda2>1.d0) THEN
+               flambda=(0.75d0+0.50d0*dist_perc_5/dist_poss_5)
+					IF (SR_lambda) lambda=lambda*flambda
+					IF (flambda>1.d0) THEN
 						loop_stop(3)=.FALSE.
 					ELSE
 						loop_stop(3)=.TRUE.
 					END IF
-					IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [DIST5] cambio lambda2 di', flambda2
-					IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [DIST5] cambio lambda2 di', flambda2
+					IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [DIST5] cambio lambda di', flambda
+					IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [DIST5] cambio lambda di', flambda
 				END IF
 				IF ((contatore>5).AND.(num_coord_Rp>0)) THEN       !parametri Rp
 					dist_poss_5=SUM(old_step_Rp(1:5))
 					dist_perc_5=DSQRT(DOT_PRODUCT(old_p0(N-num_coord_Rp+1:N,1)-old_p0(N-num_coord_Rp+1:N,5), &
 					                              old_p0(N-num_coord_Rp+1:N,1)-old_p0(N-num_coord_Rp+1:N,5)))
-					flambda2_Rp=(0.75d0+0.50d0*dist_perc_5/dist_poss_5)
-					!lambda2_Rp=lambda2_Rp*flambda2_Rp
-					IF (flambda2_Rp>1.d0) THEN
+					flambda_Rp=(0.75d0+0.50d0*dist_perc_5/dist_poss_5)
+               IF (SR_lambda_Rp) lambda_Rp=lambda_Rp*flambda_Rp
+					IF (flambda_Rp>1.d0) THEN
 						loop_stop(3)=.FALSE.
 					ELSE
 						loop_stop(3)=.TRUE.
 					END IF
-					IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [DIST5] cambio lambda2_Rp di', flambda2_Rp
-					IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [DIST5] cambio lambda2_Rp di', flambda2_Rp
+					IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [DIST5] cambio lambda_Rp di', flambda_Rp
+					IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [DIST5] cambio lambda_Rp di', flambda_Rp
 				END IF
 				
-				IF (contatore>5) THEN
-					DO i = 1, 4, 1
-						derivE(i)=((old_E(1,i)-old_E(1,i+1)))/old_step(i)
-						dummy(1)=derivE(i)-DSIGN(1.d0,derivE(i))*(old_E(2,i)+old_E(2,i+1))/old_step(i)
-						IF (derivE(i)>0) THEN
-							derivE(i)=MAX(dummy(1),0.d0)
-						ELSE
-							derivE(i)=MIN(dummy(1),0.d0)
-						END IF
-						derivE(i)=REAL(5-i,8)*derivE(i)
-					END DO
-				END IF
-				IF (contatore>5) THEN
-					av_errore=SUM(old_E(2,1:3))/3.d0
-					derE=SUM(derivE(1:2))/7.d0
-					nextdE=DABS(DABS(derE)-av_errore)
-					flambda2=MIN(1.10d0,MAX(0.900d0,nextdE/av_errore))
-					IF (flambda2>1.d0) THEN
-						loop_stop(4)=.FALSE.
-					ELSE
-						loop_stop(4)=.TRUE.
-					END IF
-				END IF
-				IF (contatore>5) THEN
-					av_errore=SUM(old_E(2,1:5))/5.d0
-					derE=SUM(derivE(1:4))/10.d0
-					nextdE=DABS(DABS(derE)-av_errore)
-					flambda2=MIN(1.150d0,MAX(0.85d0,nextdE/av_errore))
-					IF (flambda2>1.d0) THEN
-						loop_stop(5)=.FALSE.
-					ELSE
-						loop_stop(5)=.TRUE.
-					END IF
-				END IF
-				IF (contatore>5) THEN
-					av_errore=SUM(old_E(2,1:5))/5.d0
-					derE=0.5d0*(old_E(1,1)+old_E(1,2)-old_E(1,5)-old_E(1,4)) / &
-					  DSQRT(DOT_PRODUCT(old_p0(1:N,1)-old_p0(1:N,5),old_p0(1:N,1)-old_p0(1:N,5)))
-					nextdE=2.d0*DABS(derE*DSQRT(DOT_PRODUCT(old_p0(1:N,1)-old_p0(1:N,5),old_p0(1:N,1)-old_p0(1:N,5)))*0.2d0)
-					flambda2=MIN(1.5d0,MAX(0.5d0,nextdE/av_errore))
-					IF (flambda2>1.d0) THEN
-						loop_stop(6)=.FALSE.
-					ELSE
-						loop_stop(6)=.TRUE.
-					END IF
-				END IF
-				IF (contatore>5) THEN
-					IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [DER] Possibile fermarsi? ', loop_stop(4:6)
-					IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [DER] Possibile fermarsi? ', loop_stop(4:6)
-				END IF
+            !!!!controllo per vedere se e' possibile fermarsi
+				!!!IF (contatore>5) THEN
+				!!!	DO i = 1, 4, 1
+				!!!		derivE(i)=((old_E(1,i)-old_E(1,i+1)))/old_step(i)
+				!!!		dummy(1)=derivE(i)-DSIGN(1.d0,derivE(i))*(old_E(2,i)+old_E(2,i+1))/old_step(i)
+				!!!		IF (derivE(i)>0) THEN
+				!!!			derivE(i)=MAX(dummy(1),0.d0)
+				!!!		ELSE
+				!!!			derivE(i)=MIN(dummy(1),0.d0)
+				!!!		END IF
+				!!!		derivE(i)=REAL(5-i,8)*derivE(i)
+				!!!	END DO
+				!!!END IF
+				!!!IF (contatore>5) THEN
+				!!!	av_errore=SUM(old_E(2,1:3))/3.d0
+				!!!	derE=SUM(derivE(1:2))/7.d0
+				!!!	nextdE=DABS(DABS(derE)-av_errore)
+				!!!	flambda2=MIN(1.10d0,MAX(0.900d0,nextdE/av_errore))
+				!!!	IF (flambda2>1.d0) THEN
+				!!!		loop_stop(4)=.FALSE.
+				!!!	ELSE
+				!!!		loop_stop(4)=.TRUE.
+				!!!	END IF
+				!!!END IF
+				!!!IF (contatore>5) THEN
+				!!!	av_errore=SUM(old_E(2,1:5))/5.d0
+				!!!	derE=SUM(derivE(1:4))/10.d0
+				!!!	nextdE=DABS(DABS(derE)-av_errore)
+				!!!	flambda2=MIN(1.150d0,MAX(0.85d0,nextdE/av_errore))
+				!!!	IF (flambda2>1.d0) THEN
+				!!!		loop_stop(5)=.FALSE.
+				!!!	ELSE
+				!!!		loop_stop(5)=.TRUE.
+				!!!	END IF
+				!!!END IF
+				!!!IF (contatore>5) THEN
+				!!!	av_errore=SUM(old_E(2,1:5))/5.d0
+				!!!	derE=0.5d0*(old_E(1,1)+old_E(1,2)-old_E(1,5)-old_E(1,4)) / &
+				!!!	  DSQRT(DOT_PRODUCT(old_p0(1:N,1)-old_p0(1:N,5),old_p0(1:N,1)-old_p0(1:N,5)))
+				!!!	nextdE=2.d0*DABS(derE*DSQRT(DOT_PRODUCT(old_p0(1:N,1)-old_p0(1:N,5),old_p0(1:N,1)-old_p0(1:N,5)))*0.2d0)
+				!!!	flambda2=MIN(1.5d0,MAX(0.5d0,nextdE/av_errore))
+				!!!	IF (flambda2>1.d0) THEN
+				!!!		loop_stop(6)=.FALSE.
+				!!!	ELSE
+				!!!		loop_stop(6)=.TRUE.
+				!!!	END IF
+				!!!END IF
+				!!!IF (contatore>5) THEN
+				!!!	IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [DER] Possibile fermarsi? ', loop_stop(4:6)
+				!!!	IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [DER] Possibile fermarsi? ', loop_stop(4:6)
+				!!!END IF
 				
-				IF ( N-num_coord_Rp>0 ) THEN
-					!lambda=0.25d0
-					!lambda=lambda/DSQRT(DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp)))
-               lambda=1.d0
-				END IF
-				IF ( num_coord_Rp>0 ) THEN
-					!lambda_Rp=0.25d0
-					!lambda_Rp=lambda_Rp/DSQRT(DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N)))
-               lambda_Rp=1.d0
-				END IF
-								
 				!!!!controllo se posso uscire dal loop
 				!!!flag_loop=.TRUE.
 				!!!IF (loop_stop(4).AND.(loop_stop(5)).AND.(loop_stop(6))) flag_loop=.FALSE.
@@ -1643,51 +1623,53 @@ MODULE variational_opt
 				!determino [e stampo *eliminato*] lo spostamento variazionale
 				IF (flag_loop) THEN
 					IF ( N-num_coord_Rp>0 ) THEN
-						cont_step=cont_step+DSQRT(DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp)))!*lambda*lambda2
+						IF (mpi_myrank==0) PRINT * , 'VAR_OPT: fattore dp: ', &
+						  DSQRT(DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp))/ &
+						  DOT_PRODUCT(dp_iniz(1:N-num_coord_Rp),dp_iniz(1:N-num_coord_Rp)))
+                  IF (SR_lambda) dp(1:N-num_coord_Rp)=dp(1:N-num_coord_Rp)*lambda
 						old_step(5)=old_step(4)
 						old_step(4)=old_step(3)
 						old_step(3)=old_step(2)
 						old_step(2)=old_step(1)
-						old_step(1)=DSQRT(DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp)))!*lambda*lambda2
-						IF (mpi_myrank==0) PRINT * , 'VAR_OPT: fattore dp: ', &
-						  DSQRT(DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp))/ &
-						  DOT_PRODUCT(dp_iniz(1:N-num_coord_Rp),dp_iniz(1:N-num_coord_Rp)))
-						!dp(1:N-num_coord_Rp)=dp(1:N-num_coord_Rp)*lambda*lambda2					
+						old_step(1)=DSQRT(DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp)))
+					   cont_step=cont_step+DSQRT(DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp)))
 					END IF
 					IF ( num_coord_Rp>0 ) THEN
-						cont_step=cont_step+DSQRT(DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N)))*lambda_Rp*lambda2_Rp
+						IF (mpi_myrank==0) PRINT * , 'VAR_OPT: fattore dp_Rp: ', &
+						  DSQRT(DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N)) / &
+						  DOT_PRODUCT(dp_iniz(N-num_coord_Rp+1:N),dp_iniz(N-num_coord_Rp+1:N)))
+                  IF (SR_lambda_Rp) dp(N-num_coord_Rp+1:N)=dp(N-num_coord_Rp+1:N)*lambda_Rp
 						old_step_Rp(5)=old_step_Rp(4)
 						old_step_Rp(4)=old_step_Rp(3)
 						old_step_Rp(3)=old_step_Rp(2)
 						old_step_Rp(2)=old_step_Rp(1)
-						old_step_Rp(1)=DSQRT(DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N)))*lambda_Rp*lambda2_Rp
-						IF (mpi_myrank==0) PRINT * , 'VAR_OPT: fattore dp_Rp: ', &
-						  DSQRT(DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N)) / &
-						  DOT_PRODUCT(dp_iniz(N-num_coord_Rp+1:N),dp_iniz(N-num_coord_Rp+1:N)))
-						!dp(N-num_coord_Rp+1:N)=dp(N-num_coord_Rp+1:N)*lambda_Rp*lambda2_Rp
+						old_step_Rp(1)=DSQRT(DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N)))*lambda_Rp
+						cont_step=cont_step+DSQRT(DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N)))
 					END IF
 					
 					IF ((mpi_myrank==0).AND.(N-num_coord_Rp>0)) THEN
-						PRINT '(A54,F9.3,A2)', ' VAR_OPT: seguendo SR, cambio i parametri    (lambda2=',lambda2,') '!'  (lambda3=', lambda3,')'
+						PRINT '(A53,F12.3,A10,F9.7,A2)', 'VAR_OPT: seguendo SR, cambio i parametri    (lambda='&
+                     ,lambda,', SR_beta=',SR_beta,') '
 						WRITE (stringa, '(I4.4)'), N-num_coord_Rp
-						PRINT '(1X,'//stringa//'(F9.3,1X))' , p0(1:N-num_coord_Rp)
-						PRINT '(1X,'//stringa//'(F9.3,1X))' , p0(1:N-num_coord_Rp)+dp(1:N-num_coord_Rp)
+						!PRINT '(1X,'//stringa//'(F9.3,1X))' , p0(1:N-num_coord_Rp)
+						!PRINT '(1X,'//stringa//'(F9.3,1X))' , p0(1:N-num_coord_Rp)+dp(1:N-num_coord_Rp)
 						IF (flag_output) THEN
-							WRITE (7, '(A54,F9.3,A2)'), &
-							  ' VAR_OPT: seguendo SR, cambio i parametri    (lambda2=',lambda2,') '!'  (lambda3=', lambda3,')'
-							WRITE (7, '(1X,'//stringa//'(F9.3,1X))'), p0(1:N-num_coord_Rp)
-							WRITE (7, '(1X,'//stringa//'(F9.3,1X))'), p0(1:N-num_coord_Rp)+dp(1:N-num_coord_Rp)
+							WRITE (7, '(A53,F12.3,A10,F9.7,A2)'), &
+							  'VAR_OPT: seguendo SR, cambio i parametri    (lambda=',lambda,', SR_beta=',SR_beta,') '
+							!WRITE (7, '(1X,'//stringa//'(F9.3,1X))'), p0(1:N-num_coord_Rp)
+							!WRITE (7, '(1X,'//stringa//'(F9.3,1X))'), p0(1:N-num_coord_Rp)+dp(1:N-num_coord_Rp)
 						END IF
 					END IF
 					IF ((mpi_myrank==0).AND.(num_coord_Rp>0)) THEN
-						PRINT '(A54,F9.3,A2)', ' VAR_OPT: seguendo SR, muovo i protoni    (lambda2_Rp=',lambda2_Rp,') '!'  (lambda3=', lambda3,')'
+						PRINT '(A53,F12.3,A13,F9.7,A2)', 'VAR_OPT: seguendo SR, muovo i protoni    (lambda_Rp='&
+                     ,lambda_Rp,', SR_beta_Rp=',SR_beta_Rp,') '
 						WRITE (stringa, '(I4.4)'), num_coord_Rp
 						!DO i = 1, N_part, 1
 						!	PRINT '(1X,A8,I3.3,10X,3(F9.3,5X))' , 'Protone ', i, dp(N-num_coord_Rp+i*3-2:N-num_coord_Rp+i*3)
 						!END DO
 						IF (flag_output) THEN
-							WRITE (7, '(A54,F9.3,A2)'), &
-							  ' VAR_OPT: seguendo SR, muovo i protoni    (lambda2_Rp=',lambda2_Rp,') '!'  (lambda3=', lambda3,')'
+							WRITE (7, '(A53,F12.3,A13,F9.7,A2)'), &
+							  'VAR_OPT: seguendo SR, muovo i protoni    (lambda_Rp=',lambda_Rp,', SR_beta_Rp=',SR_beta_Rp,') '
 							!DO i = 1, N_part, 1
 							!	WRITE (7, '(1X,A8,I3.3,10X,3(F9.3,5X))'), 'Protone ', i, dp(N-num_coord_Rp+i*3-2:N-num_coord_Rp+i*3)
 							!END DO
@@ -1712,10 +1694,12 @@ MODULE variational_opt
                ELSE
                   AV_P=AV_P+p0
                   AV_cont=AV_cont+1
-                  IF ( AV_cont > 20 ) THEN
-                     IF (mpi_myrank==0)  PRINT *,'VAR_OPT: > > > Nello stesso minimo da 20 iterazioni. Stop forzato < < <'
+                  IF ( AV_cont > SR_num_max_AV ) THEN
+                     IF (mpi_myrank==0)  PRINT *,'VAR_OPT: > > > Nello stesso minimo da SR_num_max_AV iterazioni.&
+                        Stop forzato < < <'
                      IF ((flag_output).AND.(mpi_myrank==0)) THEN
-                        WRITE (7, *), ' VAR_OPT: > > > Nello stesso minimo da 20 iterazioni. Stop forzato < < <'
+                        WRITE (7, *), ' VAR_OPT: > > > Nello stesso minimo da SR_num_max_AV iterazioni.&
+                           Stop forzato < < <'
                      END IF 
                      flag_loop=.FALSE.
                   END IF
@@ -1769,7 +1753,6 @@ MODULE variational_opt
 				CALL chiudi_dati_funzione_onda()
             CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
 			END IF
-			
 
 			!stampa i dati variazionali AVERAGE
 			IF (stampa_dati_funzione_onda) THEN
@@ -2976,7 +2959,7 @@ MODULE variational_opt
 		INTEGER :: i, j
 		INTEGER (KIND=8) :: i_mc
 		REAL (KIND=8) :: E, Oi(1:num_par_var), OiOj(1:num_par_var,1:num_par_var), OiE(1:num_par_var)
-      REAL(KIND=8) :: OiE2(1:num_par_var), E2, dH, dH2, dOi(1:num_par_var)
+      REAL(KIND=8) :: OiE2(1:num_par_var), E2, dH, dH2, ddH2, dOi(1:num_par_var)
 		REAL (KIND=8) :: media, errore, estimatore(1:2), dummy1(1:N_mc), quoz
       REAL(KIND=8), ALLOCATABLE :: O_fast(:,:)
       LOGICAL :: mask(1:num_par_var)
@@ -2997,10 +2980,14 @@ MODULE variational_opt
       dummy1(1)=SUM((E_tot(1:N_mc)-E)*w(1:N_mc))
       CALL MPI_REDUCE(dummy1(1),dH,1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
       IF (NORMALIZE) dH=dH*quoz!*REAL(N_part,8)
-      !!!Calcolo E2
+      !!!Calcolo dH2
       dummy1(1)=SUM(((E_tot(1:N_mc)-E)*(E_tot(1:N_mc)-E))*w(1:N_mc))
       CALL MPI_REDUCE(dummy1(1),dH2,1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
       IF (NORMALIZE) dH2=dH2*quoz!*REAL(N_part*N_part,8)
+      !!!Calcolo ddH2
+      dummy1(1)=SUM(((E_tot(1:N_mc)-E)*(E_tot(1:N_mc)-E)-dH2)*w(1:N_mc))
+      CALL MPI_REDUCE(dummy1(1),ddH2,1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+      IF (NORMALIZE) ddH2=ddH2*quoz!*REAL(N_part*N_part,8)
 
       !!!Metto insieme i flag_O di tutti i processori
       CALL MPI_REDUCE(flag_O,mask,num_par_var,MPI_LOGICAL,MPI_LOR,0,MPI_COMM_WORLD,mpi_ierr)
@@ -3080,16 +3067,21 @@ MODULE variational_opt
          !Costruisco la matrice s_kl e il vettore f_k
 		      DO j = 1, num_par_var, 1
 		      	DO i = 1, num_par_var, 1
-		      		s_kl(i,j)=OiOj(i,j)-Oi(i)*Oi(j)
-                  !s_kl(i,j)=OiOj(i,j)-Oi(i)*Oi(j) + beta_SR*( OiE(i)*Oi(j)-OiOj(i,j)*E )! &
-                     !+ 0.5d0*beta_SR*beta_SR*( OiOj(i,j)*E2-OiE2(i)*Oi(j) )
-                  !s_kl(i,j)=OiOj(i,j)-Oi(i)*Oi(j)
+                  SELECT CASE(SR_exp_ord_beta)
+                  CASE(1)
+                     s_kl(i,j)=OiOj(i,j)-Oi(i)*Oi(j)
+                  CASE(2)
+                     s_kl(i,j)=OiOj(i,j)-Oi(i)*Oi(j) + SR_beta*( OiE(i)*Oi(j)-OiOj(i,j)*E )
+                  END SELECT
 		      	END DO
 		      END DO
 		      DO i = 1, num_par_var, 1
-		      	f_k(i)=beta_SR*(Oi(i)*E-OiE(i))
-               !f_k(i)=beta_SR*(Oi(i)*E-OiE(i)) + 0.5d0*beta_SR*beta_SR*( OiE2(i)-Oi(i)*E2 )
-               !f_k(i)=-0.5d0*beta_SR*( dH - 0.5d0*beta_SR*( dH2-dH*dH )*dOi(i) )
+               SELECT CASE(SR_exp_ord_beta)
+               CASE(1)
+                  f_k(i)=SR_beta*(Oi(i)*E-OiE(i))
+               CASE(2)
+                  f_k(i)=SR_beta*(Oi(i)*E-OiE(i)) + 0.5d0*SR_beta*SR_beta*( OiE2(i)-Oi(i)*E2 )
+               END SELECT
 		      END DO
       END IF
 

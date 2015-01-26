@@ -11,6 +11,12 @@ opt_Kse=T
 opt_Jsesp=T
 opt_SDse=F
 opt_rp=F
+SR_num_max_AV=20
+SR_lambda=T
+SR_lambda_Rp=F
+SR_beta=0.01
+SR_beta_Rp=0.01
+SR_exp_ord_beta=1
 /
 
 !It specifies which part of the wave function is optimized with Stochastic Reconfiguration
