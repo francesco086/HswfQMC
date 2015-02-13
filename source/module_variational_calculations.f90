@@ -60,7 +60,7 @@ MODULE variational_calculations
 	REAL (KIND=8), ALLOCATABLE :: parametri_var(:,:)
 	REAL (KIND=8), ALLOCATABLE :: O(:,:)
    REAL(KIND=8), ALLOCATABLE :: Onow(:)
-   REAL(KIND=8), ALLOCATABLE :: Oi_av(:), OiE_av(:), OiOj_av(:,:), OiE2_av(:)
+   REAL(KIND=8), ALLOCATABLE :: Oi_av(:), OiH_av(:), OiOj_av(:,:), OiH2_av(:), OiOjOk_av(:,:,:)
    LOGICAL, ALLOCATABLE :: flag_O(:) !machera per O: T da usare, F da non considerare
 	
 	CONTAINS
@@ -204,11 +204,15 @@ MODULE variational_calculations
 			flag_derivate_var=.TRUE.
          ALLOCATE(Onow(1:num_par))
          IF (OAV_ON_THE_FLY) THEN
-            ALLOCATE(Oi_av(1:num_par),OiE_av(1:num_par),OiOj_av(1:num_par,1:num_par))
-            ALLOCATE(OiE2_av(1:num_par))
+            ALLOCATE(Oi_av(1:num_par),OiH_av(1:num_par),OiOj_av(1:num_par,1:num_par))
+            ALLOCATE(OiH2_av(1:num_par))
             Oi_av=0.d0
-            OiE_av=0.d0
+            OiH_av=0.d0
             OiOj_av=0.d0
+            IF (SR_exp_ord_psi>1) THEN
+               ALLOCATE(OiOjOk_av(1:num_par,1:num_par,1:num_par))
+               OiOjOk_av=0.d0
+            END IF
          ELSE
             ALLOCATE(O(1:num_par,1:N_mc))
          END IF
@@ -666,7 +670,7 @@ MODULE variational_calculations
 		USE estimatori
 		IMPLICIT NONE
 		INTEGER (KIND=8), INTENT(IN) :: i_mc
-		INTEGER :: cont, i, j
+		INTEGER :: cont, i, j, k
 		
 		cont=1
 		
@@ -1011,6 +1015,9 @@ MODULE variational_calculations
 			CASE ('bat')
 				CALL derivata_SDe_bat(Onow(cont))
 				cont=cont+1
+         CASE ('hl_')
+            CALL derivata_SDe_HL(Onow(cont))
+            cont=cont+1
 			CASE ('1sb')
             IF (opt_dynamic_backflow.AND.opt_orbital) THEN
 				   CALL derivata_SDe_1sb(Onow(cont:cont+2))
@@ -1066,16 +1073,27 @@ MODULE variational_calculations
 
       !accumulo i valori calcolati
        IF (OAV_ON_THE_FLY) THEN
-          !Oi
           DO i = 1, num_par, 1
             IF (flag_O(i)) THEN
                Oi_av(i)=Oi_av(i)+Onow(i)*w(i_mc)
-               OiE_av(i)=OiE_av(i)+Onow(i)*E_tot(i_mc)*w(i_mc)
-               OiE2_av(i)=OiE_av(i)+Onow(i)*E_tot(i_mc)*E_tot(i_mc)*w(i_mc)
+               OiH_av(i)=OiH_av(i)+Onow(i)*E_tot(i_mc)*w(i_mc)
+               OiH2_av(i)=OiH_av(i)+Onow(i)*E_tot(i_mc)*E_tot(i_mc)*w(i_mc)
                DO j = i, num_par, 1
                   IF (flag_O(j)) THEN
-                     OiOj_av(i,j)=OiOj_av(i,j)+Onow(i)*Onow(j)*w(i_mc)
+                     OiOj_av(j,i)=OiOj_av(j,i)+Onow(j)*Onow(i)*w(i_mc)
                      OiOj_av(j,i)=OiOj_av(i,j)
+                     IF (SR_exp_ord_psi>1) THEN
+                        DO k = j, num_par, 1
+                           IF (flag_O(k)) THEN
+                              OiOjOk_av(k,j,i)=OiOjOk_av(k,j,i)+Onow(k)*Onow(j)*Onow(i)*w(i_mc)
+                              OiOjOk_av(i,j,k)=OiOjOk_av(k,j,i)
+                              OiOjOk_av(i,k,j)=OiOjOk_av(k,j,i)
+                              OiOjOk_av(j,i,k)=OiOjOk_av(k,j,i)
+                              OiOjOk_av(j,k,i)=OiOjOk_av(k,j,i)
+                              OiOjOk_av(k,i,j)=OiOjOk_av(k,j,i)
+                           END IF
+                        END DO
+                     END IF
                   END IF
                END DO
             END IF
@@ -1204,8 +1222,9 @@ MODULE variational_calculations
 			flag_derivate_var=.FALSE.
          DEALLOCATE(Onow)
          IF (OAV_ON_THE_FLY) THEN
-            DEALLOCATE(Oi_av,OiE_av,OiOj_av)
-            DEALLOCATE(OiE2_av)
+            DEALLOCATE(Oi_av,OiH_av,OiOj_av)
+            DEALLOCATE(OiH2_av)
+            IF (SR_exp_ord_psi>1) DEALLOCATE(OiOjOk_av)
          ELSE
             DEALLOCATE(O)
          END IF

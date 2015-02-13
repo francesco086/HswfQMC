@@ -17,6 +17,7 @@ SR_lambda_Rp=F
 SR_beta=0.01
 SR_beta_Rp=0.01
 SR_exp_ord_beta=1
+SR_exp_ord_psi=1
 /
 
 !It specifies which part of the wave function is optimized with Stochastic Reconfiguration

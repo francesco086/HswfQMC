@@ -19,8 +19,8 @@ MODULE dati_mc
 	LOGICAL, PROTECTED, SAVE :: opt_rp, opt_SDse, opt_SDe, opt_orbital, opt_dynamic_backflow
 	REAL (KIND=8), SAVE :: time_VMC_start
    LOGICAL, PROTECTED, SAVE :: SR_lambda, SR_lambda_Rp
-   REAL(KIND=8), PROTECTED, SAVE :: SR_beta, SR_beta_Rp
-   INTEGER, PROTECTED, SAVE :: SR_exp_ord_beta, SR_num_max_AV
+   REAL(KIND=8), SAVE :: SR_beta, SR_beta_Rp
+   INTEGER, PROTECTED, SAVE :: SR_exp_ord_beta, SR_exp_ord_psi, SR_num_max_AV
 	
 	CONTAINS
 	
@@ -38,7 +38,7 @@ MODULE dati_mc
 		
 		NAMELIST /dati_ottimizzazione/ opt_SDe, opt_orbital, opt_dynamic_backflow, opt_A_Jee, opt_F_Jee, opt_A_Jep, &
          opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp, opt_SDse, opt_c_eff_dnfH, opt_rp, &
-         SR_num_max_AV, SR_lambda, SR_lambda_Rp, SR_beta, SR_beta_Rp, SR_exp_ord_beta
+         SR_num_max_AV, SR_lambda, SR_lambda_Rp, SR_beta, SR_beta_Rp, SR_exp_ord_beta, SR_exp_ord_psi
 		
 		CALL CPU_TIME(time_VMC_start)
 		

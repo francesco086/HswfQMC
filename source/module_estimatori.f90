@@ -384,6 +384,75 @@ MODULE estimatori
 				END DO
 			END DO
 
+      CASE ('hl_')
+         gsdee_up(1:3,1)=-C_atm* ( (rij_ep_old(1:3,1,1)/rij_ep_old(0,1,1))*&
+            DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) +&
+           (rij_ep_old(1:3,1,2)/rij_ep_old(0,1,2))&
+           *DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) ) *ISDe_up_old(1,1)
+
+         gsdee_dw(1:3,1)=-C_atm* ( (rij_ep_old(1:3,2,2)/rij_ep_old(0,2,2))&
+            *DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) +&
+            (rij_ep_old(1:3,2,1)/rij_ep_old(0,2,1))&
+            *DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) ) *ISDe_up_old(1,1)
+
+         lsdee=-C_atm* ( ( 2.d0/rij_ep_old(0,1,1)-C_atm )*&
+           DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) +&
+           ( 2.d0/rij_ep_old(0,1,2)-C_atm )*&
+           DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) )
+         lsdee=lsdee-C_atm* ( ( 2.d0/rij_ep_old(0,2,2)-C_atm )*&
+           DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) +&
+           ( 2.d0/rij_ep_old(0,2,1)-C_atm )*&
+           DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) )
+         lsdee=lsdee*ISDe_up_old(1,1)
+
+         !PRINT *, 
+         !PRINT *, "CHECK gsdee_up"
+         !PRINT *, "analytical: ", REAL(gsdee_up(1:3,1),8)
+         !frf1(0)=detSDe_up_old
+         !frf6=0.00001d0
+         !DO i = 1, 3, 1
+         !   re_new=re_old
+         !   re_new(i,1)=re_old(i,1)+frf6
+         !   CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
+         !   CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
+         !   frf1(i)=detSDe_up_new
+         !END DO
+         !PRINT *, "numerical: ", (frf1(1:3)-frf1(0))/(frf6*frf1(0))
+
+         !PRINT *, 
+         !PRINT *, "CHECK gsdee_dw"
+         !PRINT *, "analytical: ", REAL(gsdee_dw(1:3,1),8)
+         !DO i = 1, 3, 1
+         !   re_new=re_old
+         !   re_new(i,2)=re_old(i,2)+frf6
+         !   CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
+         !   CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
+         !   frf2(i)=detSDe_up_new
+         !END DO
+         !PRINT *, "numerical: ", (frf2(1:3)-frf1(0))/(frf6*frf1(0))
+
+         !PRINT *, 
+         !PRINT *, "CHECK lsdee"
+         !PRINT *, "analytical: ", REAL(lsdee,8)
+         !DO i = 1, 3, 1
+         !   re_new=re_old
+         !   re_new(i,1)=re_old(i,1)-frf6
+         !   CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
+         !   CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
+         !   frfs1(i)=detSDe_up_new
+         !END DO
+         !DO i = 1, 3, 1
+         !   re_new=re_old
+         !   re_new(i,2)=re_old(i,2)-frf6
+         !   CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
+         !   CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
+         !   frfs2(i)=detSDe_up_new
+         !END DO
+         !PRINT *, "numerical: ", (SUM(frf1(1:3)-2.d0*frf1(0)+frfs1(1:3))+SUM(frf2(1:3)-2.d0*frf1(0)+frfs2(1:3)))/&
+         !   (frf6*frf6*frf1(0))
+
+         !STOP
+
 		CASE ('1sb')
 
          norm=1.d0
@@ -1670,6 +1739,7 @@ MODULE estimatori
 		END DO
 		
 		E_JF=E_JF+frf1(0)*hbar*hbar/(2.d0*MASS_e*N_part)
+
 		END IF elettroni
 				
 	END SUBROUTINE energia_cinetica
@@ -1842,6 +1912,19 @@ MODULE estimatori
 		END DO
 	
 	END SUBROUTINE derivata_SDe_bat
+!-----------------------------------------------------------------------
+
+	SUBROUTINE derivata_SDe_HL(O)
+		USE walkers
+		IMPLICIT NONE
+		INTEGER :: i, j
+		REAL (KIND=8) :: O      !O(1) - Gsesp
+
+      O=-( DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) * (rij_ep_old(0,1,1)+rij_ep_old(0,2,2))+&
+         DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) * (rij_ep_old(0,1,2)+rij_ep_old(0,2,1)) ) /&
+         detSDe_up_old
+	
+	END SUBROUTINE derivata_SDe_HL
 !-----------------------------------------------------------------------
 
 	SUBROUTINE derivata_SDe_1sb(O)
