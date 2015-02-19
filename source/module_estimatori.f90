@@ -1893,21 +1893,23 @@ MODULE estimatori
 	SUBROUTINE derivata_SDe_bat(O)
 		USE walkers
 		IMPLICIT NONE
-		INTEGER :: i, j
+		INTEGER :: i, j, j_sd
 		REAL (KIND=8) :: O      !O(1) - Gsesp
 		O=0.d0
 	
 		DO j = 1, H_N_part, 1
+         j_sd=j+H_N_part
 			DO i = 1, H_N_part, 1
 				O=O-(rij_ep_old(0,i,j)*DEXP(-C_atm*rij_ep_old(0,i,j)) +  &
-				  rij_ep_old(0,i,j+H_N_part)*DEXP(-C_atm*rij_ep_old(0,i,j+H_N_part)))*ISDe_up_old(j,i)
+				  rij_ep_old(0,i,j_sd)*DEXP(-C_atm*rij_ep_old(0,i,j_sd)))*ISDe_up_old(j,i)
 			END DO
 		END DO
 	
 		DO j = H_N_part+1, N_part, 1
+         j_sd=j-H_N_part
 			DO i = H_N_part+1, N_part, 1
 				O=O-(rij_ep_old(0,i,j)*DEXP(-C_atm*rij_ep_old(0,i,j)) + &
-				  rij_ep_old(0,i,j-H_N_part)*DEXP(-C_atm*rij_ep_old(0,i,j-H_N_part)) )*ISDe_dw_old(j-H_N_part,i-H_N_part)
+				  rij_ep_old(0,i,j_sd)*DEXP(-C_atm*rij_ep_old(0,i,j_sd)) )*ISDe_dw_old(j_sd,i-H_N_part)
 			END DO
 		END DO
 	
