@@ -384,6 +384,75 @@ MODULE estimatori
 				END DO
 			END DO
 
+      CASE ('hl_')
+         gsdee_up(1:3,1)=-C_atm* ( (rij_ep_old(1:3,1,1)/rij_ep_old(0,1,1))*&
+            DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) +&
+           (rij_ep_old(1:3,1,2)/rij_ep_old(0,1,2))&
+           *DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) ) *ISDe_up_old(1,1)
+
+         gsdee_dw(1:3,1)=-C_atm* ( (rij_ep_old(1:3,2,2)/rij_ep_old(0,2,2))&
+            *DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) +&
+            (rij_ep_old(1:3,2,1)/rij_ep_old(0,2,1))&
+            *DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) ) *ISDe_up_old(1,1)
+
+         lsdee=-C_atm* ( ( 2.d0/rij_ep_old(0,1,1)-C_atm )*&
+           DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) +&
+           ( 2.d0/rij_ep_old(0,1,2)-C_atm )*&
+           DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) )
+         lsdee=lsdee-C_atm* ( ( 2.d0/rij_ep_old(0,2,2)-C_atm )*&
+           DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) +&
+           ( 2.d0/rij_ep_old(0,2,1)-C_atm )*&
+           DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) )
+         lsdee=lsdee*ISDe_up_old(1,1)
+
+         !PRINT *, 
+         !PRINT *, "CHECK gsdee_up"
+         !PRINT *, "analytical: ", REAL(gsdee_up(1:3,1),8)
+         !frf1(0)=detSDe_up_old
+         !frf6=0.00001d0
+         !DO i = 1, 3, 1
+         !   re_new=re_old
+         !   re_new(i,1)=re_old(i,1)+frf6
+         !   CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
+         !   CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
+         !   frf1(i)=detSDe_up_new
+         !END DO
+         !PRINT *, "numerical: ", (frf1(1:3)-frf1(0))/(frf6*frf1(0))
+
+         !PRINT *, 
+         !PRINT *, "CHECK gsdee_dw"
+         !PRINT *, "analytical: ", REAL(gsdee_dw(1:3,1),8)
+         !DO i = 1, 3, 1
+         !   re_new=re_old
+         !   re_new(i,2)=re_old(i,2)+frf6
+         !   CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
+         !   CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
+         !   frf2(i)=detSDe_up_new
+         !END DO
+         !PRINT *, "numerical: ", (frf2(1:3)-frf1(0))/(frf6*frf1(0))
+
+         !PRINT *, 
+         !PRINT *, "CHECK lsdee"
+         !PRINT *, "analytical: ", REAL(lsdee,8)
+         !DO i = 1, 3, 1
+         !   re_new=re_old
+         !   re_new(i,1)=re_old(i,1)-frf6
+         !   CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
+         !   CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
+         !   frfs1(i)=detSDe_up_new
+         !END DO
+         !DO i = 1, 3, 1
+         !   re_new=re_old
+         !   re_new(i,2)=re_old(i,2)-frf6
+         !   CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
+         !   CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
+         !   frfs2(i)=detSDe_up_new
+         !END DO
+         !PRINT *, "numerical: ", (SUM(frf1(1:3)-2.d0*frf1(0)+frfs1(1:3))+SUM(frf2(1:3)-2.d0*frf1(0)+frfs2(1:3)))/&
+         !   (frf6*frf6*frf1(0))
+
+         !STOP
+
 		CASE ('1sb')
 
          norm=1.d0
@@ -1670,6 +1739,7 @@ MODULE estimatori
 		END DO
 		
 		E_JF=E_JF+frf1(0)*hbar*hbar/(2.d0*MASS_e*N_part)
+
 		END IF elettroni
 				
 	END SUBROUTINE energia_cinetica
@@ -1823,32 +1893,47 @@ MODULE estimatori
 	SUBROUTINE derivata_SDe_bat(O)
 		USE walkers
 		IMPLICIT NONE
-		INTEGER :: i, j
+		INTEGER :: i, j, j_sd
 		REAL (KIND=8) :: O      !O(1) - Gsesp
 		O=0.d0
 	
 		DO j = 1, H_N_part, 1
+         j_sd=j+H_N_part
 			DO i = 1, H_N_part, 1
 				O=O-(rij_ep_old(0,i,j)*DEXP(-C_atm*rij_ep_old(0,i,j)) +  &
-				  rij_ep_old(0,i,j+H_N_part)*DEXP(-C_atm*rij_ep_old(0,i,j+H_N_part)))*ISDe_up_old(j,i)
+				  rij_ep_old(0,i,j_sd)*DEXP(-C_atm*rij_ep_old(0,i,j_sd)))*ISDe_up_old(j,i)
 			END DO
 		END DO
 	
 		DO j = H_N_part+1, N_part, 1
+         j_sd=j-H_N_part
 			DO i = H_N_part+1, N_part, 1
 				O=O-(rij_ep_old(0,i,j)*DEXP(-C_atm*rij_ep_old(0,i,j)) + &
-				  rij_ep_old(0,i,j-H_N_part)*DEXP(-C_atm*rij_ep_old(0,i,j-H_N_part)) )*ISDe_dw_old(j-H_N_part,i-H_N_part)
+				  rij_ep_old(0,i,j_sd)*DEXP(-C_atm*rij_ep_old(0,i,j_sd)) )*ISDe_dw_old(j_sd,i-H_N_part)
 			END DO
 		END DO
 	
 	END SUBROUTINE derivata_SDe_bat
 !-----------------------------------------------------------------------
 
+	SUBROUTINE derivata_SDe_HL(O)
+		USE walkers
+		IMPLICIT NONE
+		INTEGER :: i, j
+		REAL (KIND=8) :: O      !O(1) - Gsesp
+
+      O=-( DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) * (rij_ep_old(0,1,1)+rij_ep_old(0,2,2))+&
+         DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) * (rij_ep_old(0,1,2)+rij_ep_old(0,2,1)) ) /&
+         detSDe_up_old
+	
+	END SUBROUTINE derivata_SDe_HL
+!-----------------------------------------------------------------------
+
 	SUBROUTINE derivata_SDe_1sb(O)
 		USE walkers
 		IMPLICIT NONE
 		INTEGER :: i, j, ip, iadd, beta
-		REAL (KIND=8) :: O(1:3)
+		REAL (KIND=8), DIMENSION(:) :: O(:)
 		REAL(KIND=8) :: phi1(1:H_N_part,1:H_N_part) !per derivata C_atm
 		REAL(KIND=8) :: phi2(1:H_N_part,1:H_N_part) !per derivata A_POT_se
 		REAL(KIND=8) :: phi3(1:H_N_part,1:H_N_part) !per derivata D_POT_se
@@ -1867,31 +1952,35 @@ MODULE estimatori
 	             END DO
 	             q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
 	             q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
-	             !derivata di C_atm
-			       deriv=-q(0)
-		          phi1(i,j)=deriv*norm*DEXP(-C_atm*q(0))
-		          !derivata di A_POT_se
-		          deriv=0.d0
-	             DO ip = 1, N_part, 1
-					    sigm=DEXP(A_POT_se*(rij_ep_old(0,j+iadd,ip)-D_POT_se))
-	                DO beta = 1, 3, 1
-	                   deriv=deriv+q(beta)*rp_old(beta,ip)* &
-	                      (- sigm * (rij_ep_old(0,j+iadd,ip)-D_POT_se) / ((1.d0 + sigm)**2) )
-	                END DO
-	             END DO
-	             deriv=deriv*C_atm/q(0)
-		          phi2(i,j)=deriv*norm*DEXP(-C_atm*q(0))
-		          !derivata di D_POT_se
-		          deriv=0.d0
-	             DO ip = 1, N_part, 1
-					    sigm=DEXP(A_POT_se*(rij_ep_old(0,j+iadd,ip)-D_POT_se))
-	                DO beta = 1, 3, 1
-	                   deriv=deriv+q(beta)*rp_old(beta,ip)* &
-	                      ( sigm * A_POT_se / ((1.d0 + sigm)**2) )
-	                END DO
-	             END DO
-	             deriv=deriv*C_atm/q(0)
-		          phi3(i,j)=deriv*norm*DEXP(-C_atm*q(0))
+                IF (opt_orbital) THEN
+	               !derivata di C_atm
+			         deriv=-q(0)
+		            phi1(i,j)=deriv*norm*DEXP(-C_atm*q(0))
+                END IF
+                IF (opt_dynamic_backflow) THEN 
+		            !derivata di A_POT_se
+		            deriv=0.d0
+	               DO ip = 1, N_part, 1
+					      sigm=DEXP(A_POT_se*(rij_ep_old(0,j+iadd,ip)-D_POT_se))
+	                  DO beta = 1, 3, 1
+	                     deriv=deriv+q(beta)*rp_old(beta,ip)* &
+	                        (- sigm * (rij_ep_old(0,j+iadd,ip)-D_POT_se) / ((1.d0 + sigm)**2) )
+	                  END DO
+	               END DO
+	               deriv=deriv*C_atm/q(0)
+		            phi2(i,j)=deriv*norm*DEXP(-C_atm*q(0))
+		            !derivata di D_POT_se
+		            deriv=0.d0
+	               DO ip = 1, N_part, 1
+					      sigm=DEXP(A_POT_se*(rij_ep_old(0,j+iadd,ip)-D_POT_se))
+	                  DO beta = 1, 3, 1
+	                     deriv=deriv+q(beta)*rp_old(beta,ip)* &
+	                        ( sigm * A_POT_se / ((1.d0 + sigm)**2) )
+	                  END DO
+	               END DO
+	               deriv=deriv*C_atm/q(0)
+		            phi3(i,j)=deriv*norm*DEXP(-C_atm*q(0))
+               END IF
 		      END DO
 		   END DO
 		   
@@ -1899,16 +1988,20 @@ MODULE estimatori
 		      DO j = 1, H_N_part, 1
 		         DO i = 1, H_N_part, 1
 		            O(1)=O(1)+phi1(i,j)*ISDe_up_old(j,i)
-		            O(2)=O(2)+phi2(i,j)*ISDe_up_old(j,i)
-		            O(3)=O(3)+phi3(i,j)*ISDe_up_old(j,i)
+                  IF (opt_dynamic_backflow) THEN
+		               O(2)=O(2)+phi2(i,j)*ISDe_up_old(j,i)
+		               O(3)=O(3)+phi3(i,j)*ISDe_up_old(j,i)
+                  END IF
 		         END DO
 		      END DO
 		   ELSE IF (iadd==H_N_part) THEN
 		      DO j = 1, H_N_part, 1
 		         DO i = 1, H_N_part, 1
 		            O(1)=O(1)+phi1(i,j)*ISDe_dw_old(j,i)
-		            O(2)=O(2)+phi2(i,j)*ISDe_dw_old(j,i)
-		            O(3)=O(3)+phi3(i,j)*ISDe_dw_old(j,i)
+                  IF (opt_dynamic_backflow) THEN
+		               O(2)=O(2)+phi2(i,j)*ISDe_dw_old(j,i)
+		               O(3)=O(3)+phi3(i,j)*ISDe_dw_old(j,i)
+                  END IF
 		         END DO
 		      END DO
 		   END IF
@@ -1943,47 +2036,51 @@ MODULE estimatori
 	             END DO
 	             q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
 	             q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
-	             !derivata della spline
-                CALL MSPL_t_deriv(SPL=Bsplep,R=q(0),T_DERIV=td)
-                IF (iadd==0) THEN
-                   phi1(1:ispl,i,j)= &
-                     -RESHAPE(td(0:Bsplep%m,0:Bsplep%nknots),(/ispl/)) &
-                     *REAL(SDe_up_old(i,j),8)
-                ELSE
-                   phi1(1:ispl,i,j)= &
-                     -RESHAPE(td(0:Bsplep%m,0:Bsplep%nknots),(/ispl/)) &
-                     *REAL(SDe_dw_old(i,j),8)
+                IF (opt_orbital) THEN
+	               !derivata della spline
+                  CALL MSPL_t_deriv(SPL=Bsplep,R=q(0),T_DERIV=td)
+                  IF (iadd==0) THEN
+                     phi1(1:ispl,i,j)= &
+                       -RESHAPE(td(0:Bsplep%m,0:Bsplep%nknots),(/ispl/)) &
+                       *REAL(SDe_up_old(i,j),8)
+                  ELSE
+                     phi1(1:ispl,i,j)= &
+                       -RESHAPE(td(0:Bsplep%m,0:Bsplep%nknots),(/ispl/)) &
+                       *REAL(SDe_dw_old(i,j),8)
+                  END IF
                 END IF
-		          !derivata di A_POT_se
-		          deriv=0.d0
-	             DO ip = 1, N_part, 1
-					 sigm=DEXP(A_POT_se*(rij_ep_old(0,j+iadd,ip)-D_POT_se))
-	               DO beta = 1, 3, 1
-	                  deriv=deriv+q(beta)*rp_old(beta,ip)* &
-	                     (- sigm * (rij_ep_old(0,j+iadd,ip)-D_POT_se) / ((1.d0 + sigm)**2) )
+                IF (opt_dynamic_backflow) THEN
+		            !derivata di A_POT_se
+		            deriv=0.d0
+	               DO ip = 1, N_part, 1
+					   sigm=DEXP(A_POT_se*(rij_ep_old(0,j+iadd,ip)-D_POT_se))
+	                 DO beta = 1, 3, 1
+	                    deriv=deriv+q(beta)*rp_old(beta,ip)* &
+	                       (- sigm * (rij_ep_old(0,j+iadd,ip)-D_POT_se) / ((1.d0 + sigm)**2) )
+	                 END DO
 	               END DO
-	             END DO
-	             deriv=deriv*C_atm/q(0)
-                IF (iadd==0) THEN
-                   phi2(i,j)=deriv*REAL(SDe_up_old(i,j),8)
-                ELSE
-                   phi2(i,j)=deriv*REAL(SDe_dw_old(i,j),8)
-                END IF
-		          !derivata di D_POT_se
-		          deriv=0.d0
-	             DO ip = 1, N_part, 1
-					    sigm=DEXP(A_POT_se*(rij_ep_old(0,j+iadd,ip)-D_POT_se))
-	                DO beta = 1, 3, 1
-	                   deriv=deriv+q(beta)*rp_old(beta,ip)* &
-	                      ( sigm * A_POT_se / ((1.d0 + sigm)**2) )
-	                END DO
-	             END DO
-	             deriv=deriv*C_atm/q(0)
-                IF (iadd==0) THEN
-                   phi3(i,j)=deriv*REAL(SDe_up_old(i,j),8)
-                ELSE
-                   phi3(i,j)=deriv*REAL(SDe_dw_old(i,j),8)
-                END IF
+	               deriv=deriv*C_atm/q(0)
+                  IF (iadd==0) THEN
+                     phi2(i,j)=deriv*REAL(SDe_up_old(i,j),8)
+                  ELSE
+                     phi2(i,j)=deriv*REAL(SDe_dw_old(i,j),8)
+                  END IF
+		            !derivata di D_POT_se
+		            deriv=0.d0
+	               DO ip = 1, N_part, 1
+					      sigm=DEXP(A_POT_se*(rij_ep_old(0,j+iadd,ip)-D_POT_se))
+	                  DO beta = 1, 3, 1
+	                     deriv=deriv+q(beta)*rp_old(beta,ip)* &
+	                        ( sigm * A_POT_se / ((1.d0 + sigm)**2) )
+	                  END DO
+	               END DO
+	               deriv=deriv*C_atm/q(0)
+                  IF (iadd==0) THEN
+                     phi3(i,j)=deriv*REAL(SDe_up_old(i,j),8)
+                  ELSE
+                     phi3(i,j)=deriv*REAL(SDe_dw_old(i,j),8)
+                  END IF
+               END IF
 		      END DO
 		   END DO
 		   
@@ -1991,16 +2088,20 @@ MODULE estimatori
 		      DO j = 1, H_N_part, 1
 		         DO i = 1, H_N_part, 1
 		            O(1:ispl)=O(1:ispl)+phi1(1:ispl,i,j)*ISDe_up_old(j,i)
-		            O(ispl+1)=O(ispl+1)+phi2(i,j)*ISDe_up_old(j,i)
-		            O(ispl+2)=O(ispl+2)+phi3(i,j)*ISDe_up_old(j,i)
+                  IF (opt_dynamic_backflow) THEN
+		               O(ispl+1)=O(ispl+1)+phi2(i,j)*ISDe_up_old(j,i)
+		               O(ispl+2)=O(ispl+2)+phi3(i,j)*ISDe_up_old(j,i)
+                  END IF
 		         END DO
 		      END DO
 		   ELSE IF (iadd==H_N_part) THEN
 		      DO j = 1, H_N_part, 1
 		         DO i = 1, H_N_part, 1
 		            O(1:ispl)=O(1:ispl)+phi1(1:ispl,i,j)*ISDe_dw_old(j,i)
-		            O(ispl+1)=O(ispl+1)+phi2(i,j)*ISDe_dw_old(j,i)
-		            O(ispl+2)=O(ispl+2)+phi3(i,j)*ISDe_dw_old(j,i)
+                  IF (opt_dynamic_backflow) THEN
+		               O(ispl+1)=O(ispl+1)+phi2(i,j)*ISDe_dw_old(j,i)
+		               O(ispl+2)=O(ispl+2)+phi3(i,j)*ISDe_dw_old(j,i)
+                  END IF
 		         END DO
 		      END DO
 		   END IF

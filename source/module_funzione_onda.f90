@@ -351,7 +351,7 @@ MODULE funzione_onda
             END IF
          END IF
       END IF
-		                                                         
+
 		IF ((Jsesp_kind=='bou') .OR. (Jsesp_kind=='ppb')) THEN   
 			M=fattoriale_doppio(N_part-1)
 			ALLOCATE(coppie(1:2,1:N_part/2,1:M))
@@ -925,34 +925,37 @@ MODULE funzione_onda
 					END DO
 					CALL chiudi_dnfH()
 				END IF
-			ELSE IF ((SDe_kind=='atm').OR.(SDe_kind=='atp')) THEN
-				IF ( opt_SDe ) THEN
-					C_atm=nuovi_parametri(cont)
-					cont=cont+1
-				END IF
-			ELSE IF (SDe_kind=='bat') THEN
+			ELSE IF ((SDe_kind=='atm').OR.(SDe_kind=='atp').OR.(SDe_kind=='bat').OR.(SDe_kind=='hl_')) THEN
 				IF ( opt_SDe ) THEN
 					C_atm=nuovi_parametri(cont)
 					cont=cont+1
 				END IF
 			ELSE IF (SDe_kind=='1sb') THEN
 				IF ( opt_SDe ) THEN
-					C_atm=nuovi_parametri(cont)
-					cont=cont+1
-					A_POT_se=nuovi_parametri(cont)
-					cont=cont+1
-					D_POT_se=nuovi_parametri(cont)
-					cont=cont+1
+               IF (opt_orbital) THEN
+					   C_atm=nuovi_parametri(cont)
+					   cont=cont+1
+               END IF
+               IF (opt_dynamic_backflow) THEN
+					   A_POT_se=nuovi_parametri(cont)
+					   cont=cont+1
+					   D_POT_se=nuovi_parametri(cont)
+					   cont=cont+1
+               END IF
 				END IF
 			ELSE IF (SDe_kind=='spb') THEN
 				IF ( opt_SDe ) THEN
-					Bsplep%t(0:Bsplep%m,0:Bsplep%nknots)=&
-                  RESHAPE(nuovi_parametri(cont:cont+(Bsplep%m+1)*(Bsplep%nknots+1)-1),(/Bsplep%m+1,Bsplep%nknots+1/))
-					cont=cont+(Bsplep%m+1)*(Bsplep%nknots+1)
-					A_POT_se=nuovi_parametri(cont)
-					cont=cont+1
-					D_POT_se=nuovi_parametri(cont)
-					cont=cont+1
+               IF (opt_orbital) THEN
+					   Bsplep%t(0:Bsplep%m,0:Bsplep%nknots)=&
+                     RESHAPE(nuovi_parametri(cont:cont+(Bsplep%m+1)*(Bsplep%nknots+1)-1),(/Bsplep%m+1,Bsplep%nknots+1/))
+					   cont=cont+(Bsplep%m+1)*(Bsplep%nknots+1)
+               END IF
+               IF (opt_dynamic_backflow) THEN
+					   A_POT_se=nuovi_parametri(cont)
+					   cont=cont+1
+					   D_POT_se=nuovi_parametri(cont)
+					   cont=cont+1
+               END IF
 				END IF
 			END IF
 		END IF
@@ -1020,7 +1023,7 @@ MODULE funzione_onda
 				PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 				IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
 				  'SDe: ', SDe_kind,'  -  C_atm=', C_atm
-	  		CASE ('bat')
+	  		CASE ('bat','hl_')
 	  			PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
 	  			  'SDe: ', SDe_kind,'  -  C_atm=', C_atm
@@ -1893,6 +1896,25 @@ MODULE funzione_onda
 			IF (verbose_mode) PRINT * , 'funzione_onda: detSD(gss)=', detSD
 				
 		END SUBROUTINE valuta_SD_bat	
+	
+	!-----------------------------------------------------------------------
+
+		SUBROUTINE valuta_SD_HL(rij,SD,detSD,ISD)
+			USE generic_tools
+			IMPLICIT NONE
+			REAL (KIND=8), INTENT(IN) :: rij(1:2,1:2)
+			COMPLEX (KIND=8) :: SD(1:1,1:1), ISD(1:1,1:1), detSD
+		
+			IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
+			  [ module_funzione_onda.f90 > valuta_SD_HL ]'
+		
+         SD(1,1)=(1.d0,0.d0)*(DEXP(-C_atm*(rij(1,1)+rij(2,2)))+DEXP(-C_atm*(rij(1,2)+rij(2,1))))
+         detSD=SD(1,1)
+         ISD(1,1)=(1.d0,0.d0)/detSD
+
+			IF (verbose_mode) PRINT * , 'funzione_onda: detSD(gss)=', detSD
+				
+		END SUBROUTINE valuta_SD_HL	
 	
 	!-----------------------------------------------------------------------
 
