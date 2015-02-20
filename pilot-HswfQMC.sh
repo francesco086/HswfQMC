@@ -258,7 +258,7 @@ complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh" >> ~/.${FILE_TO_SET}
 			mv trunk ${LAPACK_FOLDER}
 			cd ${LAPACK_FOLDER}
 			sed -i.bak "s/FORTRAN  = gfortran/FORTRAN = ${FF}/" make.inc.example
-			sed -i.bak "s/OPTS     = -O2 -frecursiv/OPTS     = -O3 -march=native -frecursiv/" make.inc.example
+			sed -i.bak "s/OPTS     = -O2 -frecursiv/OPTS     = -O3 -frecursiv/" make.inc.example
 			sed -i.bak "s/LOADER   = gfortran/LOADER   = ${FF}/" make.inc.example
 			\rm make.inc.example.bak
 			mv make.inc.example make.inc
@@ -285,7 +285,7 @@ complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh" >> ~/.${FILE_TO_SET}
          \rm -r -f markuspline/
          git clone https://github.com/francesco086/markuspline
 			cd markuspline/
-         gfortran -O3 -march=native -c module_markuspline.f90
+         gfortran -O3 -c module_markuspline.f90
          ar rcv libmarkuspline.a *.o
          ranlib libmarkuspline.a
          mv libmarkuspline.a libmarkuspline${HswfQMC_NAME}.a

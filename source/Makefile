@@ -10,7 +10,7 @@ USERNAME:=$(shell whoami)
 IDENTIFIER:=$(USERNAME)@$(COMPUTER)
 
 #set the flags for the compiler 
-FFLAGS=-O3 -march=native
+FFLAGS=-O3
 #standard: append _exe to the executable name
 EXEC1=$(EXEC2)_exe
 
