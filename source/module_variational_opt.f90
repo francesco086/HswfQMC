@@ -8,10 +8,10 @@ MODULE variational_opt
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: parametri_var(:)
    REAL(KIND=8), PROTECTED, SAVE :: H
    REAL(KIND=8), ALLOCATABLE, PROTECTED, SAVE :: Oi(:), HOi(:), OiOj(:,:)
-   REAL(KIND=8), PROTECTED, SAVE :: sigmaH
-   REAL(KIND=8), ALLOCATABLE, PROTECTED, SAVE :: sigmaHOi(:)
+   !REAL(KIND=8), PROTECTED, SAVE :: sigmaH
+   !REAL(KIND=8), ALLOCATABLE, PROTECTED, SAVE :: sigmaHOi(:)
    REAL(KIND=8), ALLOCATABLE, PROTECTED, SAVE :: Oi_eff(:), HOi_eff(:), OiOj_eff(:,:)
-   REAL(KIND=8), ALLOCATABLE, PROTECTED, SAVE :: sigmaHOi_eff(:)
+   !REAL(KIND=8), ALLOCATABLE, PROTECTED, SAVE :: sigmaHOi_eff(:)
 	!!!REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: c_knm(:,:,:)
    REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: s_kn(:,:), f_k(:)  !parametri per SR
    REAL(KIND=8), PROTECTED, SAVE :: f_SR_beta    !dynamical factor for SR_beta
@@ -256,7 +256,7 @@ MODULE variational_opt
 		ALLOCATE(parametri_var(1:num_par_var))
       ALLOCATE(used_par(1:num_par_var),M_used_par(1:num_par_var,1:num_par_var))
       ALLOCATE(Oi(1:num_par_var),HOi(1:num_par_var),OiOj(1:num_par_var,1:num_par_var))
-      IF (.NOT. OAV_ON_THE_FLY) ALLOCATE(sigmaHOi(1:num_par_var))
+      !IF (.NOT. OAV_ON_THE_FLY) ALLOCATE(sigmaHOi(1:num_par_var))
 		!!!!!!!
 		
 		IF (Jee_kind/='no_') THEN
@@ -1259,7 +1259,8 @@ MODULE variational_opt
       REAL(KIND=8) :: SRopt_count
       REAL(KIND=8) :: opt_SVD_MIN, static_SVD_MIN
       REAL(KIND=8) :: lambda3, opt_lambda3, static_lambda3
-      REAL(KIND=8) :: sigmaHnext, SRtarget, SRtargetmin
+      !REAL(KIND=8) :: sigmaHnext
+      REAL(KIND=8) :: SRtarget, SRtargetmin
       REAL(KIND=8) :: array_SRtargetmin(0:mpi_nprocs-1)
       REAL(KIND=8), ALLOCATABLE :: work(:)
 		REAL (KIND=8) :: D_tr(1:N), E_tr(1:N-1), TAU_tr(1:N-1)
@@ -1454,8 +1455,8 @@ MODULE variational_opt
                         IF ( ( (SR_change_bound.AND.(var_change<SR_max_change)) .OR. &
                          (.NOT.SR_change_bound) ) .AND. (DABS(DOT_PRODUCT(dpnext,Oi))<0.5d0) ) THEN
                            Hnext=( H+DOT_PRODUCT(dpnext,HOi) )/( 1.d0+DOT_PRODUCT(dpnext,Oi) )
-                           sigmaHnext=( sigmaH+DOT_PRODUCT(dpnext,sigmaHOi) )/( 1.d0+DOT_PRODUCT(dpnext,Oi) )
-                           SRtarget=Hnext+sigmaHnext
+                           !sigmaHnext=( sigmaH+DOT_PRODUCT(dpnext,sigmaHOi) )/( 1.d0+DOT_PRODUCT(dpnext,Oi) )
+                           SRtarget=Hnext!+sigmaHnext
                            !WRITE(UNIT=666, FMT=*), var_change,f_SR_beta,SVD_MIN,lambda,Hnext,sigmaHnext,SRtarget
                            IF (SRtarget<SRtargetmin) THEN
                               SRtargetmin=SRtarget
@@ -3189,11 +3190,11 @@ MODULE variational_opt
       IF (NORMALIZE) H=H*quoz
 		CALL MPI_BCAST(H,1,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
 
-      !!!Calcolo sigmaH=<(H-<H>)^2>
-      dummy1(1)=SUM(((E_tot(1:N_mc)-H)**2)*w(1:N_mc))
-      CALL MPI_REDUCE(dummy1(1),sigmaH,1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
-      IF (NORMALIZE) sigmaH=sigmaH*quoz
-      CALL MPI_BCAST(sigmaH,1,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
+      !!!!Calcolo sigmaH=<(H-<H>)^2>
+      !dummy1(1)=SUM(((E_tot(1:N_mc)-H)**2)*w(1:N_mc))
+      !CALL MPI_REDUCE(dummy1(1),sigmaH,1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+      !IF (NORMALIZE) sigmaH=sigmaH*quoz
+      !CALL MPI_BCAST(sigmaH,1,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
 
       IF (OAV_ON_THE_FLY) THEN
          DO i = 1, num_par_var, 1
@@ -3216,11 +3217,7 @@ MODULE variational_opt
          END DO
       ELSE
          ALLOCATE(O_fast(1:N_mc,1:num_par_var))
-         DO j = 1, N_mc, 1
-         DO i = 1, num_par_var, 1
-            O_fast(j,i)=O(i,j)
-         END DO
-         END DO
+         O_fast(1:N_mc,1:num_par_var)=TRANSPOSE(O(1:num_par_var,1:N_mc))
          DO i = 1, num_par_var, 1
             IF (flag_O(i)) THEN
                !!!Calcolo i termini Oi
@@ -3231,10 +3228,10 @@ MODULE variational_opt
                dummy1(1)=SUM(E_tot(1:N_mc)*O_fast(1:N_mc,i)*w(1:N_mc))
                CALL MPI_REDUCE(dummy1(1),HOi(i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
                IF (NORMALIZE) HOi(i)=HOi(i)*quoz
-               !!!Calcolo i termini sigmaHOi
-               dummy1(1)=SUM(((E_tot(1:N_mc)-H)**2)*O_fast(1:N_mc,i)*w(1:N_mc))
-               CALL MPI_REDUCE(dummy1(1),sigmaHOi(i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
-               IF (NORMALIZE) sigmaHOi(i)=sigmaHOi(i)*quoz
+               !!!!Calcolo i termini sigmaHOi
+               !dummy1(1)=SUM(((E_tot(1:N_mc)-H)**2)*O_fast(1:N_mc,i)*w(1:N_mc))
+               !CALL MPI_REDUCE(dummy1(1),sigmaHOi(i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+               !IF (NORMALIZE) sigmaHOi(i)=sigmaHOi(i)*quoz
                !!!Calcolo i termini OiOj
                DO j = i, num_par_var, 1
                   IF (flag_O(j)) THEN
@@ -3252,7 +3249,7 @@ MODULE variational_opt
       !Distribuisco H, Oi, HOi, OiOj a tutti i processori
       CALL MPI_BCAST(Oi,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
       CALL MPI_BCAST(HOi,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
-      IF (.NOT. OAV_ON_THE_FLY) CALL MPI_BCAST(sigmaHOi,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
+      !IF (.NOT. OAV_ON_THE_FLY) CALL MPI_BCAST(sigmaHOi,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
       CALL MPI_BCAST(OiOj,num_par_var*num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
 
       !Alloco s_kn e f_k
@@ -3270,12 +3267,12 @@ MODULE variational_opt
       IF (ALLOCATED(HOi_eff)) DEALLOCATE(HOi_Eff)
       ALLOCATE(HOi_eff(1:num_par_var_eff))
       HOi_eff=PACK(HOi,used_par)
-      !sigmaHOi
-      IF (.NOT. OAV_ON_THE_FLY) THEN
-         IF (ALLOCATED(sigmaHOi_eff)) DEALLOCATE(sigmaHOi_Eff)
-         ALLOCATE(sigmaHOi_eff(1:num_par_var_eff))
-         sigmaHOi_eff=PACK(sigmaHOi,used_par)
-      END IF
+      !!sigmaHOi
+      !IF (.NOT. OAV_ON_THE_FLY) THEN
+      !   IF (ALLOCATED(sigmaHOi_eff)) DEALLOCATE(sigmaHOi_Eff)
+      !   ALLOCATE(sigmaHOi_eff(1:num_par_var_eff))
+      !   sigmaHOi_eff=PACK(sigmaHOi,used_par)
+      !END IF
       !OiOj
       IF (ALLOCATED(OiOj_eff)) DEALLOCATE(OiOj_eff)
       ALLOCATE(OiOj_eff(1:num_par_var_eff,1:num_par_var_eff))
@@ -3338,7 +3335,7 @@ MODULE variational_opt
          END IF
       END DO
       Is_kn=MATMUL(Usvd,MATMUL(Is_kn,VTsvd))
-      Usvd=MATMUL(s_kn,Is_kn)
+      !Usvd=MATMUL(s_kn,Is_kn)
 
 		dp_eff=0.d0
 		DO j = 1, N, 1
@@ -3358,7 +3355,7 @@ MODULE variational_opt
 		DEALLOCATE(parametri_var)
       DEALLOCATE(used_par,M_used_par)
       DEALLOCATE(Oi,Hoi,OiOj)
-      IF (.NOT. OAV_ON_THE_FLY) DEALLOCATE(sigmaHOi)
+      !IF (.NOT. OAV_ON_THE_FLY) DEALLOCATE(sigmaHOi)
 	END SUBROUTINE chiudi_variational_opt
 	
 END MODULE variational_opt
