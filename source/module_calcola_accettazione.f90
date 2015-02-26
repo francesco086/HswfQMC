@@ -1,4 +1,4 @@
-MODULE calcola_accettazione
+mODULE calcola_accettazione
 	IMPLICIT NONE
 	LOGICAL, PARAMETER, PRIVATE :: verbose_mode=.FALSE.
 	LOGICAL, SAVE, PRIVATE :: iniz_calcola_accettazione=.FALSE.
@@ -403,21 +403,6 @@ MODULE calcola_accettazione
 				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E DOWN. INFO=', info
 				STOP
 			END IF
-		CASE ('bat')
-			CALL valuta_SD_bat(-1,'up',rij_ep_old(0,:,:),H_N_part, &
-			  SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,SDe_up_new,detSDe_up_new)
-			CALL valuta_SD_bat(-1,'dw',rij_ep_old(0,:,:),H_N_part, &
-			  SDe_dw_old,detSDe_dw_old,ISDe_dw_old,pvte_dw_old,SDe_dw_new,detSDe_dw_new)
-			CALL ZGETRI( H_N_part, ISDe_up_old, H_N_part, pvte_up_old, work, 3*H_N_part, info )
-			IF (info/=0) THEN
-				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E UP. INFO=', info
-				STOP
-			END IF
-			CALL ZGETRI( H_N_part, ISDe_dw_old, H_N_part, pvte_dw_old, work, 3*H_N_part, info )
-			IF (info/=0) THEN
-				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E DOWN. INFO=', info
-				STOP
-			END IF
 		CASE ('atp')
 			CALL attiva_pc()
 			CALL valuta_SD_atm(-1,rijpc_ep_old(0,1:H_N_part,1:H_N_part),H_N_part, &
@@ -434,6 +419,59 @@ MODULE calcola_accettazione
 				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E DOWN. INFO=', info
 				STOP
 			END IF
+		CASE ('bat')
+			CALL valuta_SD_bat(-1,'up',rij_ep_old(0,:,:),H_N_part, &
+			  SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,SDe_up_new,detSDe_up_new)
+			CALL valuta_SD_bat(-1,'dw',rij_ep_old(0,:,:),H_N_part, &
+			  SDe_dw_old,detSDe_dw_old,ISDe_dw_old,pvte_dw_old,SDe_dw_new,detSDe_dw_new)
+			CALL ZGETRI( H_N_part, ISDe_up_old, H_N_part, pvte_up_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E UP. INFO=', info
+				STOP
+			END IF
+			CALL ZGETRI( H_N_part, ISDe_dw_old, H_N_part, pvte_dw_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E DOWN. INFO=', info
+				STOP
+			END IF
+      CASE ('1sb')
+         CALL valuta_SD_1s_backflow(-1,'up',L,re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
+            SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,ISDe_up_new,detSDe_up_new)
+         CALL valuta_SD_1s_backflow(-1,'dw',L,re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
+            SDe_dw_old,detSDe_dw_old,ISDe_dw_old,pvte_dw_old,ISDe_dw_new,detSDe_dw_new)
+			CALL ZGETRI( H_N_part, ISDe_up_old, H_N_part, pvte_up_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E UP. INFO=', info
+				STOP
+			END IF
+			CALL ZGETRI( H_N_part, ISDe_dw_old, H_N_part, pvte_dw_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E DOWN. INFO=', info
+				STOP
+			END IF
+      CASE ('spb')
+         CALL valuta_SD_spl_backflow(-1,'up',L,re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
+            SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,ISDe_up_new,detSDe_up_new)
+         CALL valuta_SD_spl_backflow(-1,'dw',L,re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
+            SDe_dw_old,detSDe_dw_old,ISDe_dw_old,pvte_dw_old,ISDe_dw_new,detSDe_dw_new)
+			CALL ZGETRI( H_N_part, ISDe_up_old, H_N_part, pvte_up_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E UP. INFO=', info
+				STOP
+			END IF
+			CALL ZGETRI( H_N_part, ISDe_dw_old, H_N_part, pvte_dw_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E DOWN. INFO=', info
+				STOP
+			END IF
+      CASE('hl_')
+         IF (N_part/=2) STOP "Non si puo' usare lo Slater di Heitler-London &
+            con un numero di particelle diverso da 2&
+            [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]"
+         CALL valuta_SD_HL(rij_ep_old(0,1:2,1:2),SDe_up_old,detSDe_up_old,ISDe_up_old)
+         SDe_dw_old=1.d0
+         detSDe_dw_old=1.d0
+         ISDe_dw_old=1.d0
 		CASE ('no_') 
 			detSDe_up_old=1.d0
 			detSDe_dw_old=1.d0
@@ -441,14 +479,14 @@ MODULE calcola_accettazione
 			STOP 'Non hai selezionato un valore di SDe_kind accettabile &
 			  [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]'
 		END SELECT
+		detSDe_up_new=detSDe_up_old
+		detSDe_dw_new=detSDe_dw_old
 		IF (SDe_kind/='no_') THEN
 			SDe_up_new=SDe_up_old
 			ISDe_up_new=ISDe_up_old
 			SDe_dw_new=SDe_dw_old
 			ISDe_dw_new=ISDe_dw_old
 		END IF
-		detSDe_up_new=detSDe_up_old
-		detSDe_dw_new=detSDe_dw_old
 		
 		SELECT CASE (Jee_kind)
 		CASE ('yuk')
@@ -456,6 +494,11 @@ MODULE calcola_accettazione
 		CASE ('yup') 
 			CALL attiva_pc()
 			CALL valuta_Uee_YUK(-1,rijpc_ee_old,N_part,u_ee_old,Uee_old)
+      CASE ('spl')
+         CALL valuta_Uee_SPL(-1,rij_ee_old,N_part,u_ee_old,Uee_old)
+      CASE ('spp')
+         CALL attiva_pc()
+         CALL valuta_Uee_SPL(-1,rijpc_ee_old,N_part,u_ee_old,Uee_old)
 		CASE ('no_') 
 			Uee_old=0.d0
 		CASE DEFAULT
@@ -471,6 +514,11 @@ MODULE calcola_accettazione
 		CASE ('yup') 
 			CALL attiva_pc()
 			CALL valuta_Uep_YUK(-1,0,rijpc_ep_old,N_part,u_ep_old,Uep_old)
+      CASE ('spl')
+         CALL valuta_Uep_SPL(-1,rij_ep_old,N_part,u_ep_old,Uep_old)
+      CASE ('spp')
+         CALL attiva_pc()
+         CALL valuta_Uep_SPL(-1,rijpc_ep_old,N_part,u_ep_old,Uep_old)
 		CASE ('atm')
 			CALL valuta_Uep_ATM(-1,0,rij_ep_old,N_part,u_ep_old,Uep_old)
 		CASE ('atp') 
@@ -1155,8 +1203,9 @@ MODULE calcola_accettazione
 		LOGICAL, INTENT(OUT) :: accettazione
 		INTEGER :: i, info, M_pvt(1:H_N_part), perm
 		REAL (KIND=8) :: M(1:H_N_part,1:H_N_part), work(1:3*H_N_part), detM
-				
+
 		contatore_interno=contatore_interno+1
+      !PRINT *, 'inizio valuta_accettazione', contatore_interno 
 		
 		flag_coppie=.FALSE.
 		IF (num_mc/=num_mc_old) THEN
@@ -1203,17 +1252,29 @@ MODULE calcola_accettazione
 					  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,SDe_up_old,detSDe_up_old)
 					CALL valuta_SD_atm(num,rij_ep_new(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
 					  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
-	  			CASE ('bat')
-	  				CALL valuta_SD_bat(num,'up',rij_ep_new(0,:,:),H_N_part, &
-	  				  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,SDe_up_old,detSDe_up_old)
-	  				CALL valuta_SD_bat(num,'dw',rij_ep_new(0,:,:),H_N_part, &
-	  				  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
 				CASE ('atp')
 					CALL calcola_nuove_distanze_pc(tipo,num,'e_p_')
 					CALL valuta_SD_atm(num,rijpc_ep_new(0,1:H_N_part,1:H_N_part),H_N_part, &
 					  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,SDe_up_old,detSDe_up_old)
 					CALL valuta_SD_atm(num,rijpc_ep_new(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
 					  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+	  			CASE ('bat')
+	  				CALL valuta_SD_bat(num,'up',rij_ep_new(0,:,:),H_N_part, &
+	  				  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,SDe_up_old,detSDe_up_old)
+	  				CALL valuta_SD_bat(num,'dw',rij_ep_new(0,:,:),H_N_part, &
+	  				  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+            CASE ('1sb')
+               CALL valuta_SD_1s_backflow(num,'up',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+               CALL valuta_SD_1s_backflow(num,'dw',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+            CASE ('spb')
+               CALL valuta_SD_SPL_backflow(num,'up',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+               CALL valuta_SD_SPL_backflow(num,'dw',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+            CASE ('hl_')
+               CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
 				CASE ('no_')
 					detSDe_up_new=1.d0
 					detSDe_dw_new=1.d0
@@ -1230,6 +1291,11 @@ MODULE calcola_accettazione
 				CASE ('yup')
 					CALL calcola_nuove_distanze_pc(tipo,num,'e_e_')
 					CALL valuta_Uee_YUK(num,rijpc_ee_new,N_part,u_ee_new,Uee_new)
+				CASE ('spl')
+					CALL valuta_Uee_SPL(num,rij_ee_new,N_part,u_ee_new,Uee_new)
+				CASE ('spp')
+					CALL calcola_nuove_distanze_pc(tipo,num,'e_e_')
+					CALL valuta_Uee_SPL(num,rijpc_ee_new,N_part,u_ee_new,Uee_new)
 				CASE ('no_')
 					Uee_old=0.d0
 				CASE DEFAULT
@@ -1253,6 +1319,11 @@ MODULE calcola_accettazione
 					ELSE IF (tipo=='p__') THEN
 						CALL valuta_Uep_YUK(num,2,rijpc_ep_new,N_part,u_ep_new,Uep_new)
 					END IF
+				CASE ('spl')
+					CALL valuta_Uep_SPL(num,rij_ep_new,N_part,u_ep_new,Uep_new)
+				CASE ('spp')
+					CALL calcola_nuove_distanze_pc(tipo,num,'e_p_')
+					CALL valuta_Uep_SPL(num,rijpc_ep_new,N_part,u_ep_new,Uep_new)
 				CASE ('atm')
 					IF ((tipo=='all') .OR. (tipo=='e__')) THEN
 						CALL valuta_Uep_ATM(num,1,rij_ep_new,N_part,u_ep_new,Uep_new)
@@ -1548,19 +1619,6 @@ MODULE calcola_accettazione
 						CALL valuta_SD_atm(num-H_N_part,rij_ep_new(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
 						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
 					END IF
-				CASE ('bat')
-					IF (num==-1) THEN
-						CALL valuta_SD_bat(num,'up',rij_ep_new(0,:,:),H_N_part, &
-						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
-						CALL valuta_SD_bat(num,'dw',rij_ep_new(0,:,:),H_N_part, &
-						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
-					ELSE IF ((num>0) .AND. (num<=H_N_part)) THEN
-						CALL valuta_SD_bat(num,'up',rij_ep_new(0,:,:),H_N_part, &
-						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
-					ELSE IF ((num>H_N_part) .AND. (num<=N_part)) THEN
-						CALL valuta_SD_bat(num-H_N_part,'dw',rij_ep_new(0,:,:),H_N_part, &
-						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
-					END IF
 				CASE ('atp')
 					CALL calcola_nuove_distanze_pc(tipo,num,'e_p_')
 					IF (num==-1) THEN
@@ -1575,6 +1633,47 @@ MODULE calcola_accettazione
 						CALL valuta_SD_atm(num-H_N_part,rijpc_ep_new(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
 						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
 					END IF
+				CASE ('bat')
+					IF (num==-1) THEN
+						CALL valuta_SD_bat(num,'up',rij_ep_new(0,:,:),H_N_part, &
+						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+						CALL valuta_SD_bat(num,'dw',rij_ep_new(0,:,:),H_N_part, &
+						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+					ELSE IF ((num>0) .AND. (num<=H_N_part)) THEN
+						CALL valuta_SD_bat(num,'up',rij_ep_new(0,:,:),H_N_part, &
+						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+					ELSE IF ((num>H_N_part) .AND. (num<=N_part)) THEN
+						CALL valuta_SD_bat(num-H_N_part,'dw',rij_ep_new(0,:,:),H_N_part, &
+						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+					END IF
+            CASE ('1sb')
+               IF (num==-1) THEN
+                  CALL valuta_SD_1s_backflow(num,'up',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                     SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+                  CALL valuta_SD_1s_backflow(num-H_N_part,'dw',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                     SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+               ELSE IF ((num>0) .AND. (num<=H_N_part)) THEN
+                  CALL valuta_SD_1s_backflow(num,'up',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                     SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+               ELSE IF ((num>H_N_part) .AND. (num<=N_part)) THEN
+                  CALL valuta_SD_1s_backflow(num-H_N_part,'dw',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                     SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+               END IF
+            CASE ('spb')
+               IF (num==-1) THEN
+                  CALL valuta_SD_SPL_backflow(num,'up',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                     SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+                  CALL valuta_SD_SPL_backflow(num-H_N_part,'dw',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                     SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+               ELSE IF ((num>0) .AND. (num<=H_N_part)) THEN
+                  CALL valuta_SD_SPL_backflow(num,'up',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                     SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+               ELSE IF ((num>H_N_part) .AND. (num<=N_part)) THEN
+                  CALL valuta_SD_SPL_backflow(num-H_N_part,'dw',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                     SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+               END IF
+            CASE('hl_')
+               CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
 				CASE ('no_')
 					detSDe_up_new=1.d0
 					detSDe_dw_new=1.d0
@@ -1591,6 +1690,11 @@ MODULE calcola_accettazione
 				CASE ('yup')
 					CALL calcola_nuove_distanze_pc(tipo,num,'e_e_')
 					CALL valuta_Uee_YUK(num,rijpc_ee_new,N_part,u_ee_new,Uee_new)
+				CASE ('spl')
+					CALL valuta_Uee_SPL(num,rij_ee_new,N_part,u_ee_new,Uee_new)
+				CASE ('spp')
+					CALL calcola_nuove_distanze_pc(tipo,num,'e_e_')
+					CALL valuta_Uee_SPL(num,rijpc_ee_new,N_part,u_ee_new,Uee_new)
 				CASE ('no_')
 					Uee_old=0.d0
 				CASE DEFAULT
@@ -1614,6 +1718,11 @@ MODULE calcola_accettazione
 					ELSE IF (tipo=='p__') THEN
 						CALL valuta_Uep_YUK(num,2,rijpc_ep_new,N_part,u_ep_new,Uep_new)
 					END IF
+				CASE ('spl')
+					CALL valuta_Uep_SPL(num,rij_ep_new,N_part,u_ep_new,Uep_new)
+				CASE ('spp')
+					CALL calcola_nuove_distanze_pc(tipo,num,'e_p_')
+					CALL valuta_Uep_SPL(num,rijpc_ep_new,N_part,u_ep_new,Uep_new)
 				CASE ('atm')
 					IF ((tipo=='e__') .OR. (tipo=='tre')) THEN
 						CALL valuta_Uep_ATM(num,1,rij_ep_new,N_part,u_ep_new,Uep_new)
@@ -2558,7 +2667,7 @@ MODULE calcola_accettazione
 		ELSE IF ((num>0) .AND. (num<=N_part)) THEN
 			SELECT CASE (tipo)
 			CASE ('e__')
-				IF (SDe_kind/='no_') THEN
+				IF ((SDe_kind/='no_').AND.(SDe_kind/='hl_')) THEN
 					IF (num<=H_N_part) THEN
 						SDe_up_new(num,1:H_N_part)=SDe_up_old(num,1:H_N_part)
 						detSDe_up_new=detSDe_up_old
@@ -2566,7 +2675,11 @@ MODULE calcola_accettazione
 						SDe_dw_new(num-H_N_part,1:H_N_part)=SDe_dw_old(num-H_N_part,1:H_N_part)
 						detSDe_dw_new=detSDe_dw_old
 					END IF
-				END IF
+            ELSE IF (SDe_kind=='hl_') THEN
+               SDe_up_new=SDe_up_old
+               ISDe_up_new=ISDe_up_old
+               detSDe_up_new=detSDe_up_old
+            END IF
 				IF (Jee_kind/='no_') THEN
 					u_ee_new(num,1:num-1)=u_ee_old(num,1:num-1)
 					u_ee_new(num+1:N_part,num)=u_ee_old(num+1:N_part,num)
@@ -2838,20 +2951,58 @@ MODULE calcola_accettazione
 					ISDe_dw_old=ISDe_dw_new
 					pvte_dw_old=pvte_dw_new
 				ELSE IF ((num>0) .AND. (num<=N_part)) THEN
-					IF (num<=H_N_part) THEN
-						CALL aggiorna_matrice_inversa_C_1ppt(H_N_part,num,ISDe_up_old,detSDe_up_old,SDe_up_new,detSDe_up_new,ISDe_up_new)
-						SDe_up_old(num,1:H_N_part)=SDe_up_new(num,1:H_N_part)
-						ISDe_up_old=ISDe_up_new
-					ELSE IF (num>H_N_part) THEN
-						CALL aggiorna_matrice_inversa_C_1ppt(H_N_part,num-H_N_part,ISDe_dw_old,detSDe_dw_old,SDe_dw_new,detSDe_dw_new,ISDe_dw_new)
-						SDe_dw_old(num-H_N_part,1:H_N_part)=SDe_dw_new(num-H_N_part,1:H_N_part)
-						ISDe_dw_old=ISDe_dw_new
-					END IF
+               IF ((SDe_kind=='1sb').OR.(SDe_kind=='spb')) THEN
+					   IF (num<=H_N_part) THEN
+                     CALL aggiorna_determinante_C_1ppt(H_N_part,num,ISDe_up_old,detSDe_up_old,&
+                        SDe_up_new,detSDe_up_new)
+					   	CALL aggiorna_matrice_inversa_C_1ppt(H_N_part,num,ISDe_up_old,detSDe_up_old,&
+                        SDe_up_new,detSDe_up_new,ISDe_up_new)
+                     SDe_up_old(num,1:H_N_part)=SDe_up_new(num,1:H_N_part)
+                     ISDe_up_old=ISDe_up_new
+                     detSDe_up_old=detSDe_up_new
+                     CALL aggiorna_determinante_C_col_1ppt(H_N_part,num,ISDe_up_old,detSDe_up_old,&
+                        SDe_up_new,detSDe_up_new)
+                     CALL aggiorna_matrice_inversa_C_col_1ppt(H_N_part,num,ISDe_up_old,detSDe_up_old,&
+                        SDe_up_new,detSDe_up_new,ISDe_up_new)
+					   	SDe_up_old(num,1:H_N_part)=SDe_up_new(num,1:H_N_part)
+					   	ISDe_up_old=ISDe_up_new
+					   ELSE IF (num>H_N_part) THEN
+                     CALL aggiorna_determinante_C_1ppt(H_N_part,num-H_N_part,ISDe_dw_old,detSDe_dw_old,&
+                        SDe_dw_new,detSDe_dw_new)
+					   	CALL aggiorna_matrice_inversa_C_1ppt(H_N_part,num-H_N_part,ISDe_dw_old,detSDe_dw_old,&
+                        SDe_dw_new,detSDe_dw_new,ISDe_dw_new)
+                     SDe_dw_old(num-H_N_part,1:H_N_part)=SDe_dw_new(num-H_N_part,1:H_N_part)
+                     ISDe_dw_old=ISDe_dw_new
+                     detSDe_dw_old=detSDe_dw_new
+                     CALL aggiorna_determinante_C_col_1ppt(H_N_part,num-H_N_part,ISDe_dw_old,detSDe_dw_old,&
+                        SDe_dw_new,detSDe_dw_new)
+                     CALL aggiorna_matrice_inversa_C_col_1ppt(H_N_part,num-H_N_part,ISDe_dw_old,detSDe_dw_old,&
+                        SDe_dw_new,detSDe_dw_new,ISDe_dw_new)
+					   	SDe_dw_old(num-H_N_part,1:H_N_part)=SDe_dw_new(num-H_N_part,1:H_N_part)
+					   	ISDe_dw_old=ISDe_dw_new
+					   END IF
+               ELSE IF (SDe_kind=='hl_') THEN
+                  SDe_up_old=SDe_up_new
+                  ISDe_up_old=ISDe_up_new
+               ELSE
+					   IF (num<=H_N_part) THEN
+					   	CALL aggiorna_matrice_inversa_C_1ppt(H_N_part,num,ISDe_up_old,detSDe_up_old,&
+                        SDe_up_new,detSDe_up_new,ISDe_up_new)
+					   	SDe_up_old(num,1:H_N_part)=SDe_up_new(num,1:H_N_part)
+					   	ISDe_up_old=ISDe_up_new
+					   ELSE IF (num>H_N_part) THEN
+					   	CALL aggiorna_matrice_inversa_C_1ppt(H_N_part,num-H_N_part,ISDe_dw_old,detSDe_dw_old,&
+                        SDe_dw_new,detSDe_dw_new,ISDe_dw_new)
+					   	SDe_dw_old(num-H_N_part,1:H_N_part)=SDe_dw_new(num-H_N_part,1:H_N_part)
+					   	ISDe_dw_old=ISDe_dw_new
+					   END IF
+               END IF
 				END IF
 			END IF
 			detSDe_up_old=detSDe_up_new
 			detSDe_dw_old=detSDe_dw_new
 			
+         !Jee
 			IF (Jee_kind/='no_') THEN	
 				IF (num==-1) THEN
 					u_ee_old=u_ee_new
@@ -2863,6 +3014,7 @@ MODULE calcola_accettazione
 			Uee_old=Uee_new
 		END IF
 		
+      !Jep
 		IF ((tipo=='all') .OR. (tipo=='e__') .OR. (tipo=='p__') .OR. (tipo=='tre')) THEN
 			IF (Jep_kind/='no_') THEN
 				IF (num==-1) THEN

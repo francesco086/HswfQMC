@@ -76,13 +76,13 @@ MODULE dati_fisici
 			L(2)=L(2)*(((3.d0**3.d0)/(2.d0**5.d0))**(1.d0/6.d0))
 			L(3)=L(3)*((2.d0**(2.d0/3.d0))/(3**(1.d0/2.d0)))   *(1.58d0/DSQRT(8.d0/3.d0))
 		END IF
-		H_L=0.5d0*L
 		IF ( crystal_cell=='grp__' ) THEN
 			L(1:2)=r_s*DSQRT(PI*N_part)
 			L(1)=L(1)*3.d0/DSQRT(DSQRT(27.d0))
 			L(2)=L(2)*DSQRT(3.d0)/DSQRT(DSQRT(27.d0))
 			L(3)=L(1)
 		END IF
+		H_L=0.5d0*L
 		
 		ALLOCATE(r_crystal(1:3,1:N_part),app(1:3,1:N_part))
 		IF ( crystal_cell=='bcc__' ) THEN

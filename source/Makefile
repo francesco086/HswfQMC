@@ -14,16 +14,16 @@ FFLAGS=-O3
 #standard: append _exe to the executable name
 EXEC1=$(EXEC2)_exe
 
-#debug compiling mode
-ifeq ($(DEBUG),true)
-  	FFLAGS=-O0 -g -fbounds-check
-	EXEC1=$(EXEC2)_debug
-endif
-
 #quick compile compiling mode
 ifeq ($(QUICK_COMPILE),true)
 	FFLAGS=-O0
 	EXEC1=$(EXEC2)_qc
+endif
+
+#debug compiling mode
+ifeq ($(DEBUG),true)
+  	FFLAGS=-O0 -g -fbounds-check
+	EXEC1=$(EXEC2)_debug
 endif
 
 
@@ -88,7 +88,7 @@ module_VMC.o: module_stati_eccitati.o module_walkers.o module_calcola_accettazio
 	$(FC) $(FFLAGS) -c module_VMC.f90 
 
 module_estimatori.o: module_calcola_accettazione.o module_momenta.o module_funzione_onda.o module_dati_mc.o module_dati_fisici.o module_walkers.o module_generic_tools.o module_estimatori.f90
-	$(FC) $(FFLAGS) -c module_estimatori.f90 
+	$(FC) $(FFLAGS) -c module_estimatori.f90
 
 module_calcola_accettazione.o: module_walkers.o module_dati_mc.o module_dati_fisici.o module_funzione_onda.o module_momenta.o module_calcola_accettazione.f90
 	$(FC) $(FFLAGS) -c module_calcola_accettazione.f90
@@ -112,7 +112,7 @@ module_dnfH.o: module_dati_fisici.o module_walkers.o module_dnfH.f90
 	$(FC) $(FFLAGS) -c module_dnfH.f90 
 
 module_funzione_onda.o: module_dft.o module_momenta.o module_generic_tools.o module_dati_mc.o module_dati_fisici.o module_dnfH.o module_walkers.o module_funzione_onda.f90
-	$(FC) $(FFLAGS) -c module_funzione_onda.f90 
+	$(FC) $(FFLAGS) $(LDFLAGS) -c module_funzione_onda.f90 $(LIBS)
 
 module_momenta.o: module_momenta.f90
 	$(FC) $(FFLAGS) -c module_momenta.f90 
