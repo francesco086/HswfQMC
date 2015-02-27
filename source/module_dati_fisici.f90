@@ -43,6 +43,8 @@ MODULE dati_fisici
 			N_part=16*N_cell_side**3
 		ELSE IF ( (crystal_cell=='hcp_w') .AND. (flag_molecular) ) THEN
 			N_part=16*N_cell_side**3
+		ELSE IF ( crystal_cell=='hring' ) THEN
+			N_part=6
 		ELSE IF ( (crystal_cell=='mhcpo') .AND. (.NOT. flag_molecular) ) THEN
 			STOP 'mhcpo deve essere associato ad una fase molecolare'
 		ELSE IF ( (crystal_cell=='mhcpo') .AND. (flag_molecular) ) THEN
@@ -74,13 +76,13 @@ MODULE dati_fisici
 			L(2)=L(2)*(((3.d0**3.d0)/(2.d0**5.d0))**(1.d0/6.d0))
 			L(3)=L(3)*((2.d0**(2.d0/3.d0))/(3**(1.d0/2.d0)))   *(1.58d0/DSQRT(8.d0/3.d0))
 		END IF
-		H_L=0.5d0*L
 		IF ( crystal_cell=='grp__' ) THEN
 			L(1:2)=r_s*DSQRT(PI*N_part)
 			L(1)=L(1)*3.d0/DSQRT(DSQRT(27.d0))
 			L(2)=L(2)*DSQRT(3.d0)/DSQRT(DSQRT(27.d0))
 			L(3)=L(1)
 		END IF
+		H_L=0.5d0*L
 		
 		ALLOCATE(r_crystal(1:3,1:N_part),app(1:3,1:N_part))
 		IF ( crystal_cell=='bcc__' ) THEN
@@ -179,6 +181,16 @@ MODULE dati_fisici
 			END DO
 			
 			CALL RANDOM_SEED(PUT = seed)
+
+		ELSE IF ( crystal_cell=='hring' ) THEN
+
+			r_crystal(1:3,1)=(/ L_cov_bond		,	0.d0						,	0.d0/)
+			r_crystal(1:3,2)=(/ L_cov_bond*0.5d0,	sqrt(3.d0)*L_cov_bond*0.5d0	,	0.d0/)
+			r_crystal(1:3,3)=(/-L_cov_bond*0.5d0,	sqrt(3.d0)*L_cov_bond*0.5d0	,	0.d0/)
+			r_crystal(1:3,4)=(/-L_cov_bond		,	0.d0						,	0.d0/)
+			r_crystal(1:3,5)=(/-L_cov_bond*0.5d0,	-sqrt(3.d0)*L_cov_bond*0.5d0,	0.d0/)
+			r_crystal(1:3,6)=(/ L_cov_bond*0.5d0,	-sqrt(3.d0)*L_cov_bond*0.5d0,	0.d0/)
+
 		ELSE IF ( (crystal_cell=='mhcpo') .AND. (flag_molecular) ) THEN
 			app(1:3,1:H_N_part)=hexagonalclosepacking(N_cell_side)
 			DO i = 1, N_part, 1

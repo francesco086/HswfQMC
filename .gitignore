@@ -64,4 +64,8 @@ source/*.mod
 HswfQMC*
 source/HswfQMC*
 lapack_lib
+<<<<<<< HEAD
 source/makefile.users_settings*
+=======
+markuspline
+>>>>>>> master

@@ -16,8 +16,12 @@ MODULE dati_mc
 	REAL (KIND=8), PROTECTED, SAVE :: step_e, step_p, step_se
 	REAL (KIND=8), PROTECTED, SAVE :: alpha_ewald, accuracy_energy_opt
 	LOGICAL, PROTECTED, SAVE :: opt_c_eff_dnfH, opt_A_Jee, opt_F_Jee, opt_A_Jep, opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp
-	LOGICAL, PROTECTED, SAVE :: opt_rp, opt_SDse, opt_SDe
+	LOGICAL, PROTECTED, SAVE :: opt_rp, opt_SDse, opt_SDe, opt_orbital, opt_dynamic_backflow
 	REAL (KIND=8), SAVE :: time_VMC_start
+   LOGICAL, PROTECTED, SAVE :: SR_adaptative_beta, fSR, SR_lambda, SR_lambda_Rp
+   LOGICAL, PROTECTED, SAVE :: SR_change_bound
+   REAL(KIND=8), SAVE :: SR_beta, SR_beta_Rp, max_lambda, SR_max_change, SR_min_change, SR_max_SVD_MIN
+   INTEGER, PROTECTED, SAVE :: SR_num_max_WO_MIN
 	
 	CONTAINS
 	
@@ -33,8 +37,12 @@ MODULE dati_mc
 		  flag_disk, flag_output, &
 		  quick_error, flag_random_file, random_seed_path
 		
-		NAMELIST /dati_ottimizzazione/ opt_SDe, opt_A_Jee, opt_F_Jee, opt_A_Jep, opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp, &
-		  opt_SDse, opt_c_eff_dnfH, opt_rp
+		NAMELIST /dati_ottimizzazione/ opt_SDe, opt_orbital, opt_dynamic_backflow, opt_A_Jee, opt_F_Jee, opt_A_Jep, &
+         opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp, opt_SDse, opt_c_eff_dnfH, opt_rp
+
+      NAMELIST /dati_SR/ SR_num_max_WO_MIN, SR_beta, SR_beta_Rp, fSR, SR_max_SVD_MIN, &
+         SR_change_bound, SR_min_change, SR_max_change, SR_adaptative_beta, &
+         SR_lambda, max_lambda, SR_lambda_Rp
 		
 		CALL CPU_TIME(time_VMC_start)
 		
@@ -44,6 +52,10 @@ MODULE dati_mc
 		
 		OPEN (2, FILE='dati_ottimizzazione.d',STATUS='OLD')
 		READ (2, NML=dati_ottimizzazione)
+		CLOSE (2)
+
+		OPEN (2, FILE='dati_SR.d',STATUS='OLD')
+		READ (2, NML=dati_SR)
 		CLOSE (2)
 		
 		IF (flag_continua .AND. (.NOT. flag_disk)) STOP 'Non puoi continuare se non hai scritto su disco i dati &
@@ -65,7 +77,7 @@ MODULE dati_mc
 				N_TABC=-CEILING(REAL(N_mc)/REAL(N_TABC))
 			END IF
 		END IF
-		
+
 		iniz_dati_mc=.TRUE.
 		
 	END SUBROUTINE inizializza_dati_mc
@@ -101,16 +113,17 @@ MODULE dati_mc
 !-----------------------------------------------------------------------
 
 	SUBROUTINE change_step(rapp_step,quale)
+      USE dati_fisici
 		IMPLICIT NONE
 		REAL (KIND=8), INTENT(IN) :: rapp_step
 		CHARACTER(LEN=3) :: quale
 		SELECT CASE (quale)
 		CASE ('e__')
-			step_e=step_e+step_e*rapp_step
+			step_e=MIN(step_e+step_e*rapp_step,MAXVAL(L))
 		CASE ('p__')
-			step_p=step_p+step_p*rapp_step
+			step_p=MIN(step_p+step_p*rapp_step,MAXVAL(L))
 		CASE ('se_')
-			step_se=step_se+step_se*rapp_step
+			step_se=MIN(step_se+step_se*rapp_step,MAXVAL(L))
 		END SELECT
 	END SUBROUTINE change_step
 !-----------------------------------------------------------------------
