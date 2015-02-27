@@ -3890,7 +3890,6 @@ END SUBROUTINE derivata_Jep_ATM
 	END SUBROUTINE derivata_SDse_atp
 !-----------------------------------------------------------------------
 
-<<<<<<< HEAD
     SUBROUTINE derivata_psi_Rp(O)
         IMPLICIT NONE
         REAL (KIND=8), DIMENSION(:) :: O(:)
