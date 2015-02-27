@@ -3693,6 +3693,7 @@ END SUBROUTINE derivata_Jep_ATM
 		REAL (KIND=8) :: O      !O(1) - Gsesp
 		INTEGER :: pvt(1:H_N_part), info, perm
 		REAL (KIND=8) :: SD(1:H_N_part,1:H_N_part), ISD(1:H_N_part,1:H_N_part), detSD
+		
 		O=0.d0
 		
 		!s1 up
@@ -3794,6 +3795,7 @@ END SUBROUTINE derivata_Jep_ATM
 		REAL (KIND=8) :: O      !O(1) - Gsesp
 		INTEGER :: pvt(1:H_N_part), info, perm
 		REAL (KIND=8) :: SD(1:H_N_part,1:H_N_part), ISD(1:H_N_part,1:H_N_part), detSD
+		
 		O=0.d0
 		
 		!s1 up
@@ -3894,6 +3896,8 @@ END SUBROUTINE derivata_Jep_ATM
 		INTEGER :: i, j
 		REAL (KIND=8) :: uep1, frf1(1:3), frf2(1:3), frf3
 		
+		O=0.d0
+		
 		SELECT CASE (Jep_kind)
 		CASE ('yuk')
 			DO j = 1, N_part, 1
@@ -3957,6 +3961,9 @@ END SUBROUTINE derivata_Jep_ATM
 				END DO
 			END DO
 		END SELECT
+		
+		
+		
 	END SUBROUTINE derivata_psi_Rp
 !-----------------------------------------------------------------------
 

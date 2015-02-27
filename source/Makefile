@@ -3,7 +3,7 @@ DEBUG=false
 #compile without optimization or debugging flags, for quick compiling
 QUICK_COMPILE=false
 #standard executable name
-EXEC2=HswfQMC
+EXEC2=HswfQMC-deb
 
 COMPUTER:=$(shell hostname)
 USERNAME:=$(shell whoami)
