@@ -3693,6 +3693,7 @@ END SUBROUTINE derivata_Jep_ATM
 		REAL (KIND=8) :: O      !O(1) - Gsesp
 		INTEGER :: pvt(1:H_N_part), info, perm
 		REAL (KIND=8) :: SD(1:H_N_part,1:H_N_part), ISD(1:H_N_part,1:H_N_part), detSD
+		
 		O=0.d0
 		
 		!s1 up
@@ -3794,6 +3795,7 @@ END SUBROUTINE derivata_Jep_ATM
 		REAL (KIND=8) :: O      !O(1) - Gsesp
 		INTEGER :: pvt(1:H_N_part), info, perm
 		REAL (KIND=8) :: SD(1:H_N_part,1:H_N_part), ISD(1:H_N_part,1:H_N_part), detSD
+		
 		O=0.d0
 		
 		!s1 up
@@ -3888,6 +3890,7 @@ END SUBROUTINE derivata_Jep_ATM
 	END SUBROUTINE derivata_SDse_atp
 !-----------------------------------------------------------------------
 
+<<<<<<< HEAD
     SUBROUTINE derivata_psi_Rp(O)
         IMPLICIT NONE
         REAL (KIND=8), DIMENSION(:) :: O(:)
