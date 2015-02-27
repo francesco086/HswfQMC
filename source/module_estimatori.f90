@@ -3888,76 +3888,94 @@ END SUBROUTINE derivata_Jep_ATM
 	END SUBROUTINE derivata_SDse_atp
 !-----------------------------------------------------------------------
 
-	SUBROUTINE derivata_psi_Rp(O)
-		IMPLICIT NONE
-		REAL (KIND=8), DIMENSION(:) :: O(:)
-		INTEGER :: i, j
-		REAL (KIND=8) :: uep1, frf1(1:3), frf2(1:3), frf3
-		
-		SELECT CASE (Jep_kind)
-		CASE ('yuk')
-			DO j = 1, N_part, 1
-				DO i = 1, N_part, 1
-					IF ( (i<=H_N_part .AND. j<=H_N_part) .OR. (i>H_N_part .AND. j>H_N_part) ) THEN
-						uep1=Aep_yuk*( -(1.d0-DEXP(-Fep_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_yuk* &
-						  DEXP(-Fep_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
-					ELSE
-						IF (split_Fee) THEN
-							IF (split_Aee) THEN
-								uep1=Aep_ud_yuk*( -(1.d0-DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_ud_yuk* &
-								  DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
-							ELSE
-								uep1=Aep_yuk*( -(1.d0-DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_ud_yuk* &
-								  DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
-							END IF
-						ELSE
-							IF (split_Aee) THEN
-								uep1=Aep_ud_yuk*( -(1.d0-DEXP(-Fep_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_yuk* &
-								  DEXP(-Fep_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
-							ELSE
-								uep1=Aep_yuk*( -(1.d0-DEXP(-Fep_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_yuk* &
-								  DEXP(-Fep_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
-							END IF
-						END IF
-					END IF
-					O(3*(j-1)+1:3*j)=O(3*(j-1)+1:3*j)-0.5d0*uep1*rij_ep_old(1:3,i,j)/rij_ep_old(0,i,j)
-				END DO
-			END DO
-		CASE ('yup')
-			frf1(1:3)=PI/L(1:3)
-			DO j = 1, N_part, 1
-				DO i = 1, N_part, 1
-					frf2(1:3)=(/ rijpc_ep_old(1,i,j)*DCOS(frf1(1)*rij_ep_old(1,i,j)), &
-					  rijpc_ep_old(2,i,j)*DCOS(frf1(2)*rij_ep_old(2,i,j)), &
-					  rijpc_ep_old(3,i,j)*DCOS(frf1(3)*rij_ep_old(3,i,j)) /)/rijpc_ep_old(0,i,j)
-					
-					IF ( (i<=H_N_part .AND. j<=H_N_part) .OR. (i>H_N_part .AND. j>H_N_part) ) THEN
-						uep1=Aep_yuk*( -(1.d0-DEXP(-Fep_yuk*rijpc_ep_old(0,i,j)))/rijpc_ep_old(0,i,j)+Fep_yuk* &
-						  DEXP(-Fep_yuk*rijpc_ep_old(0,i,j)) )/rijpc_ep_old(0,i,j)
-					ELSE
-						IF (split_Fee) THEN
-							IF (split_Aee) THEN
-								uep1=Aep_ud_yuk*( -(1.d0-DEXP(-Fep_ud_yuk*rijpc_ep_old(0,i,j)))/rijpc_ep_old(0,i,j)+Fep_ud_yuk* &
-								  DEXP(-Fep_ud_yuk*rijpc_ep_old(0,i,j)) )/rijpc_ep_old(0,i,j)
-							ELSE
-								uep1=Aep_ud_yuk*( -(1.d0-DEXP(-Fep_ud_yuk*rijpc_ep_old(0,i,j)))/rijpc_ep_old(0,i,j)+Fep_ud_yuk* &
-								  DEXP(-Fep_ud_yuk*rijpc_ep_old(0,i,j)) )/rijpc_ep_old(0,i,j)
-							END IF
-						ELSE
-							IF (split_Aee) THEN
-								uep1=Aep_ud_yuk*( -(1.d0-DEXP(-Fep_yuk*rijpc_ep_old(0,i,j)))/rijpc_ep_old(0,i,j)+Fep_yuk* &
-								  DEXP(-Fep_yuk*rijpc_ep_old(0,i,j)) )/rijpc_ep_old(0,i,j)
-							ELSE
-								frf3=DEXP(-Fep_yuk*rijpc_ep_old(0,i,j))
-								uep1=Aep_yuk*( -(1.d0-frf3)/rijpc_ep_old(0,i,j)+Fep_yuk*frf3)/rijpc_ep_old(0,i,j)
-							END IF
-						END IF
-					END IF
-					O(3*(j-1)+1:3*j)=O(3*(j-1)+1:3*j)-0.5d0*uep1*frf2(1:3)
-				END DO
-			END DO
-		END SELECT
-	END SUBROUTINE derivata_psi_Rp
+    SUBROUTINE derivata_psi_Rp(O)
+        IMPLICIT NONE
+        REAL (KIND=8), DIMENSION(:) :: O(:)
+        INTEGER :: i, j, i_SD, j_SD
+        REAL (KIND=8) :: uep1, frf1(1:3), frf2(1:3), frf3
+
+        SELECT CASE (Jep_kind)
+        CASE ('yuk')
+            DO j = 1, N_part, 1
+                DO i = 1, N_part, 1
+                    IF ( (i<=H_N_part .AND. j<=H_N_part) .OR. (i>H_N_part .AND. j>H_N_part) ) THEN
+                        uep1=Aep_yuk*( -(1.d0-DEXP(-Fep_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_yuk* &
+                          DEXP(-Fep_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
+                    ELSE
+                        IF (split_Fee) THEN
+                            IF (split_Aee) THEN
+                                uep1=Aep_ud_yuk*( -(1.d0-DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_ud_yuk* &
+                                  DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
+                            ELSE
+                                uep1=Aep_yuk*( -(1.d0-DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_ud_yuk* &
+                                  DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
+                            END IF
+                        ELSE
+                            IF (split_Aee) THEN
+                                uep1=Aep_ud_yuk*( -(1.d0-DEXP(-Fep_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_yuk* &
+                                  DEXP(-Fep_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
+                            ELSE
+                                uep1=Aep_yuk*( -(1.d0-DEXP(-Fep_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_yuk* &
+                                  DEXP(-Fep_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
+                            END IF
+                        END IF
+                    END IF
+                    O(3*(j-1)+1:3*j)=O(3*(j-1)+1:3*j)-0.5d0*uep1*rij_ep_old(1:3,i,j)/rij_ep_old(0,i,j)
+                END DO
+            END DO
+        CASE ('yup')
+            frf1(1:3)=PI/L(1:3)
+            DO j = 1, N_part, 1
+                DO i = 1, N_part, 1
+                    frf2(1:3)=(/ rijpc_ep_old(1,i,j)*DCOS(frf1(1)*rij_ep_old(1,i,j)), &
+                      rijpc_ep_old(2,i,j)*DCOS(frf1(2)*rij_ep_old(2,i,j)), &
+                      rijpc_ep_old(3,i,j)*DCOS(frf1(3)*rij_ep_old(3,i,j)) /)/rijpc_ep_old(0,i,j)
+
+                    IF ( (i<=H_N_part .AND. j<=H_N_part) .OR. (i>H_N_part .AND. j>H_N_part) ) THEN
+                        uep1=Aep_yuk*( -(1.d0-DEXP(-Fep_yuk*rijpc_ep_old(0,i,j)))/rijpc_ep_old(0,i,j)+Fep_yuk* &
+                          DEXP(-Fep_yuk*rijpc_ep_old(0,i,j)) )/rijpc_ep_old(0,i,j)
+                    ELSE
+                        IF (split_Fee) THEN
+                            IF (split_Aee) THEN
+                                uep1=Aep_ud_yuk*( -(1.d0-DEXP(-Fep_ud_yuk*rijpc_ep_old(0,i,j)))/rijpc_ep_old(0,i,j)+Fep_ud_yuk* &
+                                  DEXP(-Fep_ud_yuk*rijpc_ep_old(0,i,j)) )/rijpc_ep_old(0,i,j)
+                            ELSE
+                                uep1=Aep_ud_yuk*( -(1.d0-DEXP(-Fep_ud_yuk*rijpc_ep_old(0,i,j)))/rijpc_ep_old(0,i,j)+Fep_ud_yuk* &
+                                  DEXP(-Fep_ud_yuk*rijpc_ep_old(0,i,j)) )/rijpc_ep_old(0,i,j)
+                            END IF
+                        ELSE
+                            IF (split_Aee) THEN
+                                uep1=Aep_ud_yuk*( -(1.d0-DEXP(-Fep_yuk*rijpc_ep_old(0,i,j)))/rijpc_ep_old(0,i,j)+Fep_yuk* &
+                                  DEXP(-Fep_yuk*rijpc_ep_old(0,i,j)) )/rijpc_ep_old(0,i,j)
+                            ELSE
+                                frf3=DEXP(-Fep_yuk*rijpc_ep_old(0,i,j))
+                                uep1=Aep_yuk*( -(1.d0-frf3)/rijpc_ep_old(0,i,j)+Fep_yuk*frf3)/rijpc_ep_old(0,i,j)
+                            END IF
+                        END IF
+                    END IF
+                    O(3*(j-1)+1:3*j)=O(3*(j-1)+1:3*j)-0.5d0*uep1*frf2(1:3)
+                END DO
+            END DO
+        END SELECT
+
+        SELECT CASE (SDe_kind)
+        CASE ('bat')
+        DO i = 1, H_N_part, 1
+                i_SD=i+H_N_part
+                DO j = 1, H_N_part, 1
+                    j_SD=j+H_N_part
+                    frf1(1:3)=-(rij_ep_old(1:3,j,i)*C_atm/rij_ep_old(0,j,i))*DEXP(-C_atm*rij_ep_old(0,j,i))  &
+                                 -(rij_ep_old(1:3,j,i_SD)*C_atm/rij_ep_old(0,j,i_SD))*DEXP(-C_atm*rij_ep_old(0,j,i_SD))
+                    frf2(1:3)=-(rij_ep_old(1:3,j_SD,i_SD)*C_atm/rij_ep_old(0,j_SD,i_SD))*DEXP(-C_atm*rij_ep_old(0,j_SD,i_SD))  &
+                                 -(rij_ep_old(1:3,j_SD,i)*C_atm/rij_ep_old(0,j_SD,i))*DEXP(-C_atm*rij_ep_old(0,j_SD,i))
+
+                    O(3*(i-1)+1:3*i)=O(3*(i-1)+1:3*i)+frf1*ISDe_up_old(i,j)
+                    O(3*(i-1)+1:3*i)=O(3*(i-1)+1:3*i)+frf2*ISDe_dw_old(i,j)
+
+                END DO
+            END DO
+        END SELECT
+    END SUBROUTINE derivata_psi_Rp
 !-----------------------------------------------------------------------
 
 	SUBROUTINE chiudi_estimatori()
@@ -3968,5 +3986,5 @@ END SUBROUTINE derivata_Jep_ATM
 		DEALLOCATE(w)
 		iniz_estimatori=.FALSE.
 	END SUBROUTINE chiudi_estimatori
-	
+
 END MODULE estimatori
