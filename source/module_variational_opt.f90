@@ -3327,6 +3327,7 @@ MODULE variational_opt
       CALL DGESVD('A','A',N,N,Is_kn,N,Ssvd,Usvd,N,VTsvd,N,work,LWORK*N,info)
       IF (info /= 0) THEN
          PRINT *, "Error in SVD [ stochastic_reconfiguration > module_variational_opt.f90 ]"
+		 PRINT*, "Info=", info
          STOP
       END IF
       Is_kn=0.d0
