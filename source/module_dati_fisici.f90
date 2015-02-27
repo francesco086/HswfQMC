@@ -185,10 +185,10 @@ MODULE dati_fisici
 		ELSE IF ( crystal_cell=='hring' ) THEN
 
 			r_crystal(1:3,1)=(/ L_cov_bond		,	0.d0						,	0.d0/)
-			r_crystal(1:3,2)=(/ L_cov_bond*0.5d0,	sqrt(3.d0)*L_cov_bond*0.5d0	,	0.d0/)
-			r_crystal(1:3,3)=(/-L_cov_bond*0.5d0,	sqrt(3.d0)*L_cov_bond*0.5d0	,	0.d0/)
-			r_crystal(1:3,4)=(/-L_cov_bond		,	0.d0						,	0.d0/)
-			r_crystal(1:3,5)=(/-L_cov_bond*0.5d0,	-sqrt(3.d0)*L_cov_bond*0.5d0,	0.d0/)
+			r_crystal(1:3,4)=(/ L_cov_bond*0.5d0,	sqrt(3.d0)*L_cov_bond*0.5d0	,	0.d0/)
+			r_crystal(1:3,2)=(/-L_cov_bond*0.5d0,	sqrt(3.d0)*L_cov_bond*0.5d0	,	0.d0/)
+			r_crystal(1:3,5)=(/-L_cov_bond		,	0.d0						,	0.d0/)
+			r_crystal(1:3,3)=(/-L_cov_bond*0.5d0,	-sqrt(3.d0)*L_cov_bond*0.5d0,	0.d0/)
 			r_crystal(1:3,6)=(/ L_cov_bond*0.5d0,	-sqrt(3.d0)*L_cov_bond*0.5d0,	0.d0/)
 
 		ELSE IF ( (crystal_cell=='mhcpo') .AND. (flag_molecular) ) THEN
