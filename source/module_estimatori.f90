@@ -393,7 +393,7 @@ MODULE estimatori
          gsdee_dw(1:3,1)=-C_atm* ( (rij_ep_old(1:3,2,2)/rij_ep_old(0,2,2))&
             *DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) +&
             (rij_ep_old(1:3,2,1)/rij_ep_old(0,2,1))&
-            *DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) ) *ISDe_up_old(1,1)
+            *DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) ) *ISDe_dw_old(1,1)
 
          lsdee=-C_atm* ( ( 2.d0/rij_ep_old(0,1,1)-C_atm )*&
            DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) +&
@@ -3970,14 +3970,27 @@ END SUBROUTINE derivata_Jep_ATM
 			i_SD=i+H_N_part
 			DO j = 1, H_N_part, 1
 				j_SD=j+H_N_part
-				der1_up(1:3)=-(rij_ep_old(1:3,j,i)*C_atm/rij_ep_old(0,j,i))*DEXP(-C_atm*rij_ep_old(0,j,i))  & 
-				             -(rij_ep_old(1:3,j,i_SD)*C_atm/rij_ep_old(0,j,i_SD))*DEXP(-C_atm*rij_ep_old(0,j,i_SD))
-				der1_dw(1:3)=-(rij_ep_old(1:3,j_SD,i_SD)*C_atm/rij_ep_old(0,j_SD,i_SD))*DEXP(-C_atm*rij_ep_old(0,j_SD,i_SD))  &
-				             -(rij_ep_old(1:3,j_SD,i)*C_atm/rij_ep_old(0,j_SD,i))*DEXP(-C_atm*rij_ep_old(0,j_SD,i))
+				der1_up(1:3)= (rij_ep_old(1:3,j,i)*C_atm/rij_ep_old(0,j,i))*DEXP(-C_atm*rij_ep_old(0,j,i))  &
+				             +(rij_ep_old(1:3,j,i_SD)*C_atm/rij_ep_old(0,j,i_SD))*DEXP(-C_atm*rij_ep_old(0,j,i_SD))
+				der1_dw(1:3)= (rij_ep_old(1:3,j_SD,i_SD)*C_atm/rij_ep_old(0,j_SD,i_SD))*DEXP(-C_atm*rij_ep_old(0,j_SD,i_SD))  &
+				             +(rij_ep_old(1:3,j_SD,i)*C_atm/rij_ep_old(0,j_SD,i))*DEXP(-C_atm*rij_ep_old(0,j_SD,i))
 				O(3*(i-1)+1:3*i)=O(3*(i-1)+1:3*i)+der1_up(1:3)*ISDe_up_old(i,j)
 				O(3*(i_SD-1)+1:3*i_SD)=O(3*(i_SD-1)+1:3*i_SD)+der1_dw(1:3)*ISDe_dw_old(i,j)
 			END DO
 		END DO
+
+		CASE ('hl_')
+
+            O(1:3)= C_atm* ( (rij_ep_old(1:3,1,1)/rij_ep_old(0,1,1))*&
+            DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) +&
+            (rij_ep_old(1:3,1,2)/rij_ep_old(0,1,2))&
+            *DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) ) *ISDe_up_old(1,1)
+
+            O(4:6)= C_atm* ( (rij_ep_old(1:3,2,2)/rij_ep_old(0,2,2))&
+            *DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) +&
+            (rij_ep_old(1:3,2,1)/rij_ep_old(0,2,1))&
+            *DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) ) *ISDe_dw_old(1,1)
+
 		END SELECT
 		
 	END SUBROUTINE derivata_psi_Rp
