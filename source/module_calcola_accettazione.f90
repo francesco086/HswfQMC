@@ -3,9 +3,11 @@ mODULE calcola_accettazione
 	LOGICAL, PARAMETER, PRIVATE :: verbose_mode=.FALSE.
 	LOGICAL, SAVE, PRIVATE :: iniz_calcola_accettazione=.FALSE.
 	COMPLEX (KIND=8), ALLOCATABLE, SAVE, PROTECTED :: SDe_up_new(:,:), SDe_up_old(:,:), ISDe_up_new(:,:), ISDe_up_old(:,:)
-	INTEGER, ALLOCATABLE, SAVE, PROTECTED :: pvte_up_new(:), pvte_up_old(:)
+	!INTEGER, ALLOCATABLE, SAVE, PROTECTED :: pvte_up_new(:), pvte_up_old(:)
+	INTEGER, ALLOCATABLE, SAVE :: pvte_up_new(:), pvte_up_old(:)
 	COMPLEX (KIND=8), ALLOCATABLE, SAVE, PROTECTED :: SDe_dw_new(:,:), SDe_dw_old(:,:), ISDe_dw_new(:,:), ISDe_dw_old(:,:)
-	INTEGER, ALLOCATABLE, SAVE, PROTECTED :: pvte_dw_new(:), pvte_dw_old(:)
+	!INTEGER, ALLOCATABLE, SAVE, PROTECTED :: pvte_dw_new(:), pvte_dw_old(:)
+	INTEGER, ALLOCATABLE, SAVE :: pvte_dw_new(:), pvte_dw_old(:)
 	COMPLEX (KIND=8), SAVE, PROTECTED ::  detSDe_up_new, detSDe_up_old, detSDe_dw_new, detSDe_dw_old
 	REAL (KIND=8), ALLOCATABLE, SAVE, PROTECTED :: u_ee_new(:,:), u_ee_old(:,:), u_ep_new(:,:), u_ep_old(:,:)
 	REAL (KIND=8), SAVE, PROTECTED :: Uee_new, Uee_old, Uep_new, Uep_old

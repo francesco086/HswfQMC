@@ -3966,18 +3966,55 @@ END SUBROUTINE derivata_Jep_ATM
 		
 		SELECT CASE(SDe_kind)
 		CASE('bat')
-		DO i = 1, H_N_part, 1
-			i_SD=i+H_N_part
-			DO j = 1, H_N_part, 1
-				j_SD=j+H_N_part
-				der1_up(1:3)=-(rij_ep_old(1:3,j,i)*C_atm/rij_ep_old(0,j,i))*DEXP(-C_atm*rij_ep_old(0,j,i))  & 
-				             -(rij_ep_old(1:3,j,i_SD)*C_atm/rij_ep_old(0,j,i_SD))*DEXP(-C_atm*rij_ep_old(0,j,i_SD))
-				der1_dw(1:3)=-(rij_ep_old(1:3,j_SD,i_SD)*C_atm/rij_ep_old(0,j_SD,i_SD))*DEXP(-C_atm*rij_ep_old(0,j_SD,i_SD))  &
-				             -(rij_ep_old(1:3,j_SD,i)*C_atm/rij_ep_old(0,j_SD,i))*DEXP(-C_atm*rij_ep_old(0,j_SD,i))
-				O(3*(i-1)+1:3*i)=O(3*(i-1)+1:3*i)+der1_up(1:3)*ISDe_up_old(i,j)
-				O(3*(i_SD-1)+1:3*i_SD)=O(3*(i_SD-1)+1:3*i_SD)+der1_dw(1:3)*ISDe_dw_old(i,j)
-			END DO
-		END DO
+		   DO i = 1, H_N_part, 1
+		   	i_SD=i+H_N_part
+		   	DO j = 1, H_N_part, 1
+		   		j_SD=j+H_N_part
+               O(3*(i-1)+1:3*i)=O(3*(i-1)+1:3*i)+&
+                  (rij_ep_old(1:3,j,i)*C_atm/rij_ep_old(0,j,i))*DEXP(-C_atm*rij_ep_old(0,j,i))*ISDe_up_old(i,j)
+               O(3*(i-1)+1:3*i)=O(3*(i-1)+1:3*i)+&
+                  (rij_ep_old(1:3,j_SD,i)*C_atm/rij_ep_old(0,j_SD,i))*DEXP(-C_atm*rij_ep_old(0,j_SD,i))*ISDe_dw_old(i,j)
+
+               O(3*(i_SD-1)+1:3*i_SD)=O(3*(i_SD-1)+1:3*i_SD)+&
+                  (rij_ep_old(1:3,j_SD,i_SD)*C_atm/rij_ep_old(0,j_SD,i_SD))*DEXP(-C_atm*rij_ep_old(0,j_SD,i_SD))*ISDe_dw_old(i,j)
+               O(3*(i_SD-1)+1:3*i_SD)=O(3*(i_SD-1)+1:3*i_SD)+&
+                  (rij_ep_old(1:3,j,i_SD)*C_atm/rij_ep_old(0,j,i_SD))*DEXP(-C_atm*rij_ep_old(0,j,i_SD))*ISDe_up_old(i,j)
+		   	END DO
+		   END DO
+
+         !!!CHECK DONE for H2
+         !PRINT *, 
+         !PRINT *, "CHECK Rp gradient of bat"
+         !PRINT *, "analytical up: ", O(1:3)
+         !frf3=0.0000001d0
+         !frf1(1)=detSDe_up_old*detSDe_dw_old
+         !DO i = 1, 3, 1
+         !   rp_new=rp_old
+         !   rp_new(i,1)=rp_old(i,1)+frf3
+         !   CALL valuta_distanza_ij(re_old,rp_new,N_part,L,rij_ep_new)
+         !   CALL valuta_SD_bat(-1,'up',rij_ep_new(0,1:N_part,1:N_part),H_N_part,SDe_up_new,detSDe_up_new,&
+         !      ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+         !   CALL valuta_SD_bat(-1,'dw',rij_ep_new(0,1:N_part,1:N_part),H_N_part,SDe_dw_new,detSDe_dw_new,&
+         !      ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+         !   frf2(i)=detSDe_up_new*detSDe_dw_new
+         !   rp_new=rp_old
+         !END DO
+         !PRINT *, "numerical up: ", (frf2(1:3)-frf1(1))/(frf3*frf1(1))
+         !PRINT *, "analytical dw: ", O(4:6)
+         !DO i = 1, 3, 1
+         !   rp_new=rp_old
+         !   rp_new(i,2)=rp_old(i,2)+frf3
+         !   CALL valuta_distanza_ij(re_old,rp_new,N_part,L,rij_ep_new)
+         !   CALL valuta_SD_bat(-1,'up',rij_ep_new(0,1:N_part,1:N_part),H_N_part,SDe_up_new,detSDe_up_new,&
+         !      ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+         !   CALL valuta_SD_bat(-1,'dw',rij_ep_new(0,1:N_part,1:N_part),H_N_part,SDe_dw_new,detSDe_dw_new,&
+         !      ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+         !   frf2(i)=detSDe_up_new*detSDe_dw_new
+         !   rp_new=rp_old
+         !END DO
+         !PRINT *, "numerical dw: ", (frf2(1:3)-frf1(1))/(frf3*frf1(1))
+         !STOP
+
 		END SELECT
 		
 	END SUBROUTINE derivata_psi_Rp

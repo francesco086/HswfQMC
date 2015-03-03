@@ -1813,7 +1813,6 @@ MODULE funzione_onda
 		SUBROUTINE valuta_SD_bat(num,updw,rij,N,SD,detSD,ISD,pvt,ISD_old,detSD_old)
 			USE generic_tools
 			IMPLICIT NONE
-			REAL (KIND=8), PARAMETER :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
 			CHARACTER (LEN=2) :: updw
 			INTEGER, INTENT(IN) :: N, num
 			REAL (KIND=8), INTENT(IN) :: rij(1:N+N,1:N+N)
@@ -1826,7 +1825,7 @@ MODULE funzione_onda
 			IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
 			  [ module_funzione_onda.f90 > valuta_SD_bat ]'
 		
-			norm=1.d0 !/DSQRT(PI)
+			norm=1.d0
 			
 			SELECT CASE(updw)
 			CASE('up')

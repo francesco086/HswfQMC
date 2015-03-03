@@ -1413,6 +1413,7 @@ MODULE variational_opt
          !PRINT *, mpi_myrank, p0
          !CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr) 
          !CALL SLEEP(1)
+         IF (mpi_myrank==0) PRINT *, "> > > DISTANZA pp = ", DSQRT(DOT_PRODUCT(p0(1:3)-p0(4:6),p0(1:3)-p0(4:6)))
          
 			contatore=contatore+1
          WRITE (istring, '(I4.4)'), contatore
@@ -3346,6 +3347,8 @@ MODULE variational_opt
       IF (ALLOCATED(OiOj_eff)) DEALLOCATE(OiOj_eff)
       ALLOCATE(OiOj_eff(1:num_par_var_eff,1:num_par_var_eff))
       OiOj_eff=RESHAPE( PACK(OiOj,M_used_par) , (/ num_par_var_eff,num_par_var_eff /)  )
+
+      IF (mpi_myrank==0) PRINT *, " > > > Oi: ", Oi
 
 	END SUBROUTINE estrai_medie_SR
 
