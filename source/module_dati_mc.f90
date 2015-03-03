@@ -40,7 +40,7 @@ MODULE dati_mc
 		NAMELIST /dati_ottimizzazione/ opt_SDe, opt_orbital, opt_dynamic_backflow, opt_A_Jee, opt_F_Jee, opt_A_Jep, &
          opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp, opt_SDse, opt_c_eff_dnfH, opt_rp
 
-      NAMELIST /dati_SR/ SR_num_max_WO_MIN, SR_deltaPsi, SR_beta, SR_beta_Rp, fSR, SR_max_SVD_MIN, &
+      NAMELIST /dati_SR/ SR_num_max_WO_MIN, SR_beta, SR_beta_Rp, fSR, SR_deltaPsi, SR_max_SVD_MIN, &
          SR_change_bound, SR_min_change, SR_max_change, SR_adaptative_beta, &
          SR_lambda, max_lambda, SR_lambda_Rp
 		

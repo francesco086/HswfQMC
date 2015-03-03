@@ -1251,10 +1251,10 @@ MODULE variational_opt
 		CHARACTER(LEN=4) :: stringa, istring
 		INTEGER :: i, j, k, info, contatore, IO, i_orbit, AV_cont, WO_MIN_cont
       INTEGER :: lwork
-		REAL (KIND=8) :: lambda, lambda2, flambda, eps, boundd, dummy(1:4), dummy2(0:N)
+		REAL (KIND=8) :: lambda, lambda2, flambda, eps, boundd, foo, dummy(1:4), dummy2(0:N)
 		REAL (KIND=8) :: lambda_Rp, flambda_Rp
 		REAL (KIND=8) :: p0(1:N), dp_iniz(1:N), AV_P(1:N)
-		REAL (KIND=8) :: dp(1:N), dp_old(1:N), Is_kn(1:N,1:N), pvt(1:N), cont_step
+		REAL (KIND=8) :: dp(1:N), dp0(1:N), dp_old(1:N), Is_kn(1:N,1:N), pvt(1:N), cont_step
       REAL(KIND=8) :: var_change, var_change_min, Hmin, Hnext, dpnext(1:N), opt_f_SR_beta, static_f_SR_beta
       REAL(KIND=8) :: SRopt_count
       REAL(KIND=8) :: opt_SVD_MIN, static_SVD_MIN
@@ -1285,7 +1285,7 @@ MODULE variational_opt
 		contatore=0
       WRITE (istring, '(I4.4)'), contatore
       id='SR'//istring
-      minE_AV=(/ 100.d0, 0.d0 /)
+      minE_AV=(/ HUGE(0.d0), 0.d0 /)
 		
       lwork=10*N
       ALLOCATE(work(1:lwork))
@@ -1407,13 +1407,18 @@ MODULE variational_opt
 		loop_stop=.FALSE.
 				
 		DO WHILE (flag_loop)
+
+         !CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr) 
+         !CALL SLEEP(1)
+         !PRINT *, mpi_myrank, p0
+         !CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr) 
+         !CALL SLEEP(1)
          
 			contatore=contatore+1
          WRITE (istring, '(I4.4)'), contatore
          id='SR'//istring
 			CALL SR_campiona_wf_attuale(id,p0,N,energia,accettabile)
-         IF (mpi_myrank==0) WRITE (8, *), cont_step, energia(1:2), &
-          DSQRT(DOT_PRODUCT(p0(1:3)-p0(4:6),p0(1:3)-p0(4:6)))
+         IF (mpi_myrank==0) WRITE (8, *), cont_step, energia(1:2)
 			IF (mpi_myrank==0) CLOSE (8)
 			IF (mpi_myrank==0) OPEN (UNIT=8, FILE='ottimizzazione/SR_energies.dat', STATUS='OLD', POSITION='APPEND')
 			IF (mpi_myrank==0) WRITE (9, *), p0
@@ -1479,6 +1484,7 @@ MODULE variational_opt
             static_f_SR_beta=f_SR_beta
             static_SVD_MIN=SVD_MIN
             static_lambda3=lambda3
+            var_change_min=HUGE(0.d0)
             DO i = 0, 100, 1
                IF (mpi_myrank==MOD(i,mpi_nprocs)) THEN
                   f_SR_beta = static_f_SR_beta * ( 1.1d0**( ((-1.d0)**i) * (i/2) ) )
@@ -1487,15 +1493,15 @@ MODULE variational_opt
                      SVD_MIN = MIN(SR_max_SVD_MIN , static_SVD_MIN * ( 1.1d0**( ((-1.d0)**j) * (j/2) ) ) )
                      CALL trova_dp(dpnext)
                      DO k = 0, 100, 1
-                        lambda3 = static_lambda3 * ( 1.1d0**( ((-1.d0)**k) * (k/2) ) )
+                        lambda3 = MAX(static_lambda3 * ( 1.1d0**( ((-1.d0)**k) * (k/2) ) ) , 1.d0 )
                         dpnext=lambda3*dpnext
                         var_change=DSQRT(DOT_PRODUCT(dpnext,dpnext)/DOT_PRODUCT(p0,p0))*100.d0
+                        IF ((i==0).AND.(j==0).AND.(k==0)) dp0=dp
                         IF ( ( (SR_change_bound.AND.(var_change<SR_max_change)) .OR. &
                          (.NOT.SR_change_bound) ) .AND. (DABS(DOT_PRODUCT(dpnext,Oi))<SR_deltaPsi) ) THEN
                            Hnext=( H+DOT_PRODUCT(dpnext,HOi) )/( 1.d0+DOT_PRODUCT(dpnext,Oi) )
-                           !sigmaHnext=( sigmaH+DOT_PRODUCT(dpnext,sigmaHOi) )/( 1.d0+DOT_PRODUCT(dpnext,Oi) )
-                           SRtarget=Hnext!+sigmaHnext
-                           !WRITE(UNIT=666, FMT=*), var_change,f_SR_beta,SVD_MIN,lambda,Hnext,sigmaHnext,SRtarget
+                           SRtarget=Hnext
+                           !WRITE(UNIT=666, FMT=*), var_change,f_SR_beta,SVD_MIN,lambda,Hnext,SRtarget
                            IF (SRtarget<SRtargetmin) THEN
                               SRtargetmin=SRtarget
                               dp=dpnext
@@ -1505,18 +1511,19 @@ MODULE variational_opt
                               SRopt_count=1.d0
                               var_change_min=var_change
                            ELSE IF ((SRtarget==SRtargetmin).AND.(var_change<var_change_min)) THEN
-                              !dp=dp+dpnext
-                              !opt_f_SR_beta=opt_f_SR_beta+f_SR_beta
-                              !opt_SVD_MIN=opt_SVD_MIN+SVD_MIN
-                              !opt_lambda3=opt_lambda3+lambda3
-                              !SRopt_count=SRopt_count+1.d0
-                              SRtargetmin=SRtarget
-                              dp=dpnext
-                              opt_f_SR_beta=f_SR_beta
-                              opt_SVD_MIN=SVD_MIN
-                              opt_lambda3=lambda3
-                              SRopt_count=1.d0
-                              var_change_min=var_change
+                              dp=dp+dpnext
+                              opt_f_SR_beta=opt_f_SR_beta+f_SR_beta
+                              opt_SVD_MIN=opt_SVD_MIN+SVD_MIN
+                              opt_lambda3=opt_lambda3+lambda3
+                              SRopt_count=SRopt_count+1.d0
+
+                              !SRtargetmin=SRtarget
+                              !dp=dpnext
+                              !opt_f_SR_beta=f_SR_beta
+                              !opt_SVD_MIN=SVD_MIN
+                              !opt_lambda3=lambda3
+                              !SRopt_count=1.d0
+                              !var_change_min=var_change
                            END IF
                         END IF
                      END DO
@@ -1524,53 +1531,70 @@ MODULE variational_opt
                END IF
             END DO
 
-            dp=dp/SRopt_count
-            opt_f_SR_beta=opt_f_SR_beta/SRopt_count
-            opt_SVD_MIN=opt_SVD_MIN/SRopt_count
-            opt_lambda3=opt_lambda3/SRopt_count
+            !check if at least one SR configuration has been accepted
+            !PRINT *, mpi_myrank, SRopt_count
+            CALL MPI_reduce(SRopt_count,foo,1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+            !IF (mpi_myrank==0) PRINT *, "foo=",foo
+            CALL MPI_BCAST(foo,1,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
 
-            !PRINT *, mpi_myrank, SRtargetmin
-            !Determino quale processore ha trovato il target minimo
-            CALL MPI_GATHER(SRtargetmin,1,MPI_REAL8,array_SRtargetmin(0:mpi_nprocs-1),1,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
-            IF (mpi_myrank==0) THEN
-               i=MINLOC(array_SRtargetmin(0:mpi_nprocs-1),1)-1
-               !PRINT *, array_SRtargetmin
-               !PRINT *, "MINIMO ", MINVAL(array_SRtargetmin(0:mpi_nprocs-1))
-               !PRINT *, "MINIMO IN ", i
-               !IF ((i<0).OR.(i>mpi_nprocs-1)) PRINT *, "ERRORE i fuori dal range"
-            END IF
-            CALL MPI_BCAST(i,1,MPI_INTEGER,0,MPI_COMM_WORLD,mpi_ierr)
+            IF (foo>0.5d0) THEN
 
-            !aggiorno i valori con quelli ottimali per il processore con il target piu' basso
-            IF (mpi_myrank==i) THEN
-               f_SR_beta=opt_f_SR_beta
-               SVD_MIN=opt_SVD_MIN
-               lambda3=opt_lambda3
-               !CLOSE(666)
-            END IF
+               dp=dp/SRopt_count
+               opt_f_SR_beta=opt_f_SR_beta/SRopt_count
+               opt_SVD_MIN=opt_SVD_MIN/SRopt_count
+               opt_lambda3=opt_lambda3/SRopt_count
 
-            !distribuisco i valori ottimali a tutti i processori
-            CALL MPI_BCAST(dp,num_par_var,MPI_REAL8,i,MPI_COMM_WORLD,mpi_ierr)
-            CALL MPI_BCAST(f_SR_beta,1,MPI_REAL8,i,MPI_COMM_WORLD,mpi_ierr)
-            CALL MPI_BCAST(SVD_MIN,1,MPI_REAL8,i,MPI_COMM_WORLD,mpi_ierr)
-            CALL MPI_BCAST(lambda3,1,MPI_REAL8,i,MPI_COMM_WORLD,mpi_ierr)
+               !PRINT *, mpi_myrank, SRtargetmin
+               !Determino quale processore ha trovato il target minimo
+               CALL MPI_GATHER(SRtargetmin,1,MPI_REAL8,array_SRtargetmin(0:mpi_nprocs-1),1,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
+               IF (mpi_myrank==0) THEN
+                  i=MINLOC(array_SRtargetmin(0:mpi_nprocs-1),1)-1
+                  !PRINT *, array_SRtargetmin
+                  !PRINT *, "MINIMO ", MINVAL(array_SRtargetmin(0:mpi_nprocs-1))
+                  !PRINT *, "MINIMO IN ", i
+                  !IF ((i<0).OR.(i>mpi_nprocs-1)) PRINT *, "ERRORE i fuori dal range"
+                  !CLOSE(666)
+               END IF
+               CALL MPI_BCAST(i,1,MPI_INTEGER,0,MPI_COMM_WORLD,mpi_ierr)
 
-            !stampo le informazioni
-            IF (mpi_myrank==0) THEN
-               PRINT *, "VAR_OPT: [fSR] usato fSR per determinare i parametri SR ottimali. Numero configurazioni:", &
-                INT2(SRopt_count)
+               !aggiorno i valori con quelli ottimali per il processore con il target piu' basso
+               IF (mpi_myrank==i) THEN
+                  f_SR_beta=opt_f_SR_beta
+                  SVD_MIN=opt_SVD_MIN
+                  lambda3=opt_lambda3
+               END IF
+
+               !distribuisco i valori ottimali a tutti i processori
+               CALL MPI_BCAST(dp,num_par_var,MPI_REAL8,i,MPI_COMM_WORLD,mpi_ierr)
+               CALL MPI_BCAST(f_SR_beta,1,MPI_REAL8,i,MPI_COMM_WORLD,mpi_ierr)
+               CALL MPI_BCAST(SVD_MIN,1,MPI_REAL8,i,MPI_COMM_WORLD,mpi_ierr)
+               CALL MPI_BCAST(lambda3,1,MPI_REAL8,i,MPI_COMM_WORLD,mpi_ierr)
+               CALL MPI_BCAST(SRopt_count,1,MPI_REAL8,i,MPI_COMM_WORLD,mpi_ierr)
+
+               !stampo le informazioni
+               IF (mpi_myrank==0) THEN
+                  PRINT *, "VAR_OPT: [fSR] usato fSR per determinare i parametri SR ottimali. Numero configurazioni:", &
+                   INT2(SRopt_count)
+                  IF (flag_output) WRITE(UNIT=7, FMT=*), &
+                     "VAR_OPT: [fSR] usato fSR per determinare i parametri SR ottimali. Numero configurazioni:", &
+                     INT2(SRopt_count)
+                  PRINT *, "VAR_OPT: [BETA] regolato beta tramite metodo di proiezione: ", REAL(f_SR_beta*SR_beta,4)
+                  IF (flag_output) WRITE(UNIT=7, FMT=*), &
+                     "VAR_OPT: [BETA] regolato beta tramite metodo di proiezione: ", REAL(f_SR_beta*SR_beta,4)
+                  PRINT *, "VAR_OPT: [SVD_MIN] regolato SVD_MIN tramite metodo di proiezione: ", REAL(SVD_MIN,4)
+                  IF (flag_output) WRITE(UNIT=7, FMT=*), &
+                     "VAR_OPT: [SVD_MIN] regolato SVD_MIN tramite metodo di proiezione: ", REAL(SVD_MIN,4)
+                  PRINT *, "VAR_OPT: [lambda3] regolato lambda3 tramite metodo di proiezione: ", REAL(lambda3,4)
+                  IF (flag_output) WRITE(UNIT=7, FMT=*), &
+                     "VAR_OPT: [lambda3] regolato lambda3 tramite metodo di proiezione: ", REAL(lambda3,4)
+               END IF
+            ELSE
+               IF (mpi_myrank==0) PRINT *, "VAR_OPT: [fSR] nessuna configurazione ottimale trovata,",&
+                 " quindi uso i parametri dati in input"
                IF (flag_output) WRITE(UNIT=7, FMT=*), &
-                  "VAR_OPT: [fSR] usato fSR per determinare i parametri SR ottimali. Numero configurazioni:", &
-                  INT2(SRopt_count)
-               PRINT *, "VAR_OPT: [BETA] regolato beta tramite metodo di proiezione: ", REAL(f_SR_beta*SR_beta,4)
-               IF (flag_output) WRITE(UNIT=7, FMT=*), &
-                  "VAR_OPT: [BETA] regolato beta tramite metodo di proiezione: ", REAL(f_SR_beta*SR_beta,4)
-               PRINT *, "VAR_OPT: [SVD_MIN] regolato SVD_MIN tramite metodo di proiezione: ", REAL(SVD_MIN,4)
-               IF (flag_output) WRITE(UNIT=7, FMT=*), &
-                  "VAR_OPT: [SVD_MIN] regolato SVD_MIN tramite metodo di proiezione: ", REAL(SVD_MIN,4)
-               PRINT *, "VAR_OPT: [lambda3] regolato lambda3 tramite metodo di proiezione: ", REAL(lambda3,4)
-               IF (flag_output) WRITE(UNIT=7, FMT=*), &
-                  "VAR_OPT: [lambda3] regolato lambda3 tramite metodo di proiezione: ", REAL(lambda3,4)
+                  "VAR_OPT: [fSR] nessuna configurazione ottimale trovata, quindi uso i parametri dati in input"
+               IF (mpi_myrank==0) dp=dp
+               CALL MPI_BCAST(dp,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
             END IF
 
          ELSE
@@ -1808,7 +1832,6 @@ MODULE variational_opt
                ELSE IF (energia(1)-2.d0*energia(2)<minE_AV(1)+2.d0*minE_AV(2)) THEN
                   AV_P=AV_P+p0
                   AV_cont=AV_cont+1
-                  WO_MIN_cont=WO_MIN_cont+1
                !altrimenti, se l'energia e' troppo alta, non accumulo in AV_P
                ELSE
                   WO_MIN_cont=WO_MIN_cont+1
@@ -3323,7 +3346,7 @@ MODULE variational_opt
       IF (ALLOCATED(OiOj_eff)) DEALLOCATE(OiOj_eff)
       ALLOCATE(OiOj_eff(1:num_par_var_eff,1:num_par_var_eff))
       OiOj_eff=RESHAPE( PACK(OiOj,M_used_par) , (/ num_par_var_eff,num_par_var_eff /)  )
-      
+
 	END SUBROUTINE estrai_medie_SR
 
 
