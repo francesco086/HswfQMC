@@ -1255,7 +1255,7 @@ MODULE variational_opt
 		REAL (KIND=8) :: lambda_Rp, flambda_Rp
 		REAL (KIND=8) :: p0(1:N), dp_iniz(1:N), AV_P(1:N)
 		REAL (KIND=8) :: dp(1:N), dp_old(1:N), Is_kn(1:N,1:N), pvt(1:N), cont_step
-      REAL(KIND=8) :: var_change, Hmin, Hnext, dpnext(1:N), opt_f_SR_beta, static_f_SR_beta
+      REAL(KIND=8) :: var_change, var_change_min, Hmin, Hnext, dpnext(1:N), opt_f_SR_beta, static_f_SR_beta
       REAL(KIND=8) :: SRopt_count
       REAL(KIND=8) :: opt_SVD_MIN, static_SVD_MIN
       REAL(KIND=8) :: lambda3, opt_lambda3, static_lambda3
@@ -1309,6 +1309,7 @@ MODULE variational_opt
 		END IF
 				
 		OPEN (UNIT=9, FILE='ottimizzazione/SR_var_parameters.dat', STATUS='UNKNOWN', POSITION='APPEND')
+
 		IF ( num_coord_Rp>0 ) THEN   !stampo la configurazione Rp_0 nel file 
 			IF (stampa_dati_funzione_onda) THEN
             CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
@@ -1355,6 +1356,42 @@ MODULE variational_opt
 				CALL calcola_g_Rp(p0(N-num_coord_Rp+1:N),gRpuu,gRpud)
 			END IF
 		END IF
+
+      !stampo le spline iniziali
+		IF (stampa_dati_funzione_onda) THEN
+         CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
+			CALL inizializza_dati_fisici()
+			CALL inizializza_dati_mc()
+			CALL inizializza_walkers('opt_Rp')
+			CALL inizializza_dati_funzione_onda()
+			IF (mpi_myrank==0) WRITE (istring, '(I4.4)'), contatore
+         IF (((Jee_kind=='spl').OR.(Jee_kind=='spp')).AND.(opt_A_Jee.OR.opt_F_Jee)) THEN
+            IF (mpi_myrank==0) THEN
+               CALL MSPL_print_on_file(SPL=Jsplee, DERIV=0, FILENAME='ottimizzazione/splines/Jsplee'//istring//'.d',&
+                  NPOINTS=INT(N_hist,4) ) 
+               IF (split_Aee.OR.split_Fee) CALL MSPL_print_on_file(SPL=Jsplee_ud, DERIV=0,&
+                  FILENAME='ottimizzazione/splines/Jsplee_ud.'//istring, NPOINTS=INT(N_hist,4) )
+            END IF
+         END IF
+         IF (((Jep_kind=='spl').OR.(Jep_kind=='spp')).AND.(opt_A_Jep.OR.opt_F_Jep)) THEN
+            IF (mpi_myrank==0) THEN
+               CALL MSPL_print_on_file(SPL=Jsplep, DERIV=0, FILENAME='ottimizzazione/splines/Jsplep'//istring//'.d',&
+                  NPOINTS=INT(N_hist,4) ) 
+               IF (split_Aep.OR.split_Fep) CALL MSPL_print_on_file(SPL=Jsplep_ud, DERIV=0,&
+                  FILENAME='ottimizzazione/splines/Jsplep_ud.'//istring, NPOINTS=INT(N_hist,4) )
+            END IF
+         END IF
+         IF (((SDe_kind=='spb')).AND.(opt_SDe)) THEN
+            IF (mpi_myrank==0) THEN
+               CALL MSPL_print_on_file(SPL=Bsplep, DERIV=0, FILENAME='ottimizzazione/splines/Bsplep'//istring//'.d',&
+                  NPOINTS=INT(N_hist,4) ) 
+            END IF
+         END IF
+			CALL chiudi_dati_funzione_onda()
+			CALL chiudi_walkers()
+			CALL chiudi_dati_mc()
+			CALL chiudi_dati_fisici()
+		END IF
 		
 		!IF (N-num_coord_Rp>0) lambda2=lambda2*DSQRT((DOT_PRODUCT(p0(1:N-num_coord_Rp),p0(1:N-num_coord_Rp)))/REAL(N-num_coord_Rp,8))
 		!IF (num_coord_Rp>0) lambda2_Rp=lambda2_Rp*DSQRT(num_coord_Rp*MINVAL(L)*0.01d0)
@@ -1375,7 +1412,8 @@ MODULE variational_opt
          WRITE (istring, '(I4.4)'), contatore
          id='SR'//istring
 			CALL SR_campiona_wf_attuale(id,p0,N,energia,accettabile)
-			IF (mpi_myrank==0) WRITE (8, *), cont_step, energia(1:2)
+         IF (mpi_myrank==0) WRITE (8, *), cont_step, energia(1:2), &
+          DSQRT(DOT_PRODUCT(p0(1:3)-p0(4:6),p0(1:3)-p0(4:6)))
 			IF (mpi_myrank==0) CLOSE (8)
 			IF (mpi_myrank==0) OPEN (UNIT=8, FILE='ottimizzazione/SR_energies.dat', STATUS='OLD', POSITION='APPEND')
 			IF (mpi_myrank==0) WRITE (9, *), p0
@@ -1453,7 +1491,7 @@ MODULE variational_opt
                         dpnext=lambda3*dpnext
                         var_change=DSQRT(DOT_PRODUCT(dpnext,dpnext)/DOT_PRODUCT(p0,p0))*100.d0
                         IF ( ( (SR_change_bound.AND.(var_change<SR_max_change)) .OR. &
-                         (.NOT.SR_change_bound) ) .AND. (DABS(DOT_PRODUCT(dpnext,Oi))<0.5d0) ) THEN
+                         (.NOT.SR_change_bound) ) .AND. (DABS(DOT_PRODUCT(dpnext,Oi))<SR_deltaPsi) ) THEN
                            Hnext=( H+DOT_PRODUCT(dpnext,HOi) )/( 1.d0+DOT_PRODUCT(dpnext,Oi) )
                            !sigmaHnext=( sigmaH+DOT_PRODUCT(dpnext,sigmaHOi) )/( 1.d0+DOT_PRODUCT(dpnext,Oi) )
                            SRtarget=Hnext!+sigmaHnext
@@ -1465,12 +1503,20 @@ MODULE variational_opt
                               opt_SVD_MIN=SVD_MIN
                               opt_lambda3=lambda3
                               SRopt_count=1.d0
-                           ELSE IF (SRtarget==SRtargetmin) THEN
-                              dp=dp+dpnext
-                              opt_f_SR_beta=opt_f_SR_beta+f_SR_beta
-                              opt_SVD_MIN=opt_SVD_MIN+SVD_MIN
-                              opt_lambda3=opt_lambda3+lambda3
-                              SRopt_count=SRopt_count+1.d0
+                              var_change_min=var_change
+                           ELSE IF ((SRtarget==SRtargetmin).AND.(var_change<var_change_min)) THEN
+                              !dp=dp+dpnext
+                              !opt_f_SR_beta=opt_f_SR_beta+f_SR_beta
+                              !opt_SVD_MIN=opt_SVD_MIN+SVD_MIN
+                              !opt_lambda3=opt_lambda3+lambda3
+                              !SRopt_count=SRopt_count+1.d0
+                              SRtargetmin=SRtarget
+                              dp=dpnext
+                              opt_f_SR_beta=f_SR_beta
+                              opt_SVD_MIN=SVD_MIN
+                              opt_lambda3=lambda3
+                              SRopt_count=1.d0
+                              var_change_min=var_change
                            END IF
                         END IF
                      END DO
