@@ -1,5 +1,5 @@
 #compile for debugging (useful for finding arrays overflow)
-DEBUG=false
+DEBUG=true
 #compile without optimization or debugging flags, for quick compiling
 QUICK_COMPILE=false
 #standard executable name
@@ -22,7 +22,7 @@ endif
 
 #debug compiling mode
 ifeq ($(DEBUG),true)
-  	FFLAGS=-O0 -g -fbounds-check
+  	FFLAGS=-O0 -g -fbounds-check -ffpe-trap=zero,overflow,underflow,invalid -fbacktrace
 	EXEC1=$(EXEC2)_debug
 endif
 

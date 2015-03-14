@@ -1406,7 +1406,7 @@ MODULE estimatori
 				lkernse=lkernse+0.5d0*(DOT_PRODUCT(gkernse1(1:3,i),gkernse1(1:3,i))+DOT_PRODUCT(gkernse2(1:3,i),gkernse2(1:3,i)))
 			END DO
 			lkernse=lkernse-6.d0*C_kern_e*REAL(N_part,8)
-			!ALTERNATIVA PIÙ LEGGIBILE
+			!ALTERNATIVA PI? LEGGIBILE
 			!!!DO i = 1, N_part, 1
 			!!!	
 			!!!	frf2s1(1:3)=rij_ese1_old(1:3,i,i)/rij_ese1_old(0,i,i)       !dr/dx
@@ -3981,17 +3981,193 @@ END SUBROUTINE derivata_Jep_ATM
 			END DO
 		END DO
 
-		CASE ('hl_')
+	    CASE ('hl_')
 
-            O(1:3)= C_atm* ( (rij_ep_old(1:3,1,1)/rij_ep_old(0,1,1))*&
-            DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) +&
-            (rij_ep_old(1:3,1,2)/rij_ep_old(0,1,2))&
-            *DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) ) *ISDe_up_old(1,1)
+	        O(1:3)= C_atm* ( (rij_ep_old(1:3,1,1)/rij_ep_old(0,1,1))*&
+	            DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) +&
+	            (rij_ep_old(1:3,1,2)/rij_ep_old(0,1,2))&
+	            *DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) ) *ISDe_up_old(1,1)
 
-            O(4:6)= C_atm* ( (rij_ep_old(1:3,2,2)/rij_ep_old(0,2,2))&
-            *DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) +&
-            (rij_ep_old(1:3,2,1)/rij_ep_old(0,2,1))&
-            *DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) ) *ISDe_up_old(1,1)
+	        O(4:6)= C_atm* ( (rij_ep_old(1:3,2,2)/rij_ep_old(0,2,2))&
+	            *DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) +&
+	            (rij_ep_old(1:3,2,1)/rij_ep_old(0,2,1))&
+	            *DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) ) *ISDe_up_old(1,1)
+
+        CASE ('atp')
+            frfs1(1:3)=PI/L(1:3)
+            DO i = 1, H_N_part, 1
+                i_SD=i+H_N_part
+                DO j = 1, H_N_part, 1
+                    j_SD=j+H_N_part
+
+                    der1_up(1:3)=-DCOS(frfs1(1:3)*rij_ep_old(1:3,j,i))* &
+                        rijpc_ep_old(1:3,j,i)*C_atm/rijpc_ep_old(0,j,i)
+                    der1_dw(1:3)=-DCOS(frfs1(1:3)*rij_ep_old(1:3,j_SD,i_SD))* &
+                        rijpc_ep_old(1:3,j_SD,i_SD)*C_atm/rijpc_ep_old(0,j_SD,i_SD)
+
+                    O(3*(i-1)+1:3*i)=O(3*(i-1)+1:3*i) + SDe_up_old(j,i)*der1_up*ISDe_up_old(i,j)
+                    O(3*(i_SD-1)+1:3*i_SD)=O(3*(i_SD-1)+1:3*i_SD) + SDe_dw_old(j,i)*der1_dw*ISDe_dw_old(i,j)
+
+                END DO
+            END DO
+
+        CASE ('1sb')
+
+         norm=1.d0
+
+         DO j = 1, N_part, 1
+         DO i = 1, N_part, 1
+            frf5=A_POT_se*(rij_ep_old(0,i,j)-D_POT_se)
+            frf3=DEXP(frf5)
+            sigm(i,j)=1.d0/(1.d0+frf3)
+            sigm1(i,j)=-frf3/((1.d0+frf3)*(1.d0+frf3))
+            sigm2(i,j)=(2.d0*frf3*frf3-frf3*(1.d0+frf3))/((1.d0+frf3)**3)
+            Dd(1:3,i,j)=A_POT_se*rij_ep_old(1:3,i,j)/rij_ep_old(0,i,j)
+            !D2d(1:3,i,j)=A_POT_se*(1.d0-rij_ep_old(1:3,i,j)*rij_ep_old(1:3,i,j)/(rij_ep_old(0,i,j)*rij_ep_old(0,i,j)))/&
+            !   rij_ep_old(0,i,j)
+         END DO
+         END DO
+
+         DO iadd = 0, H_N_part, H_N_part
+
+            IF (iadd==0) THEN
+               spin=1
+               SDe=SDe_up_old
+            ELSE IF (iadd==H_N_part) THEN
+               spin=2
+               SDe=SDe_dw_old
+            END IF
+
+
+            DO i = 1, H_N_part, 1
+               q(1:3,i)=0.d0
+               DO ik = 1, N_part, 1
+                  q(1:3,i)=q(1:3,i)+rp_old(1:3,ik)*sigm(i+iadd,ik)
+               END DO
+            END DO
+            CALL valuta_distanza_ij(re_old(1:3,1+iadd:H_N_part+iadd),q(1:3,1:H_N_part),&
+               H_N_part,L(1:3),rq(0:3,1:H_N_part,1:H_N_part))
+
+            DO il = 1, H_N_part, 1
+            DO j = 1, H_N_part, 1
+            DO i = 1, H_N_part, 1
+            DO alpha = 1, 3, 1
+               Grq(alpha,i,j,il,spin)=0.d0
+               IF (il==i) Grq(alpha,i,j,il,spin)=Grq(alpha,i,j,il,spin)+rq(alpha,i,j)
+               IF (j==il) THEN
+                  DO ik = 1, N_part, 1
+                  DO beta = 1, 3, 1
+                     Grq(alpha,i,j,il,spin)=Grq(alpha,i,j,il,spin)-&
+                        rq(beta,i,j)*rp_old(beta,ik)*sigm1(j+iadd,ik)*Dd(alpha,j+iadd,ik)
+                  END DO
+                  END DO
+               END IF
+               Grq(alpha,i,j,il,spin)=Grq(alpha,i,j,il,spin)/rq(0,i,j)
+               Gphi(alpha,i,j,il,spin)=-C_atm*SDe(i,j)*Grq(alpha,i,j,il,spin)
+            END DO
+            END DO
+            END DO
+            END DO
+
+         END DO
+
+         DO il = 1, H_N_part, 1
+            DO j = 1, H_N_part, 1
+            DO i = 1, H_N_part, 1
+               O(3*(il-1)+1:3*il)=O(3*(il-1)+1:3*il)+Gphi(1:3,i,j,il,1)*ISDe_up_old(j,i)
+            END DO
+            END DO
+         END DO
+         DO il = 1, H_N_part, 1
+            DO j = 1, H_N_part, 1
+            DO i = 1, H_N_part, 1
+            i_SD=il+H_N_part
+               O(3*(i_SD-1)+1:3*i_SD)=O(3*(i_SD-1)+1:3*i_SD)+Gphi(1:3,i,j,il,2)*ISDe_dw_old(j,i)
+            END DO
+            END DO
+         END DO
+
+        CASE ('spb')
+
+         norm=1.d0
+
+         DO j = 1, N_part, 1
+         DO i = 1, N_part, 1
+            frf5=A_POT_se*(rij_ep_old(0,i,j)-D_POT_se)
+            frf3=DEXP(frf5)
+            sigm(i,j)=1.d0/(1.d0+frf3)
+            sigm1(i,j)=-frf3/((1.d0+frf3)*(1.d0+frf3))
+            sigm2(i,j)=(2.d0*frf3*frf3-frf3*(1.d0+frf3))/((1.d0+frf3)**3)
+            Dd(1:3,i,j)=A_POT_se*rij_ep_old(1:3,i,j)/rij_ep_old(0,i,j)
+            !D2d(1:3,i,j)=A_POT_se*(1.d0-rij_ep_old(1:3,i,j)*rij_ep_old(1:3,i,j)/(rij_ep_old(0,i,j)*rij_ep_old(0,i,j)))/&
+            !   rij_ep_old(0,i,j)
+         END DO
+         END DO
+
+         DO iadd = 0, H_N_part, H_N_part
+
+            IF (iadd==0) THEN
+               spin=1
+               SDe=SDe_up_old
+            ELSE IF (iadd==H_N_part) THEN
+               spin=2
+               SDe=SDe_dw_old
+            END IF
+
+
+            DO i = 1, H_N_part, 1
+               q(1:3,i)=0.d0
+               DO ik = 1, N_part, 1
+                  q(1:3,i)=q(1:3,i)+rp_old(1:3,ik)*sigm(i+iadd,ik)
+               END DO
+            END DO
+            CALL valuta_distanza_ij(re_old(1:3,1+iadd:H_N_part+iadd),q(1:3,1:H_N_part),&
+               H_N_part,L(1:3),rq(0:3,1:H_N_part,1:H_N_part))
+            DO j = 1, H_N_part, 1
+            DO i = 1, H_N_part, 1
+               CALL MSPL_compute(SPL=Bsplep, DERIV=1, R=rq(0,i,j), VAL=Bspl1(i,j))
+               CALL MSPL_compute(SPL=Bsplep, DERIV=2, R=rq(0,i,j), VAL=Bspl2(i,j))
+            END DO
+            END DO
+
+            DO il = 1, H_N_part, 1
+            DO j = 1, H_N_part, 1
+            DO i = 1, H_N_part, 1
+            DO alpha = 1, 3, 1
+               Grq(alpha,i,j,il,spin)=0.d0
+               IF (il==i) Grq(alpha,i,j,il,spin)=Grq(alpha,i,j,il,spin)+rq(alpha,i,j)
+               IF (j==il) THEN
+                  DO ik = 1, N_part, 1
+                  DO beta = 1, 3, 1
+                     Grq(alpha,i,j,il,spin)=Grq(alpha,i,j,il,spin)-&
+                        rq(beta,i,j)*rp_old(beta,ik)*sigm1(j+iadd,ik)*Dd(alpha,j+iadd,ik)
+                  END DO
+                  END DO
+               END IF
+               Grq(alpha,i,j,il,spin)=Grq(alpha,i,j,il,spin)/rq(0,i,j)
+               Gphi(alpha,i,j,il,spin)=-SDe(i,j)*Bspl1(i,j)*Grq(alpha,i,j,il,spin)
+            END DO
+            END DO
+            END DO
+            END DO
+
+         END DO
+
+         DO il = 1, H_N_part, 1
+            DO j = 1, H_N_part, 1
+            DO i = 1, H_N_part, 1
+               O(3*(il-1)+1:3*il)=O(3*(il-1)+1:3*il) + Gphi(1:3,i,j,il,1)*ISDe_up_old(j,i)
+            END DO
+            END DO
+         END DO
+         DO il = 1, H_N_part, 1
+            DO j = 1, H_N_part, 1
+            DO i = 1, H_N_part, 1
+            i_SD=il+H_N_part
+               O(3*(i_SD-1)+1:3*i_SD)=O(3*(i_SD-1)+1:3*i_SD) + Gphi(1:3,i,j,il,2)*ISDe_dw_old(j,i)
+            END DO
+            END DO
+         END DO
 
 		END SELECT
 		

@@ -26,3 +26,14 @@ ifeq ($(IDENTIFIER),jakessle@login02.mogon)
         FC=mpif90
 endif
 
+
+
+
+
+ifeq ($(IDENTIFIER),jakessle@jmbprow.home)
+        EXEC=$(EXEC1)
+        LIBS=-llapackHswfQMC -lblasHswfQMC -lmarkusplineHswfQMC
+        LDFLAGS=-L/Users/jakessle/AeroFS/TCM/Code/HswfQMC/lapack_lib -I/Users/jakessle/AeroFS/TCM/Code/HswfQMC/markuspline -L/Users/jakessle/AeroFS/TCM/Code/HswfQMC/markuspline
+        FC=mpif90
+endif
+
