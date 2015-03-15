@@ -3895,13 +3895,13 @@ END SUBROUTINE derivata_Jep_ATM
 		REAL (KIND=8), DIMENSION(:) :: O(:)
 
 		INTEGER       :: i, j, i3, idw, jdw, ik, info, i_SD, j_SD, alpha, beta, gamm, il, iadd, spin, t, m, n
-		REAL (KIND=8) :: frf1(0:3), frf2(1:3), frf3, frfs1(0:3)
+		REAL (KIND=8) :: frf1(0:3), frf2(1:3), frf3, frfs1(0:3), frf5, norm
 		REAL (KIND=8) :: uep1, der1_up(1:3), der1_dw(1:3)
 		REAL(KIND=8)  :: q(0:3,H_N_part),rq(0:3,H_N_part,H_N_part),SDe(H_N_part,H_N_part)
 		REAL(KIND=8)  :: sigm(N_part,N_part),sigm1(N_part,N_part),sigm2(N_part,N_part)
         REAL(KIND=8)  :: Grq(3,H_N_part,H_N_part,H_N_part,2), Gphi(3,H_N_part,H_N_part,H_N_part,2)
         REAL(KIND=8)  :: Dd(3,N_part,N_part)
-        REAL(KIND=8)  :: Bspl1(H_N_part,H_N_part)
+        REAL(KIND=8)  :: Bspl1(H_N_part,H_N_part), Bspl2(H_N_part,H_N_part)
 
 		O=0.d0
 		
