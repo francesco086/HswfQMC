@@ -4,6 +4,7 @@ MODULE VMC
 	USE dati_fisici
 	USE dati_mc
 	USE estimatori
+   USE grad_lapl_psi
 	USE generic_tools
 	USE walkers
 	IMPLICIT NONE
@@ -214,6 +215,7 @@ MODULE VMC
 			END IF
 		END IF
 		
+      !CALL inizializza_grad_lapl_psi()
 		CALL inizializza_estimatori()
 		
 		IF (flag_gr) THEN
@@ -823,6 +825,7 @@ MODULE VMC
 		IF (.NOT. iniz_VMC) STOP 'Prima di valutare gli estimatori devi inizializzare il VMC &
 		  [ module_VMC.f90 > calcola_nuovi_estimatori ]'
 		
+      !CALL calcola_grad_lapl_psi(i)
 		CALL valuta_estimatori(i)
 				
 		IF (flag_gr) THEN
@@ -870,6 +873,7 @@ MODULE VMC
 		IF (.NOT. iniz_VMC) STOP 'Prima di valutare gli estimatori devi inizializzare il VMC &
 		  [ module_VMC.f90 > conferma_estimatori ]'
 		
+      !CALL conferma_grad_lapl_psi(i)
 		CALL mantieni_stessi_estimatori(i)
 		
 		IF (flag_gr) THEN
@@ -1594,6 +1598,7 @@ MODULE VMC
 		END IF
 		
 		CALL chiudi_estimatori()
+      !CALL chiudi_grad_lapl_psi()
 		
 		IF (flag_gr) THEN
 			DEALLOCATE(geeuu,geeuu_new,geeud,geeud_new)

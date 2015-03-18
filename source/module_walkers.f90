@@ -2,15 +2,18 @@ MODULE walkers
 	IMPLICIT NONE
 	LOGICAL, PROTECTED, SAVE :: iniz_walkers=.FALSE., iniz_pc=.FALSE.
 	LOGICAL :: flag_traccia_coppie_mol_ss
+	!REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: re_new(:,:), re_old(:,:), rp_new(:,:), rp_old(:,:)
 	REAL (KIND=8), ALLOCATABLE, SAVE :: re_new(:,:), re_old(:,:), rp_new(:,:), rp_old(:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: se1_new(:,:), se1_old(:,:), se2_new(:,:), se2_old(:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: sp1_new(:,:), sp1_old(:,:), sp2_new(:,:), sp2_old(:,:)
-	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_ee_new(:,:,:), rij_ee_old(:,:,:)
+	!REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_ee_new(:,:,:), rij_ee_old(:,:,:)
+	REAL (KIND=8), ALLOCATABLE, SAVE :: rij_ee_new(:,:,:), rij_ee_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rijpc_ee_new(:,:,:), rijpc_ee_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_se1_new(:,:,:), rij_se1_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rijpc_se1_new(:,:,:), rijpc_se1_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_se2_new(:,:,:), rij_se2_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rijpc_se2_new(:,:,:), rijpc_se2_old(:,:,:)
+	!REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_ep_new(:,:,:), rij_ep_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, SAVE :: rij_ep_new(:,:,:), rij_ep_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rijpc_ep_new(:,:,:), rijpc_ep_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_ese1_new(:,:,:), rij_ese1_old(:,:,:)
@@ -21,7 +24,8 @@ MODULE walkers
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_sesp2_new(:,:,:), rij_sesp2_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rijpc_sesp1_new(:,:,:), rijpc_sesp1_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rijpc_sesp2_new(:,:,:), rijpc_sesp2_old(:,:,:)
-	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_pp_new(:,:,:), rij_pp_old(:,:,:)
+	!REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_pp_new(:,:,:), rij_pp_old(:,:,:)
+	REAL (KIND=8), ALLOCATABLE, SAVE :: rij_pp_new(:,:,:), rij_pp_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rijpc_pp_new(:,:,:), rijpc_pp_old(:,:,:)
 	INTEGER, ALLOCATABLE, PROTECTED, SAVE :: index_mol_ss1(:,:), index_mol_ss2(:,:)
 	INTEGER, PROTECTED, SAVE :: index_mol_num

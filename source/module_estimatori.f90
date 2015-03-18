@@ -6,6 +6,7 @@ MODULE estimatori
 	USE walkers
 	USE calcola_accettazione
 	USE generic_tools
+   USE grad_lapl_psi
 	IMPLICIT NONE
 	LOGICAL, PRIVATE, SAVE :: iniz_estimatori=.FALSE., verbose_mode=.FALSE.
 	REAL (KIND=8), PARAMETER, PRIVATE :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
@@ -1048,6 +1049,44 @@ MODULE estimatori
 				END DO
 				lee=lee+DOT_PRODUCT(gee(1:3,j),gee(1:3,j))
 			END DO
+
+         !gee(1:3,1:N_part)=grad_Jee(1:3,1:N_part,0)
+         !lee=0.d0
+         !DO j = 1, N_part, 1
+         !DO i = 1, 3, 1
+         !   lee=lee+lapl_Jee(i,j,0)
+         !END DO
+         !END DO
+
+         !!CHECK
+         !CALL valuta_Uee_YUK(-1,rij_ee_old,N_part,u_ee_old,Uee_old)
+         !frf1(0)=DEXP(-0.5d0*Uee_old)
+         !frf3=0.00001d0
+         !j=1
+         !DO i = 1, 3, 1
+         !   re_new=re_old
+         !   re_new(i,j)=re_old(i,j)+frf3
+         !   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new)
+         !   CALL valuta_Uee_YUK(-1,rij_ee_new,N_part,u_ee_new,Uee_new)
+         !   frf1(i)=DEXP(-0.5d0*Uee_new)
+         !END DO
+         !PRINT *, "GRAD ANALITICO: ", gee(1:3,j)
+         !PRINT *, "GRAD NUMERICO: ", (frf1(1:3)-frf1(0))/(frf3*frf1(0))
+         !DO i = 1, 3, 1
+         !   re_new=re_old
+         !   re_new(i,j)=re_old(i,j)-frf3
+         !   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new)
+         !   CALL valuta_Uee_YUK(-1,rij_ee_new,N_part,u_ee_new,Uee_new)
+         !   frf2(i)=DEXP(-0.5d0*Uee_new)
+         !END DO
+         !PRINT *, "LAPL ANALITICO: ", lapl_Jee(1:3,j,0)
+         !PRINT *, SUM(lapl_Jee(1:3,j,0))
+         !PRINT *, "LAPL NUMERICO: ", (frf1(1:3)-2.d0*frf1(0)+frf2(1:3))/(frf3*frf3*frf1(0))
+         !gee(1:3,1)=(frf1(1:3)-2.d0*frf1(0)+frf2(1:3))/(frf3*frf3*frf1(0))
+         !PRINT *, SUM(gee(1:3,1))
+
+         !STOP
+
 		CASE ('yup')
 			frf1(1:3)=PI/L(1:3)
 			DO j = 1, N_part, 1
@@ -1266,6 +1305,15 @@ MODULE estimatori
 			DO j = 1, N_part, 1
 				lep=lep+DOT_PRODUCT(gep(1:3,j),gep(1:3,j))
 			END DO
+
+         !gep(1:3,1:N_part)=grad_Jep(1:3,1:N_part,0)
+         !lep=0.d0
+         !DO j = 1, N_part, 1
+         !DO i = 1, 3, 1
+         !   lep=lep+lapl_Jep(i,j,0)
+         !END DO
+         !END DO
+
 		CASE ('yup')
 			frf1(1:3)=PI/L(1:3)
 			DO j = 1, N_part, 1
@@ -1804,38 +1852,23 @@ MODULE estimatori
 				END DO
 			END DO
 			
-			DO k = 2, num_k_ewald, 1
-				DO i = 1, 3, 1
-					delta_R(i,k)=k_fermi(i,k)*L(i)*MINVAL(L)/(2.d0*PI)
-				END DO
-				DO i = 1, N_part, 1
-					DO j = 1, N_part, 1
-						E_pot=E_pot+1.d0/DSQRT(DOT_PRODUCT(re_old(1:3,i)-re_old(1:3,j)+delta_R(1:3,k), &
-						  re_old(1:3,i)-re_old(1:3,j)+delta_R(1:3,k)))
-						E_pot=E_pot+1.d0/DSQRT(DOT_PRODUCT(rp_old(1:3,i)-rp_old(1:3,j)+delta_R(1:3,k), &
-						  rp_old(1:3,i)-rp_old(1:3,j)+delta_R(1:3,k)))
-						E_pot=E_pot-1.d0/DSQRT(DOT_PRODUCT(re_old(1:3,i)-rp_old(1:3,j)+delta_R(1:3,k), &
-						  re_old(1:3,i)-rp_old(1:3,j)+delta_R(1:3,k)))
-						E_pot=E_pot-1.d0/DSQRT(DOT_PRODUCT(rp_old(1:3,i)-re_old(1:3,j)+delta_R(1:3,k), &
-						  rp_old(1:3,i)-re_old(1:3,j)+delta_R(1:3,k)))
-					END DO
-				END DO
-			END DO
-			
-			!!!!CON PC
-			!!!DO i = 1, N_part-1, 1
-			!!!	DO j = i+1, N_part, 1
-			!!!		E_pot=E_pot+1.d0/rijpc_ee_old(0,i,j)
-			!!!		r_prova(1:3)=L(1:3)*DSIN(PI*rij_pp_old(1:3,i,j)/L(1:3))/PI
-			!!!		r_prova(0)=DSQRT(DOT_PRODUCT(r_prova(1:3),r_prova(1:3)))
-			!!!		E_pot=E_pot+1.d0/r_prova(0)
-			!!!	END DO
-			!!!END DO
-			!!!DO i = 1, N_part, 1
-			!!!	DO j = 1, N_part, 1
-			!!!		E_pot=E_pot-1.d0/rijpc_ep_old(0,i,j)
-			!!!	END DO
-			!!!END DO
+			!DO k = 2, num_k_ewald, 1
+			!	DO i = 1, 3, 1
+			!		delta_R(i,k)=k_fermi(i,k)*L(i)*MINVAL(L)/(2.d0*PI)
+			!	END DO
+			!	DO i = 1, N_part, 1
+			!		DO j = 1, N_part, 1
+			!			E_pot=E_pot+1.d0/DSQRT(DOT_PRODUCT(re_old(1:3,i)-re_old(1:3,j)+delta_R(1:3,k), &
+			!			  re_old(1:3,i)-re_old(1:3,j)+delta_R(1:3,k)))
+			!			E_pot=E_pot+1.d0/DSQRT(DOT_PRODUCT(rp_old(1:3,i)-rp_old(1:3,j)+delta_R(1:3,k), &
+			!			  rp_old(1:3,i)-rp_old(1:3,j)+delta_R(1:3,k)))
+			!			E_pot=E_pot-1.d0/DSQRT(DOT_PRODUCT(re_old(1:3,i)-rp_old(1:3,j)+delta_R(1:3,k), &
+			!			  re_old(1:3,i)-rp_old(1:3,j)+delta_R(1:3,k)))
+			!			E_pot=E_pot-1.d0/DSQRT(DOT_PRODUCT(rp_old(1:3,i)-re_old(1:3,j)+delta_R(1:3,k), &
+			!			  rp_old(1:3,i)-re_old(1:3,j)+delta_R(1:3,k)))
+			!		END DO
+			!	END DO
+			!END DO
 			
 		END IF
 		
@@ -3896,39 +3929,57 @@ END SUBROUTINE derivata_Jep_ATM
 		INTEGER :: i, j, i_SD, j_SD
 		REAL (KIND=8) :: frf1(1:3), frf2(1:3), frf3
 		REAL (KIND=8) :: uep1, der1_up(1:3), der1_dw(1:3)
-		!REAL (KIND=8) :: Jep(0:3), dx
+      INTEGER, SAVE :: cont=0
+      REAL(KIND=8) :: re(1:3,1:N_part), rp(1:3,1:N_part), rep(0:3,1:N_part,1:N_part)
+
+      cont=cont+1
 		
 		O=0.d0
 		
 		SELECT CASE (Jep_kind)
 		CASE ('yuk')
-		DO j = 1, N_part, 1
-			DO i = 1, N_part, 1
-				IF ( (i<=H_N_part .AND. j<=H_N_part) .OR. (i>H_N_part .AND. j>H_N_part) ) THEN
-					uep1=Aep_yuk*( -(1.d0-DEXP(-Fep_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_yuk* &
-					DEXP(-Fep_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
-				ELSE
-					IF (split_Fee) THEN
-						IF (split_Aee) THEN
-							uep1=Aep_ud_yuk*( -(1.d0-DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_ud_yuk* &
-							DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
-						ELSE
-							uep1=Aep_yuk*( -(1.d0-DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_ud_yuk* &
-							DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
-						END IF
-					ELSE
-						IF (split_Aee) THEN
-							uep1=Aep_ud_yuk*( -(1.d0-DEXP(-Fep_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_yuk* &
-							DEXP(-Fep_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
-						ELSE
-							uep1=Aep_yuk*( -(1.d0-DEXP(-Fep_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_yuk* &
-							DEXP(-Fep_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
-						END IF
-					END IF
-				END IF
-				O(3*(j-1)+1:3*j)=O(3*(j-1)+1:3*j)-0.5d0*uep1*rij_ep_old(1:3,i,j)/rij_ep_old(0,i,j)
-			END DO
-		END DO
+		   DO j = 1, N_part, 1
+		   	DO i = 1, N_part, 1
+		   		IF ( (i<=H_N_part .AND. j<=H_N_part) .OR. (i>H_N_part .AND. j>H_N_part) ) THEN
+		   			uep1=Aep_yuk*( -(1.d0-DEXP(-Fep_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_yuk* &
+		   			DEXP(-Fep_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
+		   		ELSE
+		   			IF (split_Fee) THEN
+		   				IF (split_Aee) THEN
+		   					uep1=Aep_ud_yuk*( -(1.d0-DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_ud_yuk* &
+		   					DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
+		   				ELSE
+		   					uep1=Aep_yuk*( -(1.d0-DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_ud_yuk* &
+		   					DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
+		   				END IF
+		   			ELSE
+		   				IF (split_Aee) THEN
+		   					uep1=Aep_ud_yuk*( -(1.d0-DEXP(-Fep_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_yuk* &
+		   					DEXP(-Fep_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
+		   				ELSE
+		   					uep1=Aep_yuk*( -(1.d0-DEXP(-Fep_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_yuk* &
+		   					DEXP(-Fep_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
+		   				END IF
+		   			END IF
+		   		END IF
+		   		O(3*(j-1)+1:3*j)=O(3*(j-1)+1:3*j)+0.5d0*uep1*rij_ep_old(1:3,i,j)/rij_ep_old(0,i,j)
+		   	END DO
+		   END DO
+         !!!Numerical check
+         !PRINT *, "Numerical check of the yuk Rp variational derivative"
+         !PRINT *, "analytical: ", O(1:3)
+         !frf3=0.0000001d0
+         !frf1(1)=Uep_old
+         !DO i = 1, 3, 1
+         !   rp_new=rp_old
+         !   rp_new(i,1)=rp_old(i,1)+frf3
+         !   CALL valuta_distanza_ij(re_old,rp_new,N_part,L,rij_ep_new)
+         !   CALL valuta_Uep_YUK(-1,0,rij_ep_new,N_part,u_ep_new,Uep_new)
+         !   frf2(i)=Uep_new
+         !   rp_new=rp_old
+         !END DO
+         !PRINT *, "numerical: ", -0.5d0*(frf2(1:3)-frf1(1))/(frf3)
+         !STOP
 		CASE ('yup')
 			frf1(1:3)=PI/L(1:3)
 			DO j = 1, N_part, 1
@@ -3959,7 +4010,7 @@ END SUBROUTINE derivata_Jep_ATM
 							END IF
 						END IF
 					END IF
-					O(3*(j-1)+1:3*j)=O(3*(j-1)+1:3*j)-0.5d0*uep1*frf2(1:3)
+					O(3*(j-1)+1:3*j)=O(3*(j-1)+1:3*j)+0.5d0*uep1*frf2(1:3)
 				END DO
 			END DO
 		END SELECT
@@ -3981,43 +4032,152 @@ END SUBROUTINE derivata_Jep_ATM
                   (rij_ep_old(1:3,j,i_SD)*C_atm/rij_ep_old(0,j,i_SD))*DEXP(-C_atm*rij_ep_old(0,j,i_SD))*ISDe_up_old(i,j)
 		   	END DO
 		   END DO
-
-         !!!CHECK DONE for H2
+         !!!!CHECK DONE for H2
+         !re=re_old
+         !rp=rp_old
+         !rep=rij_ep_old
          !PRINT *, 
          !PRINT *, "CHECK Rp gradient of bat"
-         !PRINT *, "analytical up: ", O(1:3)
-         !frf3=0.0000001d0
+         !PRINT *, "analytical 1: ", O(1:3)
+         !frf3=0.000001d0
          !frf1(1)=detSDe_up_old*detSDe_dw_old
          !DO i = 1, 3, 1
-         !   rp_new=rp_old
-         !   rp_new(i,1)=rp_old(i,1)+frf3
-         !   CALL valuta_distanza_ij(re_old,rp_new,N_part,L,rij_ep_new)
-         !   CALL valuta_SD_bat(-1,'up',rij_ep_new(0,1:N_part,1:N_part),H_N_part,SDe_up_new,detSDe_up_new,&
+         !   rp(i,1)=rp(i,1)+frf3
+         !   CALL valuta_distanza_ij(re,rp,N_part,L,rep)
+         !   CALL valuta_SD_bat(-1,'up',rep(0,1:N_part,1:N_part),H_N_part,SDe_up_new,detSDe_up_new,&
          !      ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
-         !   CALL valuta_SD_bat(-1,'dw',rij_ep_new(0,1:N_part,1:N_part),H_N_part,SDe_dw_new,detSDe_dw_new,&
+         !   CALL valuta_SD_bat(-1,'dw',rep(0,1:N_part,1:N_part),H_N_part,SDe_dw_new,detSDe_dw_new,&
          !      ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
          !   frf2(i)=detSDe_up_new*detSDe_dw_new
-         !   rp_new=rp_old
+         !   rp=rp_old
+         !   rep=rij_ep_old
+         !   CALL valuta_SD_bat(-1,'up',rep(0,1:N_part,1:N_part),H_N_part,SDe_up_new,detSDe_up_new,&
+         !      ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+         !   CALL valuta_SD_bat(-1,'dw',rep(0,1:N_part,1:N_part),H_N_part,SDe_dw_new,detSDe_dw_new,&
+         !      ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
          !END DO
-         !PRINT *, "numerical up: ", (frf2(1:3)-frf1(1))/(frf3*frf1(1))
-         !PRINT *, "analytical dw: ", O(4:6)
+         !PRINT *, "numerical 1: ", (frf2(1:3)-frf1(1))/(frf3*frf1(1))
+         !!!IF (MAXVAL(DABS(O(1:3)-(frf2(1:3)-frf1(1))/(frf3*frf1(1))))>0.1d0) THEN
+         !!!   PRINT *, "contatore=", cont
+         !!!   PRINT *, "analytical 1: ", O(1:3)
+         !!!   PRINT *, "numerical 1: ", (frf2(1:3)-frf1(1))/(frf3*frf1(1))
+         !!!   STOP "Errore nelle derivate Rp 1"
+         !!!END IF
+         !PRINT *, "analytical 2: ", O(4:6)
          !DO i = 1, 3, 1
-         !   rp_new=rp_old
-         !   rp_new(i,2)=rp_old(i,2)+frf3
-         !   CALL valuta_distanza_ij(re_old,rp_new,N_part,L,rij_ep_new)
-         !   CALL valuta_SD_bat(-1,'up',rij_ep_new(0,1:N_part,1:N_part),H_N_part,SDe_up_new,detSDe_up_new,&
+         !   rp(i,2)=rp(i,2)+frf3
+         !   CALL valuta_distanza_ij(re,rp,N_part,L,rep)
+         !   CALL valuta_SD_bat(-1,'up',rep(0,1:N_part,1:N_part),H_N_part,SDe_up_new,detSDe_up_new,&
          !      ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
-         !   CALL valuta_SD_bat(-1,'dw',rij_ep_new(0,1:N_part,1:N_part),H_N_part,SDe_dw_new,detSDe_dw_new,&
+         !   CALL valuta_SD_bat(-1,'dw',rep(0,1:N_part,1:N_part),H_N_part,SDe_dw_new,detSDe_dw_new,&
          !      ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
          !   frf2(i)=detSDe_up_new*detSDe_dw_new
-         !   rp_new=rp_old
+         !   rp=rp_old
+         !   rep=rij_ep_old
+         !   CALL valuta_SD_bat(-1,'up',rep(0,1:N_part,1:N_part),H_N_part,SDe_up_new,detSDe_up_new,&
+         !      ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+         !   CALL valuta_SD_bat(-1,'dw',rep(0,1:N_part,1:N_part),H_N_part,SDe_dw_new,detSDe_dw_new,&
+         !      ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
          !END DO
-         !PRINT *, "numerical dw: ", (frf2(1:3)-frf1(1))/(frf3*frf1(1))
+         !PRINT *, "numerical 2: ", (frf2(1:3)-frf1(1))/(frf3*frf1(1))
+         !!!IF (MAXVAL(DABS(O(4:6)-(frf2(1:3)-frf1(1))/(frf3*frf1(1))))>0.1d0) THEN
+         !!!   PRINT *, "contatore=", cont
+         !!!   PRINT *, "analytical 2: ", O(4:6)
+         !!!   PRINT *, "numerical 2: ", (frf2(1:3)-frf1(1))/(frf3*frf1(1))
+         !!!   STOP "Errore nelle derivate Rp 2"
+         !!!END IF
          !STOP
-
 		END SELECT
 		
 	END SUBROUTINE derivata_psi_Rp
+!-----------------------------------------------------------------------
+	SUBROUTINE derivataRp_energia_potenziale(gradpV)
+		USE generic_tools
+		IMPLICIT NONE
+		REAL (KIND=8), PARAMETER :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
+		INTEGER :: i, j, k
+      REAL(KIND=8) :: frf0(1:3)
+		REAL (KIND=8) :: frf1, frf3, delta_R(1:3,1:num_k_ewald)
+		REAL (KIND=8) :: rho_k(1:num_k_ewald)
+		REAL (KIND=8), INTENT(OUT) :: gradpV(1:3*N_part)
+      REAL(KIND=8) :: dx, Epotold, Epotnew(1:3)
+		
+      !!! MUST IMPLEMENT THE PART WITH EWALD SUMMATION
+
+		!IF (flag_somme_ewald) THEN
+			!Calcolo il potenziale di Coulomb fra protoni ed elettroni con le somme di Ewald
+			!rho_k=0.d0
+			!DO k = 2, num_k_ewald, 1
+			!	frf1=0.d0
+			!	frf3=0.d0
+			!	DO i = 1, N_part, 1
+			!		frf1=frf1-DSIN(DOT_PRODUCT(k_fermi(1:3,k),re_old(1:3,i)))+ &
+			!		  DSIN(DOT_PRODUCT(k_fermi(1:3,k),rp_old(1:3,i)))
+			!		frf3=frf3-DCOS(DOT_PRODUCT(k_fermi(1:3,k),re_old(1:3,i)))+ &
+			!		  DCOS(DOT_PRODUCT(k_fermi(1:3,k),rp_old(1:3,i)))
+			!	END DO
+			!	rho_k(k)=frf1*frf1+frf3*frf3
+			!END DO
+			!DO k = 2, num_k_ewald, 1
+			!	E_pot=E_pot+rho_k(k)*DEXP(-k_fermi(0,k)*0.25d0/(alpha_ewald*alpha_ewald))/k_fermi(0,k)
+			!END DO
+			!E_pot=E_pot*2.d0*PI/(L(1)*L(2)*L(3))
+			!DO j = 1, N_part-1, 1
+			!	DO i = j+1, N_part, 1
+			!		E_pot=E_pot+DERFC(alpha_ewald*rij_ee_old(0,i,j))/rij_ee_old(0,i,j)
+			!	END DO
+			!END DO
+			!DO j = 1, N_part-1, 1
+			!	DO i = j+1, N_part, 1
+			!		E_pot=E_pot+DERFC(alpha_ewald*rij_pp_old(0,i,j))/rij_pp_old(0,i,j)
+			!	END DO
+			!END DO
+			!DO j = 1, N_part, 1
+			!	DO i = 1, N_part, 1
+			!		E_pot=E_pot-DERFC(alpha_ewald*rij_ep_old(0,i,j))/rij_ep_old(0,i,j)
+			!	END DO
+			!END DO
+			!E_pot=E_pot-2.d0*N_part*alpha_ewald/DSQRT(PI)
+			
+		!ELSE
+
+         gradpV=0.d0
+			DO i = 1, N_part-1, 1
+				DO j = i+1, N_part, 1
+               frf0(1:3)=rij_pp_old(1:3,i,j)/(rij_pp_old(0,i,j)**3)
+					gradpV((i-1)*3+1:i*3)=gradpV((i-1)*3+1:i*3)+frf0(1:3)
+					gradpV((j-1)*3+1:j*3)=gradpV((j-1)*3+1:j*3)-frf0(1:3)
+				END DO
+			END DO
+			DO i = 1, N_part, 1
+				DO j = 1, N_part, 1
+					gradpV((i-1)*3+1:i*3)=gradpV((i-1)*3+1:i*3)-rij_ep_old(1:3,j,i)/(rij_ep_old(0,j,i)**3)
+				END DO
+			END DO
+         !!NUMERICAL CHECK for H2
+         !rp_new=rp_old
+         !dx=0.0001d0
+         !CALL energia_potenziale(Epotold)
+         !DO j = 1, 2, 1
+         !DO i = 1, 3, 1
+         !   rp_old(i,j)=rp_old(i,j)+dx
+         !   CALL valuta_distanza_ii(rp_old,N_part,L,rij_pp_old)
+         !   CALL valuta_distanza_ij(re_old,rp_old,N_part,L,rij_ep_old)
+         !   CALL energia_potenziale(Epotnew(i))
+         !   rp_old(i,j)=rp_new(i,j)
+         !   CALL valuta_distanza_ii(rp_old,N_part,L,rij_pp_old)
+         !   CALL valuta_distanza_ij(re_old,rp_old,N_part,L,rij_ep_old)
+         !END DO
+         !PRINT *, "Analytical : ", gradpV((j-1)*3+1:j*3)
+         !PRINT *, "Numerical  : ", (Epotnew(1:3)-Epotold)/dx
+         !END DO
+         !STOP
+			
+		!END IF
+		
+		gradpV=gradpV*K_coulomb/REAL(N_part,8)
+		
+	END SUBROUTINE derivataRp_energia_potenziale
 !-----------------------------------------------------------------------
 
 	SUBROUTINE chiudi_estimatori()

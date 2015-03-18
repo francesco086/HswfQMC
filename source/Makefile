@@ -63,7 +63,7 @@ endif
 
 # elenco degli oggetti da creare (c'è sempre l'oggetto del programma principale e gli oggetti
 # dei vari moduli)
-OBJECTS=main.o module_dft.o module_dati_fisici.o module_dati_mc.o module_dnfH.o module_stati_eccitati.o module_generic_tools.o module_lattice.o module_VMC.o module_estimatori.o module_momenta.o module_calcola_accettazione.o module_funzione_onda.o module_walkers.o module_variational_opt.o module_variational_calculations.o
+OBJECTS=main.o module_dft.o module_dati_fisici.o module_dati_mc.o module_dnfH.o module_stati_eccitati.o module_generic_tools.o module_lattice.o module_VMC.o module_estimatori.o module_momenta.o module_calcola_accettazione.o module_funzione_onda.o module_walkers.o module_variational_opt.o module_variational_calculations.o module_grad_lapl_psi.o
 
 
 # crea tutti gli oggetti e li linka correttamente con le librerie; scrivere "make"
@@ -84,11 +84,14 @@ main.o: module_dft.o module_stati_eccitati.o module_walkers.o module_dnfH.o modu
 module_variational_calculations.o: module_walkers.o module_dati_mc.o module_dati_fisici.o module_funzione_onda.o module_momenta.o module_estimatori.o module_calcola_accettazione.o module_estimatori.o module_variational_calculations.f90
 	$(FC) $(FFLAGS) -c module_variational_calculations.f90 
 
-module_VMC.o: module_stati_eccitati.o module_walkers.o module_calcola_accettazione.o module_estimatori.o module_generic_tools.o module_dati_mc.o module_dati_fisici.o module_momenta.o module_variational_calculations.o module_VMC.f90
+module_VMC.o: module_grad_lapl_psi.o module_stati_eccitati.o module_walkers.o module_calcola_accettazione.o module_estimatori.o module_generic_tools.o module_dati_mc.o module_dati_fisici.o module_momenta.o module_variational_calculations.o module_VMC.f90
 	$(FC) $(FFLAGS) -c module_VMC.f90 
 
-module_estimatori.o: module_calcola_accettazione.o module_momenta.o module_funzione_onda.o module_dati_mc.o module_dati_fisici.o module_walkers.o module_generic_tools.o module_estimatori.f90
+module_estimatori.o: module_grad_lapl_psi.o module_calcola_accettazione.o module_momenta.o module_funzione_onda.o module_dati_mc.o module_dati_fisici.o module_walkers.o module_generic_tools.o module_estimatori.f90
 	$(FC) $(FFLAGS) -c module_estimatori.f90
+
+module_grad_lapl_psi.o: module_dati_fisici.o module_walkers.o module_funzione_onda.o module_grad_lapl_psi.f90
+	$(FC) $(FFLAGS) -c module_grad_lapl_psi.f90
 
 module_calcola_accettazione.o: module_walkers.o module_dati_mc.o module_dati_fisici.o module_funzione_onda.o module_momenta.o module_calcola_accettazione.f90
 	$(FC) $(FFLAGS) -c module_calcola_accettazione.f90

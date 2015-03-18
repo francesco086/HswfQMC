@@ -5,7 +5,7 @@ MODULE variational_calculations
 	USE dati_fisici
 	USE dati_mc
 	IMPLICIT NONE
-   LOGICAL, PARAMETER :: OAV_ON_THE_FLY=.FALSE.  !If true will compute Oi, OiE, and OiOj (necessary for SR) on the fly, saving RAM
+   LOGICAL, PARAMETER :: OAV_ON_THE_FLY=.TRUE.  !If true will compute Oi, OiE, and OiOj (necessary for SR) on the fly, saving RAM
 	TYPE variational_wave_function
 		COMPLEX (KIND=8), ALLOCATABLE :: SDe_up(:,:), ISDe_up(:,:)
 		INTEGER, ALLOCATABLE :: pvte_up(:)
@@ -61,7 +61,10 @@ MODULE variational_calculations
 	REAL (KIND=8), ALLOCATABLE :: O(:,:)
    REAL(KIND=8), ALLOCATABLE :: Onow(:)
    REAL(KIND=8), ALLOCATABLE :: Oi_av(:), OiH_av(:), OiOj_av(:,:)
+   REAL(KIND=8), ALLOCATABLE :: OiHOj_av(:,:)
    LOGICAL, ALLOCATABLE :: flag_O(:) !machera per O: T da usare, F da non considerare
+   REAL(KIND=8), ALLOCATABLE :: Hgradp(:,:), Hgradpnow(:), Hgradp_av(:)   !derivative of H in respect to the protonic positions
+   REAL(KIND=8), ALLOCATABLE :: OiHgradp_av(:,:)   !derivative of H in respect to the protonic positions
 	
 	CONTAINS
 	
@@ -203,13 +206,29 @@ MODULE variational_calculations
 		ELSE IF ((what_to_do=='stocrec').OR.(what_to_do=='stoc_ns').OR.(what_to_do=='stoc_av').OR.(what_to_do=='pure_sr')) THEN
 			flag_derivate_var=.TRUE.
          ALLOCATE(Onow(1:num_par))
+         IF (opt_Rp) THEN
+            ALLOCATE(Hgradpnow(1:3*N_part))
+            !ALLOCATE(OiHgradpnow(1:num_par,1:3*N_part))
+         END IF
          IF (OAV_ON_THE_FLY) THEN
             ALLOCATE(Oi_av(1:num_par),OiH_av(1:num_par),OiOj_av(1:num_par,1:num_par))
+            ALLOCATE(OiHOj_av(1:num_par,1:num_par))
             Oi_av=0.d0
             OiH_av=0.d0
             OiOj_av=0.d0
+            OiHOj_av=0.d0
+            IF (opt_Rp) THEN
+               ALLOCATE(Hgradp_av(1:3*N_part))
+               ALLOCATE(OiHgradp_av(1:num_par,1:3*N_part))
+               Hgradp_av=0.d0
+               OiHgradp_av=0.d0
+            END IF
          ELSE
             ALLOCATE(O(1:num_par,1:N_mc))
+            IF (opt_Rp) THEN
+               ALLOCATE(Hgradp(1:3*N_part,1:N_mc))
+               !ALLOCATE(OiHgradp(1:num_par,1:3*N_part,1:N_mc))
+            END IF
          END IF
          ALLOCATE(flag_O(1:num_par))
          flag_O=.FALSE.
@@ -1053,9 +1072,7 @@ MODULE variational_calculations
 		
 		IF ( opt_rp ) THEN
 			CALL derivata_psi_Rp(Onow(cont:cont+3*N_part-1))
-			!DO i = 1, N_part, 1
-			!	PRINT * , i, Onow(i*3-2:i*3)
-			!END DO
+         CALL derivataRp_energia_potenziale(Hgradpnow(1:3*N_part))
 			cont=cont+3*N_part
 		END IF
 
@@ -1076,12 +1093,23 @@ MODULE variational_calculations
                   IF (flag_O(j)) THEN
                      OiOj_av(j,i)=OiOj_av(j,i)+Onow(j)*Onow(i)*w(i_mc)
                      OiOj_av(i,j)=OiOj_av(j,i)
+                     OiHOj_av(j,i)=OiHOj_av(j,i)+Onow(j)*E_tot(i_mc)*Onow(i)*w(i_mc)
+                     OiHOj_av(i,j)=OiHOj_av(j,i)
                   END IF
                END DO
             END IF
           END DO
+          IF (opt_Rp) THEN
+             Hgradp_av(1:3*N_part)=Hgradp_av(1:3*N_part)+Hgradpnow(1:3*N_part)
+             DO i = 1, 3*N_part, 1
+               DO j = 1, num_par, 1
+                  OiHgradp_av(j,i)=OiHgradp_av(j,i)+Onow(j)*Hgradpnow(i)
+               END DO
+             END DO
+          END IF
        ELSE
          O(1:num_par,i_mc)=Onow(1:num_par)
+         Hgradp(1:3*N_part,i_mc)=Hgradpnow(1:3*N_part)
        END IF
 		
 	END SUBROUTINE calcola_termini_derivate_variazionali
@@ -1203,10 +1231,23 @@ MODULE variational_calculations
 		ELSE IF ((what_to_do=='stocrec').OR.(what_to_do=='stoc_ns').OR.(what_to_do=='stoc_av').OR.(what_to_do=='pure_sr')) THEN
 			flag_derivate_var=.FALSE.
          DEALLOCATE(Onow)
+         IF (opt_Rp) THEN
+            DEALLOCATE(Hgradpnow)
+            !DEALLOCATE(OiHgradpnow)
+         END IF
          IF (OAV_ON_THE_FLY) THEN
             DEALLOCATE(Oi_av,OiH_av,OiOj_av)
+            DEALLOCATE(OiHOj_av)
+            IF (opt_Rp) THEN
+               DEALLOCATE(Hgradp_av)
+               DEALLOCATE(OiHgradp_av)
+            END IF
          ELSE
             DEALLOCATE(O)
+            IF (opt_Rp) THEN
+               DEALLOCATE(Hgradp)
+               !DEALLOCATE(OiHgradp)
+            END IF
          END IF
 			DEALLOCATE(flag_O)
 		END IF

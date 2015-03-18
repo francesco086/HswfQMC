@@ -2,21 +2,25 @@ MODULE variational_opt
 	USE dati_mc
 	IMPLICIT NONE
 	LOGICAL, PARAMETER :: verbose_mode=.TRUE.
-   REAL(KIND=8), PRIVATE, SAVE :: SVD_MIN=0.00000001
+   REAL(KIND=8), PRIVATE, SAVE :: SVD_MIN=1.d-15
 	INTEGER, SAVE :: num_par_var, num_coord_Rp, num_par_var_eff
 	REAL (KIND=8) :: E_min(1:2), liv_precisione
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: parametri_var(:)
    REAL(KIND=8), PROTECTED, SAVE :: H
    REAL(KIND=8), ALLOCATABLE, PROTECTED, SAVE :: Oi(:), HOi(:), OiOj(:,:)
+   REAL(KIND=8), ALLOCATABLE, PROTECTED, SAVE :: Hi(:), OiHj(:,:)
+   REAL(KIND=8), ALLOCATABLE, PROTECTED, SAVE :: OiHOj(:,:)
    !REAL(KIND=8), PROTECTED, SAVE :: sigmaH
    !REAL(KIND=8), ALLOCATABLE, PROTECTED, SAVE :: sigmaHOi(:)
    REAL(KIND=8), ALLOCATABLE, PROTECTED, SAVE :: Oi_eff(:), HOi_eff(:), OiOj_eff(:,:)
+   REAL(KIND=8), ALLOCATABLE, PROTECTED, SAVE :: OiHj_eff(:,:)
+   REAL(KIND=8), ALLOCATABLE, PROTECTED, SAVE :: OiHOj_eff(:,:)
    !REAL(KIND=8), ALLOCATABLE, PROTECTED, SAVE :: sigmaHOi_eff(:)
 	!!!REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: c_knm(:,:,:)
    REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: s_kn(:,:), f_k(:)  !parametri per SR
    REAL(KIND=8), PROTECTED, SAVE :: f_SR_beta    !dynamical factor for SR_beta
-   LOGICAL, ALLOCATABLE :: used_par(:), M_used_par(:,:)
-	
+   LOGICAL, ALLOCATABLE :: used_par(:), M_used_par(:,:)	
+
 	CONTAINS
 
 	SUBROUTINE inizializza_variational_opt()
@@ -246,16 +250,19 @@ MODULE variational_opt
 				END SELECT
 			END IF
 		END IF
-		
 		IF ( opt_rp ) THEN
 			num_par_var=num_par_var+3*N_part
 			num_coord_Rp=3*N_part
+      ELSE
+         num_coord_Rp=0.d0
 		END IF
 		
 		!!!!!!!
 		ALLOCATE(parametri_var(1:num_par_var))
       ALLOCATE(used_par(1:num_par_var),M_used_par(1:num_par_var,1:num_par_var))
       ALLOCATE(Oi(1:num_par_var),HOi(1:num_par_var),OiOj(1:num_par_var,1:num_par_var))
+      ALLOCATE(OiHOj(1:num_par_var,1:num_par_var))
+      ALLOCATE(Hi(1:num_coord_Rp),OiHj(1:num_par_var,1:num_coord_Rp))
       !IF (.NOT. OAV_ON_THE_FLY) ALLOCATE(sigmaHOi(1:num_par_var))
 		!!!!!!!
 		
@@ -635,14 +642,10 @@ MODULE variational_opt
 		END IF
 				
 		IF ( opt_rp ) THEN
-			!CALL inizializza_dati_mc()
-			!CALL inizializza_walkers('opt_Rp')
 			DO i = 1, N_part, 1
 				parametri_var(cont:cont+2)=rp_old(1:3,i)
 				cont=cont+3
 			END DO
-			!CALL chiudi_walkers()
-			!CALL chiudi_dati_mc()
 		END IF
 						
 		IF (mpi_myrank==0) THEN
@@ -1252,14 +1255,13 @@ MODULE variational_opt
 		INTEGER :: i, j, k, info, contatore, IO, i_orbit, AV_cont, WO_MIN_cont
       INTEGER :: lwork
 		REAL (KIND=8) :: lambda, lambda2, flambda, eps, boundd, foo, dummy(1:4), dummy2(0:N)
-		REAL (KIND=8) :: lambda_Rp, flambda_Rp
+		REAL (KIND=8) :: lambda_Rp, lambda2_Rp, flambda_Rp
 		REAL (KIND=8) :: p0(1:N), dp_iniz(1:N), AV_P(1:N)
 		REAL (KIND=8) :: dp(1:N), dp0(1:N), dp_old(1:N), Is_kn(1:N,1:N), pvt(1:N), cont_step
       REAL(KIND=8) :: var_change, var_change_min, Hmin, Hnext, dpnext(1:N), opt_f_SR_beta, static_f_SR_beta
       REAL(KIND=8) :: SRopt_count
       REAL(KIND=8) :: opt_SVD_MIN, static_SVD_MIN
       REAL(KIND=8) :: lambda3, opt_lambda3, static_lambda3
-      !REAL(KIND=8) :: sigmaHnext
       REAL(KIND=8) :: SRtarget, SRtargetmin
       REAL(KIND=8) :: array_SRtargetmin(0:mpi_nprocs-1)
       REAL(KIND=8), ALLOCATABLE :: work(:)
@@ -1413,7 +1415,7 @@ MODULE variational_opt
          !PRINT *, mpi_myrank, p0
          !CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr) 
          !CALL SLEEP(1)
-         IF (mpi_myrank==0) PRINT *, "> > > DISTANZA pp = ", DSQRT(DOT_PRODUCT(p0(1:3)-p0(4:6),p0(1:3)-p0(4:6)))
+         !IF (mpi_myrank==0) PRINT *, "> > > DISTANZA pp = ", DSQRT(DOT_PRODUCT(p0(1:3)-p0(4:6),p0(1:3)-p0(4:6)))
          
 			contatore=contatore+1
          WRITE (istring, '(I4.4)'), contatore
@@ -1476,10 +1478,18 @@ MODULE variational_opt
          END IF
 
          !Calcolo il dp
-         IF (fSR) THEN
+         SELECT CASE(SR_kind)
+         CASE("Hgrad_min")
+            CALL gradH_trova_dp(num_par_var_eff,num_par_var_eff-num_coord_Rp,num_coord_Rp,dp)
+         CASE("Lagr_molt")
+            CALL moltiplicatori_lagrange_trova_dp(num_par_var_eff,num_par_var_eff-num_coord_Rp,num_coord_Rp,dp)
+         CASE("LinMolLag")
+            CALL lin_molt_lagr(num_par_var_eff,num_par_var_eff-num_coord_Rp,num_coord_Rp,dp)
+         CASE("LagrDynam")
+            CALL lagrangian_dynamic_forces(num_par_var_eff,num_par_var_eff-num_coord_Rp,num_coord_Rp,dp)
+         CASE("fast_SR__")
             !Determino il beta ottimale usando il principio variazionale stimando la E successiva tramite un'espansione
             !IF (mpi_myrank==0) OPEN(UNIT=666,FILE="ottimizzazione/SR_beta."//istring,STATUS='UNKNOWN',POSITION='ASIS')
-
             SRopt_count=0.d0
             SRtargetmin=HUGE(0.d0)
             static_f_SR_beta=f_SR_beta
@@ -1492,14 +1502,15 @@ MODULE variational_opt
                   CALL calcola_skn_fk()
                   DO j = 0, 100, 1
                      SVD_MIN = MIN(SR_max_SVD_MIN , static_SVD_MIN * ( 1.1d0**( ((-1.d0)**j) * (j/2) ) ) )
-                     CALL trova_dp(dpnext)
+                     CALL plain_SR_trova_dp(dpnext)
                      DO k = 0, 100, 1
                         lambda3 = MAX(static_lambda3 * ( 1.1d0**( ((-1.d0)**k) * (k/2) ) ) , 1.d0 )
                         dpnext=lambda3*dpnext
                         var_change=DSQRT(DOT_PRODUCT(dpnext,dpnext)/DOT_PRODUCT(p0,p0))*100.d0
+                        !var_change=DSQRT(MAXVAL(dpnext*dpnext/(p0*p0)))*100.d0
                         IF ((i==0).AND.(j==0).AND.(k==0)) dp0=dp
                         IF ( ( (SR_change_bound.AND.(var_change<SR_max_change)) .OR. &
-                         (.NOT.SR_change_bound) ) .AND. (DABS(DOT_PRODUCT(dpnext,Oi))<SR_deltaPsi) ) THEN
+                         (.NOT.SR_change_bound) ) .AND. (DABS(DOT_PRODUCT(dpnext,Oi))<SR_maxdeltaPsi) ) THEN
                            Hnext=( H+DOT_PRODUCT(dpnext,HOi) )/( 1.d0+DOT_PRODUCT(dpnext,Oi) )
                            SRtarget=Hnext
                            !WRITE(UNIT=666, FMT=*), var_change,f_SR_beta,SVD_MIN,lambda,Hnext,SRtarget
@@ -1574,6 +1585,7 @@ MODULE variational_opt
 
                !stampo le informazioni
                IF (mpi_myrank==0) THEN
+                  PRINT *, "> > > > > dp = ", dp
                   PRINT *, "VAR_OPT: [fSR] usato fSR per determinare i parametri SR ottimali. Numero configurazioni:", &
                    INT2(SRopt_count)
                   IF (flag_output) WRITE(UNIT=7, FMT=*), &
@@ -1598,13 +1610,23 @@ MODULE variational_opt
                CALL MPI_BCAST(dp,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
             END IF
 
-         ELSE
+         CASE("plain_SR_")
+
             IF (mpi_myrank==0) THEN
                CALL calcola_skn_fk()
-               CALL trova_dp(dp)
+               CALL plain_SR_trova_dp(dp)
             END IF
             CALL MPI_BCAST(dp,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
-         END IF
+
+         CASE DEFAULT
+            IF (mpi_myrank==0) PRINT *, "Errore: SR_kind non accettabile"
+            IF (mpi_myrank==0) PRINT *, "[module_variational_opt.f90 > stochastic_reconfiguration]"
+            IF (flag_output) WRITE(UNIT=7, FMT=*), "Errore: SR_kind non accettabile"
+            IF (flag_output) WRITE(UNIT=7, FMT=*),"[module_variational_opt.f90 > stochastic_reconfiguration]"
+            CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
+            STOP
+         END SELECT
+
          vec_app=dp/DSQRT(DOT_PRODUCT(dp,dp))
 
          CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
@@ -1706,16 +1728,23 @@ MODULE variational_opt
 			   	IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [DIST5] cambio lambda_Rp di', flambda_Rp
 			   END IF
 
-            !limito lambda fra 1 e max_lambda
-            lambda=MIN(MAX(1.d0,lambda),max_lambda)
+            !limito lambda fra min_lambda e max_lambda
+            lambda=MIN(MAX(min_lambda,lambda),max_lambda)
+            !limito lambda_Rp fra min_lambda_Rp e max_lambda_Rp
+            lambda_Rp=MIN(MAX(min_lambda_Rp,lambda_Rp),max_lambda_Rp)
          END IF
 
          !Controllo manuale sul cambio in percentuale dei parametri
          lambda2=1.d0
+         lambda2_Rp=1.d0
          IF (SR_change_bound) THEN
             !setto il lambda in modo che il cambio dei parametri variazionali non sia maggiore di SR_max_change%
-            IF (lambda*lambda2>DSQRT(((0.01d0*SR_max_change)**2)*DOT_PRODUCT(p0,p0)/DOT_PRODUCT(dp,dp))) THEN
-               lambda2=DSQRT(((0.01d0*SR_max_change)**2)*lambda*lambda*DOT_PRODUCT(p0,p0)/DOT_PRODUCT(dp,dp))
+            IF ( lambda*lambda2 > DSQRT(((0.01d0*SR_max_change)**2)*&
+                 DOT_PRODUCT(p0(1:N-num_coord_Rp),p0(1:N-num_coord_Rp))/&
+                 DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp))) ) THEN
+               lambda2=(0.01d0*SR_max_change/lambda)*&
+                  DSQRT( DOT_PRODUCT(p0(1:N-num_coord_Rp),p0(1:N-num_coord_Rp))/&
+                         DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp)) )
                IF (mpi_myrank==0) THEN
                   PRINT *, &
                      "VAR_OPT: [change_bound] Cambio dei parametri sarebbe troppo grande, lo riduco di ", lambda2
@@ -1723,59 +1752,92 @@ MODULE variational_opt
                      "VAR_OPT: [change_bound] Cambio dei parametri sarebbe troppo grande, lo riduco di ", lambda2
                END IF
             END IF
-
             !setto il lambda in modo che il cambio dei parametri variazionali non sia minore di SR_min_change%
-            IF (lambda*lambda2<DSQRT(((0.01d0*SR_min_change)**2)*DOT_PRODUCT(p0,p0)/DOT_PRODUCT(dp,dp))) THEN
-               lambda2=DSQRT(((0.01d0*SR_min_change)**2)*lambda*lambda*DOT_PRODUCT(p0,p0)/DOT_PRODUCT(dp,dp))
+            IF ( lambda*lambda2 < DSQRT(((0.01d0*SR_min_change)**2)*&
+                 DOT_PRODUCT(p0(1:N-num_coord_Rp),p0(1:N-num_coord_Rp))/&
+                 DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp))) ) THEN
+               lambda2=(0.01d0*SR_min_change/lambda)*&
+                  DSQRT( DOT_PRODUCT(p0(1:N-num_coord_Rp),p0(1:N-num_coord_Rp))/&
+                         DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp)) )
                IF (mpi_myrank==0) THEN
                   PRINT *, &
                      "VAR_OPT: [change_bound] Cambio dei parametri sarebbe troppo piccolo, lo aumento di ", lambda2
                   IF (flag_output) WRITE(UNIT=7, FMT=*), &
                      "VAR_OPT: [change_bound] Cambio dei parametri sarebbe troppo piccolo, lo aumento di ", lambda2
+               END IF
+            END IF
+            !setto il lambda_Rp in modo che il cambio delle posizioni protoniche non sia maggiore di SR_max_change%
+            IF ( lambda_Rp*lambda2_Rp > DSQRT(((0.01d0*SR_max_change)**2)*&
+                 DOT_PRODUCT(p0(N-num_coord_Rp+1:N),p0(N-num_coord_Rp+1:N))/&
+                 DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N))) ) THEN
+               lambda2_Rp=(0.01d0*SR_max_change/lambda_Rp)*&
+                  DSQRT( DOT_PRODUCT(p0(N-num_coord_Rp+1:N),p0(N-num_coord_Rp+1:N))/&
+                  DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N)) )
+               IF (mpi_myrank==0) THEN
+                  PRINT *, &
+                     "VAR_OPT: [change_bound] Cambio delle posizioni protoniche troppo grande, lo riduco di ", lambda2_Rp
+                  IF (flag_output) WRITE(UNIT=7, FMT=*), &
+                     "VAR_OPT: [change_bound] Cambio delle posizioni protoniche troppo grande, lo riduco di ", lambda2_Rp
+               END IF
+            END IF
+            !setto il lambda in modo che il cambio delle posizioni protoniche non sia minore di SR_min_change%
+            IF ( lambda_Rp*lambda2_Rp < DSQRT(((0.01d0*SR_min_change)**2)*&
+                 DOT_PRODUCT(p0(N-num_coord_Rp+1:N),p0(N-num_coord_Rp+1:N))/&
+                 DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N))) ) THEN
+               lambda2_Rp=(0.01d0*SR_min_change/lambda_Rp)*&
+                  DSQRT( DOT_PRODUCT(p0(N-num_coord_Rp+1:N),p0(N-num_coord_Rp+1:N))/&
+                  DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N)) )
+               IF (mpi_myrank==0) THEN
+                  PRINT *, &
+                     "VAR_OPT: [change_bound] Cambio delle posizioni protoniche troppo piccolo, lo aumento di ", lambda2_Rp
+                  IF (flag_output) WRITE(UNIT=7, FMT=*), &
+                     "VAR_OPT: [change_bound] Cambio delle posizioni protoniche troppo piccolo, lo aumento di ", lambda2_Rp
                END IF
             END IF
          END IF
 			
 			!moltiplico lo spostamento variazionale per le lambda [, lo stampo *eliminato*] e salvo gli old_step e cont_step
-			IF ( N-num_coord_Rp>0 ) THEN
-				!IF (mpi_myrank==0) PRINT * , 'VAR_OPT: fattore dp: ', &
-				!  DSQRT(DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp))/ &
-				!  DOT_PRODUCT(dp_iniz(1:N-num_coord_Rp),dp_iniz(1:N-num_coord_Rp)))
+         IF (N-num_coord_Rp>0) THEN
             dp(1:N-num_coord_Rp)=dp(1:N-num_coord_Rp)*lambda*lambda2
-				old_step(5)=old_step(4)
-				old_step(4)=old_step(3)
-				old_step(3)=old_step(2)
-				old_step(2)=old_step(1)
-				old_step(1)=DSQRT(DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp)))
+			   old_step(5)=old_step(4)
+			   old_step(4)=old_step(3)
+			   old_step(3)=old_step(2)
+			   old_step(2)=old_step(1)
+			   old_step(1)=DSQRT(DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp)))
 			   cont_step=cont_step+old_step(1)
-			END IF
-			IF ( num_coord_Rp>0 ) THEN
-				!IF (mpi_myrank==0) PRINT * , 'VAR_OPT: fattore dp_Rp: ', &
-				!  DSQRT(DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N)) / &
-				!  DOT_PRODUCT(dp_iniz(N-num_coord_Rp+1:N),dp_iniz(N-num_coord_Rp+1:N)))
-            dp(N-num_coord_Rp+1:N)=dp(N-num_coord_Rp+1:N)*lambda_Rp
-				old_step_Rp(5)=old_step_Rp(4)
-				old_step_Rp(4)=old_step_Rp(3)
-				old_step_Rp(3)=old_step_Rp(2)
-				old_step_Rp(2)=old_step_Rp(1)
-				old_step_Rp(1)=DSQRT(DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N)))*lambda_Rp
-				cont_step=cont_step+old_step_Rp(1)
-			END IF
+         END IF
+         IF (num_coord_Rp>0) THEN
+            dp(N-num_coord_Rp+1:N)=dp(N-num_coord_Rp+1:N)*lambda_Rp*lambda2_Rp
+			   old_step_Rp(5)=old_step_Rp(4)
+			   old_step_Rp(4)=old_step_Rp(3)
+			   old_step_Rp(3)=old_step_Rp(2)
+			   old_step_Rp(2)=old_step_Rp(1)
+			   old_step_Rp(1)=DSQRT(DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N)))
+			   cont_step=cont_step+old_step_Rp(1)
+         END IF
 
          !Stampo alcune informazioni riguardo SR
          IF (mpi_myrank==0) THEN
-            PRINT '(10X,A61)', "- - - - - - -  STOCHASTIC RECONFIGURATION   - - - - - - - - -"
-            PRINT '(10X,A1,1X,A9,1X,A1,1X,A9,1X,A1,1X,A9,1X,A1,1X,A9,1X,A1,1X,A9,1X,A1)', &
-              "|","beta","|","SVD_MIN","|","lambda3","|","lambda2","|","lambda","|"
-            PRINT '(10X,A1,1X,E9.3,1X,A1,1X,E9.3,1X,A1,1X,E9.3,1X,A1,1X,E9.3,1X,A1,1X,E9.3,1X,A1)', &
-               "|",f_SR_beta*SR_beta,"|",SVD_MIN,"|",lambda3,"|",lambda2,"|",lambda,"|"
-            PRINT '(10X,A61)', "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
-            WRITE(7, '(10X,A61)'), "- - - - - - -  STOCHASTIC RECONFIGURATION   - - - - - - - - -"
-            WRITE(7, '(10X,A1,1X,A9,1X,A1,1X,A9,1X,A1,1X,A9,1X,A1,1X,A9,1X,A1,1X,A9,1X,A1)'), &
-              "|","beta","|","SVD_MIN","|","lambda3","|","lambda2","|","lambda","|"
-            WRITE(7, '(10X,A1,1X,E9.3,1X,A1,1X,E9.3,1X,A1,1X,E9.3,1X,A1,1X,E9.3,1X,A1,1X,E9.3,1X,A1)'), &
-               "|",f_SR_beta*SR_beta,"|",SVD_MIN,"|",lambda3,"|",lambda2,"|",lambda,"|"
-            WRITE(7, '(10X,A61)'), "- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
+            PRINT '(5X,A92)', "- - - - - - - - - - - - - - - - - - - - - -"//&
+               " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
+            PRINT '(5X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X,'//&
+               'A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1)',&
+              "|","beta","|","SVD_MIN","|","lambda3","|","lambda2","|","lambda","|","lambda2_Rp","|","lambda_Rp","|"
+            PRINT '(5X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1,'//&
+               '1X,E10.4,1X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1)', &
+               "|",f_SR_beta*SR_beta,"|",SVD_MIN,"|",lambda3,"|",lambda2,"|",lambda,"|",lambda2_Rp,"|",lambda_Rp,"|"
+            PRINT '(5X,A92)', "- - - - - - - - - - - - - - - - - - - - - -"//&
+               " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
+            WRITE(7, '(5X,A92)'), "- - - - - - - - - - - - - - - - - - - - - - -"//&
+               " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
+            WRITE(7, '(5X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1,'//&
+               '1X,A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1)'), &
+              "|","beta","|","SVD_MIN","|","lambda3","|","lambda2","|","lambda","|","lambda2_Rp","|","lambda_Rp","|"
+            WRITE(7, '(5X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1,'//&
+               '1X,E10.4,1X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1)'),&
+               "|",f_SR_beta*SR_beta,"|",SVD_MIN,"|",lambda3,"|",lambda2,"|",lambda,"|",lambda2_Rp,"|",lambda_Rp,"|"
+            WRITE(7, '(5X,A92)'), "- - - - - - - - - - - - - - - - - - - - - - -"//&
+               " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
          END IF
 
          !calcolo il cambiamento percentuale dei parametri
@@ -1835,7 +1897,6 @@ MODULE variational_opt
                   AV_cont=AV_cont+1
                !altrimenti, se l'energia e' troppo alta, non accumulo in AV_P
                ELSE
-                  WO_MIN_cont=WO_MIN_cont+1
                   IF (mpi_myrank==0) THEN
                      PRINT *,"VAR_OPT: [AV] Energia troppo alta, non la considero per l'AVerage"
                      WRITE (7, *), "VAR_OPT: [AV] Energia troppo alta, non considero la configurazione per l'AVerage"
@@ -3223,10 +3284,11 @@ MODULE variational_opt
 		USE variational_calculations
 		IMPLICIT NONE
       LOGICAL, PARAMETER :: NORMALIZE=.TRUE.
-		INTEGER :: i, j, k
+		INTEGER :: i, j, k, i1, j1
       REAL(KIND=8) :: acca_i(1:num_par_var), eta
 		REAL (KIND=8) :: dummy1(1:N_mc), quoz
       REAL(KIND=8), ALLOCATABLE :: O_fast(:,:)
+      REAL(KIND=8), ALLOCATABLE :: Hi_fast(:,:)
       LOGICAL :: mask(1:num_par_var)
       REAL(KIND=8) :: a, b, c
 
@@ -3238,6 +3300,9 @@ MODULE variational_opt
       Oi=0.d0
       HOi=0.d0
       OiOj=0.d0
+      Hi=0.d0
+      OiHj=0.d0
+      OiHOj=0.d0
 
       !!!Metto insieme i flag_O di tutti i processori
       CALL MPI_REDUCE(flag_O,mask,num_par_var,MPI_LOGICAL,MPI_LOR,0,MPI_COMM_WORLD,mpi_ierr)
@@ -3260,12 +3325,6 @@ MODULE variational_opt
       IF (NORMALIZE) H=H*quoz
 		CALL MPI_BCAST(H,1,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
 
-      !!!!Calcolo sigmaH=<(H-<H>)^2>
-      !dummy1(1)=SUM(((E_tot(1:N_mc)-H)**2)*w(1:N_mc))
-      !CALL MPI_REDUCE(dummy1(1),sigmaH,1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
-      !IF (NORMALIZE) sigmaH=sigmaH*quoz
-      !CALL MPI_BCAST(sigmaH,1,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
-
       IF (OAV_ON_THE_FLY) THEN
          DO i = 1, num_par_var, 1
             IF (flag_O(i)) THEN
@@ -3281,10 +3340,27 @@ MODULE variational_opt
                      CALL MPI_REDUCE(OiOj_av(j,i),OiOj(j,i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
                      IF (NORMALIZE) OiOj(j,i)=OiOj(j,i)*quoz
                      OiOj(i,j)=OiOj(j,i)
+                     CALL MPI_REDUCE(OiHOj_av(j,i),OiHOj(j,i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+                     IF (NORMALIZE) OiHOj(j,i)=OiHOj(j,i)*quoz
+                     OiHOj(i,j)=OiHOj(j,i)
                   END IF
                END DO
             END IF
          END DO
+         IF (opt_Rp) THEN
+            DO i = 1, num_coord_Rp, 1
+               !!!Raccolgo i termini Hi
+               CALL MPI_REDUCE(Hgradp_av(i),Hi(i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+               IF (NORMALIZE) Hi(i)=Hi(i)*quoz
+               DO j = 1, num_par_var, 1
+                  IF (flag_O(j)) THEN
+                     !!!Raccolgo i termini OiHj
+                     CALL MPI_REDUCE(OiHgradp_av(j,i),OiHj(j,i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+                     IF (NORMALIZE) OiHj(j,i)=OiHj(j,i)*quoz
+                  END IF
+               END DO
+            END DO
+         END IF
       ELSE
          ALLOCATE(O_fast(1:N_mc,1:num_par_var))
          O_fast(1:N_mc,1:num_par_var)=TRANSPOSE(O(1:num_par_var,1:N_mc))
@@ -3298,10 +3374,6 @@ MODULE variational_opt
                dummy1(1)=SUM(E_tot(1:N_mc)*O_fast(1:N_mc,i)*w(1:N_mc))
                CALL MPI_REDUCE(dummy1(1),HOi(i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
                IF (NORMALIZE) HOi(i)=HOi(i)*quoz
-               !!!!Calcolo i termini sigmaHOi
-               !dummy1(1)=SUM(((E_tot(1:N_mc)-H)**2)*O_fast(1:N_mc,i)*w(1:N_mc))
-               !CALL MPI_REDUCE(dummy1(1),sigmaHOi(i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
-               !IF (NORMALIZE) sigmaHOi(i)=sigmaHOi(i)*quoz
                !!!Calcolo i termini OiOj
                DO j = i, num_par_var, 1
                   IF (flag_O(j)) THEN
@@ -3309,18 +3381,41 @@ MODULE variational_opt
                      CALL MPI_REDUCE(dummy1(1),OiOj(j,i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
                      IF (NORMALIZE) OiOj(j,i)=OiOj(j,i)*quoz
                      OiOj(i,j)=OiOj(j,i)
+                     dummy1(1)=SUM(O_fast(1:N_mc,i)*E_tot(1:N_mc)*O_fast(1:N_mc,j)*w(1:N_mc))
+                     CALL MPI_REDUCE(dummy1(1),OiHOj(j,i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+                     IF (NORMALIZE) OiHOj(j,i)=OiHOj(j,i)*quoz
+                     OiHOj(i,j)=OiHOj(j,i)
                   END IF
                END DO
             END IF
          END DO
+         IF (opt_Rp) THEN
+            ALLOCATE(Hi_fast(1:N_mc,1:num_coord_Rp))
+            Hi_fast(1:N_mc,1:num_par_var)=TRANSPOSE(Hgradp(1:num_par_var,1:N_mc))
+            DO i = 1, num_coord_Rp, 1
+               !!!Calcolo i termini Hi
+               dummy1(1)=SUM(Hi_fast(1:N_mc,i)*w(1:N_mc))
+               CALL MPI_REDUCE(dummy1(1),Hi(i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+               IF (NORMALIZE) Hi(i)=Hi(i)*quoz
+               DO j = 1, num_par_var, 1
+                  !!!Calcolo i termini OiHj
+                  dummy1(1)=SUM(O_fast(1:N_mc,j)*Hi_fast(1:N_mc,j)*w(1:N_mc))
+                  CALL MPI_REDUCE(dummy1(1),OiHj(j,i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+                  IF (NORMALIZE) OiHj(j,i)=OiHj(j,i)*quoz
+               END DO
+            END DO
+         END IF
          DEALLOCATE(O_fast)
+         DEALLOCATE(Hi_fast)
       END IF
 
       !Distribuisco H, Oi, HOi, OiOj a tutti i processori
       CALL MPI_BCAST(Oi,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
       CALL MPI_BCAST(HOi,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
-      !IF (.NOT. OAV_ON_THE_FLY) CALL MPI_BCAST(sigmaHOi,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
       CALL MPI_BCAST(OiOj,num_par_var*num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
+      CALL MPI_BCAST(OiHOj,num_par_var*num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
+      IF (opt_Rp) CALL MPI_BCAST(Hi,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
+      IF (opt_Rp) CALL MPI_BCAST(OiHj,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
 
       !Alloco s_kn e f_k
       IF (ALLOCATED(s_kn)) DEALLOCATE(s_kn)
@@ -3337,18 +3432,31 @@ MODULE variational_opt
       IF (ALLOCATED(HOi_eff)) DEALLOCATE(HOi_Eff)
       ALLOCATE(HOi_eff(1:num_par_var_eff))
       HOi_eff=PACK(HOi,used_par)
-      !!sigmaHOi
-      !IF (.NOT. OAV_ON_THE_FLY) THEN
-      !   IF (ALLOCATED(sigmaHOi_eff)) DEALLOCATE(sigmaHOi_Eff)
-      !   ALLOCATE(sigmaHOi_eff(1:num_par_var_eff))
-      !   sigmaHOi_eff=PACK(sigmaHOi,used_par)
-      !END IF
       !OiOj
       IF (ALLOCATED(OiOj_eff)) DEALLOCATE(OiOj_eff)
       ALLOCATE(OiOj_eff(1:num_par_var_eff,1:num_par_var_eff))
       OiOj_eff=RESHAPE( PACK(OiOj,M_used_par) , (/ num_par_var_eff,num_par_var_eff /)  )
+      !OiHOj
+      IF (ALLOCATED(OiHOj_eff)) DEALLOCATE(OiHOj_eff)
+      ALLOCATE(OiHOj_eff(1:num_par_var_eff,1:num_par_var_eff))
+      OiHOj_eff=RESHAPE( PACK(OiHOj,M_used_par) , (/ num_par_var_eff,num_par_var_eff /)  )
+      !!OiHj
+      IF (opt_Rp) THEN
+         IF (ALLOCATED(OiHj_eff)) DEALLOCATE(OiHj_eff)
+         ALLOCATE(OiHj_eff(1:num_par_var_eff,1:num_coord_Rp))
+         DO i = 1, num_coord_Rp, 1
+            j1=1
+            DO j = 1, num_par_var, 1
+               IF (used_par(j)) THEN
+                  OiHj_eff(j1,i)=OiHj(j,i)
+                  j1=j1+1
+               END IF
+            END DO
+         END DO
+      END IF
 
-      IF (mpi_myrank==0) PRINT *, " > > > Oi: ", Oi
+      !IF (mpi_myrank==0) PRINT *, " > > > Oi: ", Oi
+      !IF (mpi_myrank==0) PRINT *, " > > > HOi: ", HOi
 
 	END SUBROUTINE estrai_medie_SR
 
@@ -3367,17 +3475,17 @@ MODULE variational_opt
       !!!Costruisco s_kn e f_k
       DO i = 1, num_par_var_eff, 1
          f_k(i)=Oi_eff(i)*eta-Hk(i)
-         !f_k(i)=f_SR_beta*SR_beta*(Oi(i)*H-HOi(i))  !ORIGINAL SR
+         !f_k(i)=-f_SR_beta*SR_beta*(Oi_eff(i)*H-HOi_eff(i))  !ORIGINAL SR
          DO j = 1, num_par_var_eff, 1
             s_kn(j,i)=OiOj_eff(j,i)*eta-Oi_eff(i)*Hk(j)
-            !s_kn(j,i)=OiOj(j,i)-Oi(j)*Oi(i)  !ORIGINAL SR
+            !s_kn(j,i)=OiOj_eff(j,i)-Oi_eff(j)*Oi_eff(i)  !ORIGINAL SR
          END DO
       END DO
 
    END SUBROUTINE calcola_skn_fk
    
 
-   SUBROUTINE trova_dp(dp)
+   SUBROUTINE plain_SR_trova_dp(dp)
       IMPLICIT NONE
       INTEGER, PARAMETER :: LWORK=10
       REAL(KIND=8), INTENT(OUT) :: dp(1:num_par_var)
@@ -3420,15 +3528,548 @@ MODULE variational_opt
       dp=0.d0
       dp=UNPACK(dp_eff,used_par,dp)
       
-   END SUBROUTINE trova_dp
+   END SUBROUTINE plain_SR_trova_dp
+
+   !use le equazioni derivanti dalla lagrangiana scritta da Markus
+   SUBROUTINE lagrangian_dynamic_forces(N,Ne,Np,dp)
+      IMPLICIT NONE
+      INTEGER, PARAMETER :: LWORK=10
+      INTEGER, INTENT(IN) :: N, Ne, Np !number of effective variational parameters, electronic, and protonic
+      REAL(KIND=8), INTENT(OUT) :: dp(1:N)
+      REAL(KIND=8) :: dp_eff(1:N)
+      INTEGER :: i, j
+      INTEGER :: info
+      REAL(KIND=8) :: M(1:Ne,1:Ne), v(1:Ne)
+      REAL(KIND=8) :: IM(1:Ne,1:Ne)
+      REAL(KIND=8) :: work(1:LWORK*(Ne))
+      REAL(KIND=8) :: Usvd(1:Ne,1:Ne)
+      REAL(KIND=8) :: VTsvd(1:Ne,1:Ne)
+      REAL(KIND=8) :: Ssvd(1:Ne)
+
+      dp_eff=0.d0
+
+      IF (Ne>0) THEN
+         !costruisco la matrice per la parte elettronica
+         M(1:Ne,1:Ne)=OiOj_eff(1:Ne,1:Ne)
+         v(1:Ne)=HOi_eff(1:Ne)-H*Oi_eff(1:Ne)
+
+      !   !inverto M
+         IM=M
+         CALL DGESVD('A','A',Ne,Ne,IM,Ne,Ssvd,Usvd,Ne,VTsvd,Ne,work,LWORK*Ne,info)
+         IF (info /= 0) THEN
+            PRINT *, "Error in SVD [ gradH_trova_dp > module_variational_opt.f90 ]"
+		    PRINT*, "Info=", info
+            STOP
+         END IF
+         IM=0.d0
+         DO i = 1, Ne, 1
+            IF (Ssvd(i)>Ssvd(1)*SVD_MIN) THEN
+               IM(i,i)=1.d0/Ssvd(i)
+            ELSE
+               IM(i,i)=0.d0
+            END IF
+         END DO
+         IM=MATMUL(Usvd,MATMUL(IM,VTsvd))
+
+         !assegno i nuovi dp elettronici
+         dp_eff(1:Ne)=MATMUL(IM(1:Ne,1:Ne),-v(1:Ne))
+      END IF
+
+      IF (Np>0) THEN
+         !assegno i nuovi dp protonici
+         dp_eff(Ne+1:N)=-Hi(1:Np)-2.d0*HOi_eff(Ne+1:N)+2.d0*H*Oi_eff(Ne+1:N)
+      END IF
+
+      !IF (mpi_myrank==0) THEN
+      !   PRINT *, "N = ", N
+      !   PRINT *, "Ne = ", Ne
+      !   PRINT *, "Np = ", Np
+      !   
+      !END IF
+
+      !!riporto i dp_eff al dp globale
+      dp=0.d0
+      dp=UNPACK(dp_eff,used_par,dp)
+      
+   END SUBROUTINE lagrangian_dynamic_forces
+
+   !risolve le quazioni risultati dalla minimizzazione di H'-H
+   SUBROUTINE gradH_trova_dp(N,Ne,Np,dp)
+      IMPLICIT NONE
+      INTEGER, PARAMETER :: LWORK=10
+      INTEGER, INTENT(IN) :: N, Ne, Np !number of effective variational parameters, electronic, and protonic
+      REAL(KIND=8), INTENT(OUT) :: dp(1:num_par_var)
+      REAL(KIND=8) :: dp_eff(1:N)
+      INTEGER :: i, j, k
+      INTEGER :: info
+      REAL(KIND=8) :: Hi_gen(1:N), OiHj_gen(1:N,1:N)
+      REAL(KIND=8) :: M(1:N,1:N), v(1:N)
+      REAL(KIND=8) :: IM(1:N,1:N)
+      REAL(KIND=8) :: work(1:LWORK*(N))
+      REAL(KIND=8) :: Usvd(1:N,1:N)
+      REAL(KIND=8) :: VTsvd(1:N,1:N)
+      REAL(KIND=8) :: Ssvd(1:N)
+
+      !costruisco il vettore generalizzato Hi
+      Hi_gen=0.d0
+      IF (Np>0) Hi_gen(Ne+1:N)=Hi(1:Np)
+
+      !costruisco la matrice generalizzata HiOj
+      OiHj_gen=0.d0
+      IF (Np>0) OiHj_gen(1:N,Ne+1:N)=OiHj_eff(1:N,1:Np)
+
+      !costruisco la matrice M
+      M=0.d0
+      DO j = 1, N, 1
+      DO i = 1, N, 1
+         !M(i,j)=4.d0*HOi_eff(j)*Oi_eff(i)-4.d0*HOi_eff(i)*Oi_eff(j)-2.d0*H*OiOj_eff(i,j)
+         M(i,j) = 2.d0*Oi_eff(i)*(Hi_gen(j)+2.d0*HOi_eff(j)-2.d0*H*Oi_eff(j)) &
+                  - 2.d0*Oi_eff(j)*(Hi_gen(i)+2.d0*HOi_eff(i)-2.d0*H*Oi_eff(i)) &
+                  - 2.d0*H*OiOj_eff(i,j) & !manca il termine OiHOj
+                  + 2.d0*(OiHj_gen(i,j)+OiHj_gen(j,i))
+      END DO
+      END DO
+
+      !costruisco il vettore v
+      v=0.d0
+      v(1:N) = 2.d0*(HOi_eff(1:N)-H*Oi_eff(1:N)) &
+               + Hi_gen(1:N)
+
+      !inverto M
+      IM=M
+      CALL DGESVD('A','A',N,N,IM,N,Ssvd,Usvd,N,VTsvd,N,work,LWORK*N,info)
+      IF (info /= 0) THEN
+         PRINT *, "Error in SVD [ gradH_trova_dp > module_variational_opt.f90 ]"
+		 PRINT*, "Info=", info
+         STOP
+      END IF
+      IM=0.d0
+      DO i = 1, N, 1
+         IF (Ssvd(i)>Ssvd(1)*SVD_MIN) THEN
+            IM(i,i)=1.d0/Ssvd(i)
+         ELSE
+            IM(i,i)=0.d0
+         END IF
+      END DO
+      IM=MATMUL(Usvd,MATMUL(IM,VTsvd))
+
+      !assegno i nuovi dp elettronici
+      dp_eff(1:N)=MATMUL(IM(1:N,1:N),-v(1:N))
+
+      !riporto i dp_eff al dp globale
+      dp=0.d0
+      dp=UNPACK(dp_eff,used_par,dp)
+      
+   END SUBROUTINE gradH_trova_dp
+
+   !risolve l'equazione dei moltiplicatori di lagrange linearizzata
+   SUBROUTINE lin_molt_lagr(N,Ne,Np,dp)
+      IMPLICIT NONE
+      INTEGER, PARAMETER :: LWORK=10
+      INTEGER, INTENT(IN) :: N, Ne, Np !number of effective variational parameters, electronic, and protonic
+      REAL(KIND=8), INTENT(OUT) :: dp(1:num_par_var)
+      REAL(KIND=8) :: dp_eff(1:N)
+      INTEGER :: i, j, k
+      INTEGER :: info
+      REAL(KIND=8) :: M(0:N,0:N), v(0:N)
+      REAL(KIND=8) :: IM(1:N+1,0:N+1)
+      REAL(KIND=8) :: work(1:LWORK*(N+1))
+      REAL(KIND=8) :: Usvd(0:N,0:N)
+      REAL(KIND=8) :: VTsvd(0:N,0:N)
+      REAL(KIND=8) :: Ssvd(0:N)
+      INTEGER :: pvt(1:N+1)
+      REAL(KIND=8) :: soluzione(0:N)
+
+      !costruisco la matrice M
+      M(0,0)=0.d0
+      M(0,1:N)=Oi_eff(1:N)
+      M(1:N,0)=Oi_eff(1:N)
+      DO j = 1, N, 1
+      DO i = 1, N, 1
+         M(i,j)=(HOi_eff(j)-H*Oi_eff(j))*Oi_eff(i)-(HOi_eff(i)-H*Oi_eff(i))*Oi_eff(j)
+      END DO
+      END DO
+
+      !CALL RANDOM_NUMBER(M)
+      !DO i = 0, N, 1
+      !   M(i,i)=M(i,i)+5.d0
+      !END DO
+      
+
+      !costruisco il vettore v
+      v(0)=0.d0
+      v(1:N)=HOi_eff(1:N)-H*Oi_eff(1:N)
+
+      !!!inverto M
+      IM(0:N,0:N)=M(0:N,0:N)
+
+      !!Uso il metodo singular value decomposition
+      !CALL DGESVD('A','A',N+1,N+1,IM(0:N,0:N),N+1,Ssvd(0:N),Usvd(0:N,0:N),N+1,&
+      !   VTsvd(0:N,0:N),N+1,work(1:LWORK*(N+1)),LWORK*(N+1),info)
+      !IF (info /= 0) THEN
+      !   PRINT *, "Error in SVD [ gradH_trova_dp > module_variational_opt.f90 ]"
+		! PRINT*, "Info=", info
+      !   STOP
+      !END IF
+      !IM=0.d0
+      !DO i = 0, N, 1
+      !   IF (Ssvd(i)>Ssvd(0)*SVD_MIN) THEN
+      !      IM(i,i)=1.d0/Ssvd(i)
+      !   ELSE
+      !      IM(i,i)=0.d0
+      !   END IF
+      !END DO
+      !IM(0:N,0:N)=MATMUL(Usvd(0:N,0:N),MATMUL(IM(0:N,0:N),VTsvd(0:N,0:N)))
+      
+      !Diagonalizzazione diretta
+      pvt=0
+      work=0.d0
+      CALL DGETRF( N+1, N+1, IM(0:N,0:N), N+1, pvt, info )
+      IF (info/=0) STOP 'ERRORE NELLA DECOMPOSIZIONE LU'
+      CALL DGETRI( N+1, IM(0:n,0:N), N+1, pvt, work, LWORK*(N+1), info )
+      IF (info/=0) STOP 'ERRORE NELLA INVERSIONE'
+
+      DO i = 0, N, 1
+         PRINT *, MATMUL(M(i,0:N),IM(0:N,0:N))
+      END DO
+
+      !assegno i nuovi dp elettronici
+      soluzione(0:N)=MATMUL(-v(0:N),IM(0:N,0:N))
+      dp_eff(1:N)=soluzione(1:N)
+
+
+      IF (mpi_myrank==0) THEN
+         PRINT *, "lambda = ", soluzione(0)
+         PRINT *, "dp_eff = ", dp_eff
+         PRINT *, MATMUL(soluzione(0:N),M(0:N,0:N))+v(0:N)
+         STOP
+      END IF
+
+      !riporto i dp_eff al dp globale
+      dp=0.d0
+      dp=UNPACK(dp_eff,used_par,dp)
+      
+   END SUBROUTINE lin_molt_lagr
+
+   SUBROUTINE moltiplicatori_lagrange_trova_dp(N,Ne,Np,dp)
+      IMPLICIT NONE
+      INTEGER, PARAMETER :: LWORK=10
+      INTEGER, INTENT(IN) :: N, Ne, Np !number of effective variational parameters, electronic, and protonic
+      REAL(KIND=8), INTENT(OUT) :: dp(1:num_par_var)
+      INTEGER :: i1
+      REAL(KIND=8) :: dp_eff(1:N), lambda
+      REAL(KIND=8) :: p(0:N)
+      REAL(KIND=8) :: EqMoltLagr(0:N), MoltLagrTarget, GradEqMoltLagr(0:N,0:N)
+      REAL(KIND=8) :: norm_EqMoltLagr, weight_EqMoltLagr(0:N), sign_EqMoltLagr(0:N)
+      LOGICAL :: flag_loop1, flag_loop2
+      INTEGER(KIND=8) :: cont_loop1, cont_loop2
+      REAL(KIND=8) :: dir(0:N), dt1, dt2, dt3, f1, f2, f3, sensibility
+      REAL(KIND=8) :: EqMoltLagr_new(0:N), MoltLagrTarget_new, p_new(0:N)
+      INTEGER :: imax
+
+      sensibility=0.0000001d0
+
+      !trovo dei dp ragionevoli
+      CALL gradH_trova_dp(N,Ne,Np,dp)
+      dp_eff=PACK(dp,used_par)
+      !CALL RANDOM_NUMBER(dp_eff)
+
+      !inizializzo lambda con un valore ragionevole
+      lambda=0.d0
+      CALL RANDOM_NUMBER(lambda)
+
+      !inizializzo p
+      p(0)=lambda
+      p(1:N)=dp_eff(1:N)
+      CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
+      PRINT *, mpi_myrank, "p(0:N) = ", p(0:N)
+      CALL eq_molt_lagr(N,Ne,Np,p(0:N),EqMoltLagr(0:N))
+      MoltLagrTarget=MAXVAL(DABS(EqMoltLagr(0:N)))
+      CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
+      PRINT *, mpi_myrank, "Target = ", MoltLagrTarget
+
+      flag_loop1=.TRUE.
+      cont_loop1=0
+      DO WHILE (flag_loop1)
+         cont_loop1=cont_loop1+1
+
+         !calcolo i moliplicatori di Lagrange
+         CALL eq_molt_lagr(N,Ne,Np,p(0:N),EqMoltLagr(0:N))
+         norm_EqMoltLagr=SUM(DABS(EqMoltLagr(0:N)))
+         weight_EqMoltLagr(0:N)=DABS(EqMoltLagr(0:N))/norm_EqMoltLagr
+         sign_EqMoltLagr(0:N)=-DSIGN(1.d0,EqMoltLagr(0:N))
+         MoltLagrTarget=MAXVAL(DABS(EqMoltLagr(0:N)))
+         imax=MAXLOC(DABS(EqMoltLagr(0:N)),1)-1
+         !PRINT *, "MoltLagr = ", EqMoltLagr
+         !PRINT *, "Target = ", MoltLagrTarget
+
+         !!!calcolo il gradiente dei moltiplicatori di lagrange
+         CALL grad_eq_molt_lagr(N,Ne,Np,p(0:N),GradEqMoltLagr(0:N,0:N))
+         !faccio combinazione lineare di tutti i gradienti
+         IF (mpi_myrank==0) THEN
+            dir=0.d0
+            DO i1 = 0, N, 1 !loop sulle equazioni
+               dir(0:N)=dir(0:N)+GradEqMoltLagr(i1,0:N)*weight_EqMoltLagr(i1)*sign_EqMoltLagr(i1)
+            END DO
+         !uso semplicemente il gradiente dell'equazione piu' diversa da zero
+         ELSE
+            dir=GradEqMoltLagr(imax,0:N)*weight_EqMoltLagr(imax)*sign_EqMoltLagr(imax)
+         END IF
+
+         !trovo di quanto spostare nella direzione data
+         dt1=0.d0
+         dt2=0.1d0
+         dt3=10.d0
+         p_new(0:N)=p(0:N)+dt1*dir(0:N)
+         CALL eq_molt_lagr(N,Ne,Np,p_new(0:N),EqMoltLagr_new(0:N))
+         f1=MAXVAL(DABS(EqMoltLagr_new(0:N)))
+         p_new(0:N)=p(0:N)+dt2*dir(0:N)
+         CALL eq_molt_lagr(N,Ne,Np,p_new(0:N),EqMoltLagr_new(0:N))
+         f2=MAXVAL(DABS(EqMoltLagr_new(0:N)))
+         p_new(0:N)=p(0:N)+dt3*dir(0:N)
+         CALL eq_molt_lagr(N,Ne,Np,p_new(0:N),EqMoltLagr_new(0:N))
+         f3=MAXVAL(DABS(EqMoltLagr_new(0:N)))
+         flag_loop2=.TRUE.
+         cont_loop2=0
+         DO WHILE (flag_loop2)
+            cont_loop2=cont_loop2+1
+            
+            IF ((f3>f2).AND.(f2>f1)) THEN
+               !funzione sta crescendo
+               dt3=dt2
+               f3=f2
+               dt2=0.5d0*dt2
+               p_new(0:N)=p(0:N)+dt2*dir(0:N)
+               CALL eq_molt_lagr(N,Ne,Np,p_new(0:N),EqMoltLagr_new(0:N))
+               f2=MAXVAL(DABS(EqMoltLagr_new(0:N)))
+            END IF
+
+            IF ((f2<f1).AND.(f3<f2)) THEN
+               !funzione sta decrescendo
+               dt2=dt3
+               f2=f3
+               dt1=dt2
+               f1=f2
+               dt3=dt3*2.d0
+               p_new(0:N)=p(0:N)+dt3*dir(0:N)
+               CALL eq_molt_lagr(N,Ne,Np,p_new(0:N),EqMoltLagr_new(0:N))
+               f3=MAXVAL(DABS(EqMoltLagr_new(0:N)))
+            END IF
+
+            IF ((f2>f1).AND.(f2>f3)) THEN
+               !funzione ha un massimo locale
+               dt3=dt2
+               f3=f2
+               dt2=0.5d0*dt2
+               p_new(0:N)=p(0:N)+dt2*dir(0:N)
+               CALL eq_molt_lagr(N,Ne,Np,p_new(0:N),EqMoltLagr_new(0:N))
+               f2=MAXVAL(DABS(EqMoltLagr_new(0:N)))
+            END IF
+
+            IF ((f2<f1).AND.(f2<f3)) THEN
+               !funzione ha un minimo locale
+               IF (f1<f3) THEN
+                  !lato sx minore
+                  dt3=dt2+0.5d0*(dt3-dt2)
+                  p_new(0:N)=p(0:N)+dt3*dir(0:N)
+                  CALL eq_molt_lagr(N,Ne,Np,p_new(0:N),EqMoltLagr_new(0:N))
+                  f3=MAXVAL(DABS(EqMoltLagr_new(0:N)))
+               ELSE
+                  !lato dx minore
+                  dt1=dt2-0.5d0*(dt2-dt1)
+                  p_new(0:N)=p(0:N)+dt1*dir(0:N)
+                  CALL eq_molt_lagr(N,Ne,Np,p_new(0:N),EqMoltLagr_new(0:N))
+                  f3=MAXVAL(DABS(EqMoltLagr_new(0:N)))
+               END IF
+            END IF
+
+            IF ((MIN(dt3-dt2,dt2-dt1)<sensibility).AND.((f2<=f1).AND.(f2<=f3))) flag_loop2=.FALSE.
+            IF (cont_loop2>10000) THEN
+               !non sono riuscito a trovare il dt
+               !PRINT *, "Non riesco a trovare il dt corretto"
+               !PRINT *, "f1, f2, f3 = ", f1, f2 ,f3
+               !PRINT *, "dt1, dt2, dt3 = ", dt1, dt2, dt3
+               flag_loop2=.FALSE.
+               flag_loop1=.FALSE. 
+            END IF
+
+         END DO
+
+         !PRINT *, "dt = ", dt2
+
+         !aggiorno i parametri
+         p(0:N)=p(0:N)+dt2*dir(0:N)
+
+         IF (cont_loop1>10000) flag_loop1=.FALSE.
+
+      END DO
+
+      CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
+      PRINT *, mpi_myrank, "p(0:N) = ", p(0:N)
+      CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
+      PRINT *, mpi_myrank, "Target = ", MoltLagrTarget
+      
+      dp_eff(1:N)=p(1:N)
+
+      !riporto i dp_eff al dp globale
+      dp=0.d0
+      dp=UNPACK(dp_eff,used_par,dp)
+      
+   END SUBROUTINE moltiplicatori_lagrange_trova_dp
+
+   SUBROUTINE eq_molt_lagr(N,Ne,Np,p,EqMoltLagr)
+      IMPLICIT NONE
+      INTEGER, INTENT(IN) :: N, Ne, Np
+      REAL(KIND=8), INTENT(IN) :: p(0:N)
+      REAL(KIND=8), INTENT(OUT) :: EqMoltLagr(0:N)
+      INTEGER :: i1, i2, i3
+      REAL(KIND=8) :: rho, drho, dHOi(1:N), vi(1:N), mij(1:N,1:N), tijk(1:N,1:N,1:N)
+      REAL(KIND=8) :: f1(1:N), f2, tc, vtc(1:N)
+
+      !precalculations
+      rho=DOT_PRODUCT(p(1:N),Oi_eff(1:N))
+      !
+      !drho=2.d0*rho+DOT_PRODUCT(p(1:N),MATMUL(OiOj_eff(1:N,1:N),p(1:N)))
+      drho=2.d0*rho
+      !
+      rho=1.d0+rho
+      dHOi(1:N)=HOi_eff(1:N)-H*Oi_eff(1:N)
+      vi(1:N)=dHOi(1:N)+2.d0*p(0)*Oi_eff(1:N)
+      DO i1 = 1, N, 1
+         mij(1:N,i1)=p(0)*( OiOj_eff(1:N,i1)+2.d0*Oi_eff(1:N)*Oi_eff(i1) )
+         tijk(1:N,1:N,i1)=p(0)*OiOj_eff(1:N,1:N)*Oi_eff(i1)
+      END DO
+      tc=0.d0
+      DO i1 = 1, N, 1
+      DO i2 = 1, N, 1
+      DO i3 = 1, N, 1
+         tc=tc+p(i1)*p(i2)*p(i3)*tijk(i3,i2,i1)
+      END DO
+      END DO
+      END DO
+      vtc=0.d0
+      DO i1 = 1, N, 1
+      DO i2 = 1, N, 1
+         vtc(1:N)=vtc(1:N)+p(i1)*p(i2)*(2.d0*tijk(1:N,i2,i1)+tijk(i2,i1,1:N))
+      END DO
+      END DO
+      !
+      f1(1:N) = vi(1:N) + 2.d0*MATMUL(p(1:N),mij(1:N,1:N)) + vtc(1:N)
+      !f1(1:N) = vi(1:N)! + 2.d0*MATMUL(p(1:N),mij(1:N,1:N)) + vtc(1:N)
+      !
+      !
+      f2 = DOT_PRODUCT(p(1:N),vi(1:N)) + DOT_PRODUCT(p(1:N),MATMUL(p(1:N),mij(1:N,1:N))) + tc
+      !f2 = DOT_PRODUCT(p(1:N),vi(1:N)) ! + DOT_PRODUCT(p(1:N),MATMUL(p(1:N),mij(1:N,1:N))) + tc
+      !
+      !calcola il gradiente della lagrangiana vincolata
+      !
+      EqMoltLagr(0)=drho/rho
+      !EqMoltLagr(0)=drho
+      !
+      !
+      EqMoltLagr(1:N)= ( f1(1:N) - Oi_eff(1:N)*f2/rho )/rho
+      !EqMoltLagr(1:N)= f1(1:N) - Oi_eff(1:N)*f2/rho
+      !
+
+   END SUBROUTINE eq_molt_lagr
+
+   SUBROUTINE grad_eq_molt_lagr(N,Ne,Np,p,dir)
+      IMPLICIT NONE
+      INTEGER, INTENT(IN) :: N, Ne, Np
+      REAL(KIND=8), INTENT(IN) :: p(0:N)
+      REAL(KIND=8), INTENT(OUT) :: dir(0:N,0:N)  !primo indice: equazioni, secondo indice: componenti p della direzione
+      INTEGER :: i1
+      REAL(KIND=8), PARAMETER :: dx=0.000001d0
+      REAL(KIND=8) :: Idx, pnew(0:N), f0(0:N), f(0:N,0:N)
+
+      CALL eq_molt_lagr(N,Ne,Np,p(0:N),f0(0:N))
+      pnew(0:N)=p(0:N)
+      DO i1 = 0, N, 1
+         pnew(i1)=p(i1)+dx
+         CALL eq_molt_lagr(N,Ne,Np,pnew(0:N),f(0:N,i1))
+         pnew(i1)=p(i1)
+      END DO
+
+      Idx=1.d0/dx
+      DO i1 = 0, N, 1
+         dir(0:N,i1)=(f(0:N,i1)-f0(0:N))*Idx
+      END DO
+      
+   END SUBROUTINE grad_eq_molt_lagr
+
+   !SUBROUTINE lagrangian2_gradient(N,Ne,Np,l,p,GradLagr)
+   !   IMPLICIT NONE
+   !   REAL(KIND=8), INTENT(OUT) :: GradLagr(0:N) !componente zero per lambda
+   !   INTEGER, INTENT(IN) :: N, Ne, Np
+   !   REAL(KIND=8), INTENT(IN) :: l, p(1:N) !l=lambda, p=dp
+   !   REAL(KIND=8) :: dPsi, Psi, dHO(1:N), dHOO(1:N)
+
+   !   dPsi=2.d0*DOT_PRODUCT(p(1:N),Oi_eff(1:N))+DOT_PRODUCT(p(1:N),MATMUL(OiOj_eff(1:N,1:N),p(1:N)))
+   !   Psi=1.d0+dPsi
+   !   dHO(1:N)=HOi_eff(1:N)-H*Oi_eff(1:N)
+   !   dHOO(1:N)=H*MATMUL(p(1:N),OiOj_eff(1:N,1:N))
+
+   !   GradLagr(0)=dPsi
+   !   GradLagr(1:N) = (2.d0*dHO(1:N)-2.d0*dHOO(1:N))/(Psi) &
+   !                   - 2.d0*(Oi_eff(1:N)+MATMUL(p(1:N),OiOj_eff(1:N,1:N))) &
+   !                     *(2.d0*DOT_PRODUCT(p(1:N),dHO(1:N))-DOT_PRODUCT(p(1:N),dHOO(1:N)))/(Psi*Psi) &
+   !                   + l*2.d0*(Oi_eff(1:N)+MATMUL(p(1:N),OiOj_eff(1:N,1:N)))
+   !
+   !END SUBROUTINE lagrangian2_gradient
+
+   !SUBROUTINE lagrangian_gradient(N,Ne,Np,l,p,GradLagr)
+   !   IMPLICIT NONE
+   !   REAL(KIND=8), INTENT(OUT) :: GradLagr(0:N) !componente zero per lambda
+   !   INTEGER, INTENT(IN) :: N, Ne, Np
+   !   REAL(KIND=8), INTENT(IN) :: l, p(1:N) !l=lambda, p=dp
+   !   INTEGER :: i1, i2
+   !   REAL(KIND=8) :: dPsi, Psi, HdPsi, H_dPsi, Oi_Oj(1:N,1:N)
+
+   !   dPsi=DOT_PRODUCT(p(1:N),Oi_eff(1:N))
+   !   Psi=1.d0+dPsi
+   !   HdPsi=DOT_PRODUCT(p(1:N),HOi_eff(1:N))
+   !   H_dPsi=H*dPsi
+   !   DO i2 = 1, N, 1
+   !   DO i1 = 1, N, 1
+   !      Oi_Oj(i1,i2)=Oi_eff(i1)*Oi_eff(i2)
+   !   END DO
+   !   END DO
+
+   !   GradLagr(0)=( dPsi+DOT_PRODUCT(p(1:N),MATMUL(Oi_Oj(1:N,1:N),p(1:N))) )&
+   !                /dPsi
+   !   GradLagr(1:N)=  ( (HOi_eff(1:N)-H*Oi_eff(1:N)+l*Oi_eff(1:N) &
+   !                       +2.d0*l*MATMUL(p(1:N),Oi_Oj(1:N,1:N))) &
+   !                     /(Psi) ) &
+   !                 - ( Oi_eff(1:N)*(HdPsi-H_dPsi+l*dPsi &
+   !                      +l*DOT_PRODUCT(p(1:N),MATMUL(Oi_Oj(1:N,1:N),p(1:N)))) &
+   !                     /(Psi*Psi) ) 
+   !
+   !END SUBROUTINE lagrangian_gradient
+
+   SUBROUTINE trova_dp_Rp_con_forze(dp)
+      IMPLICIT NONE
+      REAL(KIND=8) :: dp(1:num_coord_Rp)
+
+      dp(1:num_coord_Rp)=-Hi(1:num_coord_Rp)
+      
+   END SUBROUTINE trova_dp_Rp_con_forze
 
 	SUBROUTINE chiudi_variational_opt()
       USE variational_calculations
 		IMPLICIT NONE
 		DEALLOCATE(parametri_var)
       DEALLOCATE(used_par,M_used_par)
-      DEALLOCATE(Oi,Hoi,OiOj)
-      !IF (.NOT. OAV_ON_THE_FLY) DEALLOCATE(sigmaHOi)
+      DEALLOCATE(Oi,HOi,OiOj)
+      DEALLOCATE(OiHOj)
+      DEALLOCATE(Hi,OiHj)
+
+      IF (ALLOCATED(s_kn)) DEALLOCATE(s_kn)
+      IF (ALLOCATED(f_k)) DEALLOCATE(f_k)
+      IF (ALLOCATED(Oi_eff)) DEALLOCATE(Oi_eff)
+      IF (ALLOCATED(HOi_eff)) DEALLOCATE(HOi_Eff)
+      IF (ALLOCATED(OiOj_eff)) DEALLOCATE(OiOj_eff)
+      IF (ALLOCATED(OiHj_eff)) DEALLOCATE(OiHj_eff)
+      IF (ALLOCATED(OiHj_eff)) DEALLOCATE(OiHj_eff)
 	END SUBROUTINE chiudi_variational_opt
 	
 END MODULE variational_opt
