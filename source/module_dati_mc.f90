@@ -22,7 +22,7 @@ MODULE dati_mc
    LOGICAL, PROTECTED, SAVE :: SR_adaptative_beta, SR_lambda, SR_lambda_Rp
    LOGICAL, PROTECTED, SAVE :: SR_change_bound
    REAL(KIND=8), SAVE :: SR_beta, SR_beta_Rp, SR_max_change, SR_min_change, SR_max_SVD_MIN, SR_maxdeltaPsi
-   REAL(KIND=8), SAVE :: min_lambda, max_lambda, min_lambda_Rp, max_lambda_Rp
+   REAL(KIND=8), SAVE :: lambda_init, min_lambda, max_lambda, lambda_Rp_init, min_lambda_Rp, max_lambda_Rp
    INTEGER, PROTECTED, SAVE :: SR_num_max_WO_MIN
 	
 	CONTAINS
@@ -44,7 +44,8 @@ MODULE dati_mc
 
       NAMELIST /dati_SR/ SR_kind, SR_num_max_WO_MIN, SR_beta, SR_beta_Rp, SR_maxdeltaPsi, SR_max_SVD_MIN, &
          SR_change_bound, SR_min_change, SR_max_change, SR_adaptative_beta, &
-         SR_lambda, min_lambda, max_lambda, SR_lambda_Rp, min_lambda_Rp, max_lambda_Rp
+         SR_lambda, lambda_init, min_lambda, max_lambda, &
+         SR_lambda_Rp, lambda_Rp_init, min_lambda_Rp, max_lambda_Rp
 		
 		CALL CPU_TIME(time_VMC_start)
 		

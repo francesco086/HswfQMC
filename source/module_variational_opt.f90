@@ -1846,6 +1846,24 @@ MODULE variational_opt
                DSQRT(DOT_PRODUCT(dp,dp)/DOT_PRODUCT(p0,p0))*100.d0,"%   < < <"
             IF (flag_output) WRITE(UNIT=7, FMT='(14X,A38,F5.1,A9)'), "> > >   VAR_OPT: Cambio dei parametri ",&
                DSQRT(DOT_PRODUCT(dp,dp)/DOT_PRODUCT(p0,p0))*100.d0,"%   < < <"
+            IF (N-num_coord_Rp>0) THEN
+               PRINT '(14X,A38,F5.1,A9)', "> > >          Parametri variazionali ",&
+                  DSQRT(DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp))/&
+                  DOT_PRODUCT(p0(1:N-num_coord_Rp),p0(1:N-num_coord_Rp)))*100.d0,"%   < < <"
+               IF (flag_output) WRITE(UNIT=7, FMT='(14X,A38,F5.1,A9)'), &
+                  "> > >          Parametri variazionali ",&
+                  DSQRT(DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp))/&
+                  DOT_PRODUCT(p0(1:N-num_coord_Rp),p0(1:N-num_coord_Rp)))*100.d0,"%   < < <"
+            END IF
+            IF (num_coord_Rp>0) THEN
+               PRINT '(14X,A38,F5.1,A9)', "> > >            Posizioni protoniche ",&
+                  DSQRT(DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N))/&
+                  DOT_PRODUCT(p0(N-num_coord_Rp+1:N),p0(N-num_coord_Rp+1:N)))*100.d0,"%   < < <"
+               IF (flag_output) WRITE(UNIT=7, FMT='(14X,A38,F5.1,A9)'), &
+                  "> > >            Posizioni protoniche ",&
+                  DSQRT(DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N))/&
+                  DOT_PRODUCT(p0(N-num_coord_Rp+1:N),p0(N-num_coord_Rp+1:N)))*100.d0,"%   < < <"
+            END IF
          END IF
 		   
          !controllo da quanto sono nello stesso minimo e in caso fermo il loop
@@ -3532,6 +3550,7 @@ MODULE variational_opt
 
    !use le equazioni derivanti dalla lagrangiana scritta da Markus
    SUBROUTINE lagrangian_dynamic_forces(N,Ne,Np,dp)
+      USE dati_fisici
       IMPLICIT NONE
       INTEGER, PARAMETER :: LWORK=10
       INTEGER, INTENT(IN) :: N, Ne, Np !number of effective variational parameters, electronic, and protonic
@@ -3553,7 +3572,7 @@ MODULE variational_opt
          M(1:Ne,1:Ne)=OiOj_eff(1:Ne,1:Ne)
          v(1:Ne)=HOi_eff(1:Ne)-H*Oi_eff(1:Ne)
 
-      !   !inverto M
+         !inverto M
          IM=M
          CALL DGESVD('A','A',Ne,Ne,IM,Ne,Ssvd,Usvd,Ne,VTsvd,Ne,work,LWORK*Ne,info)
          IF (info /= 0) THEN
@@ -3578,14 +3597,13 @@ MODULE variational_opt
       IF (Np>0) THEN
          !assegno i nuovi dp protonici
          dp_eff(Ne+1:N)=-Hi(1:Np)-2.d0*HOi_eff(Ne+1:N)+2.d0*H*Oi_eff(Ne+1:N)
+         !if a 2D structure is used, then the z component is set to zero
+         IF (flag_2D) THEN
+            DO i = 1, N_part, 1
+               dp_eff(Ne+3+(i-1)*3)=0.d0
+            END DO
+         END IF
       END IF
-
-      !IF (mpi_myrank==0) THEN
-      !   PRINT *, "N = ", N
-      !   PRINT *, "Ne = ", Ne
-      !   PRINT *, "Np = ", Np
-      !   
-      !END IF
 
       !!riporto i dp_eff al dp globale
       dp=0.d0
@@ -4045,14 +4063,14 @@ MODULE variational_opt
    !                     /(Psi*Psi) ) 
    !
    !END SUBROUTINE lagrangian_gradient
+   !
+   !SUBROUTINE trova_dp_Rp_con_forze(dp)
+   !   IMPLICIT NONE
+   !   REAL(KIND=8) :: dp(1:num_coord_Rp)
 
-   SUBROUTINE trova_dp_Rp_con_forze(dp)
-      IMPLICIT NONE
-      REAL(KIND=8) :: dp(1:num_coord_Rp)
-
-      dp(1:num_coord_Rp)=-Hi(1:num_coord_Rp)
-      
-   END SUBROUTINE trova_dp_Rp_con_forze
+   !   dp(1:num_coord_Rp)=-Hi(1:num_coord_Rp)
+   !   
+   !END SUBROUTINE trova_dp_Rp_con_forze
 
 	SUBROUTINE chiudi_variational_opt()
       USE variational_calculations
