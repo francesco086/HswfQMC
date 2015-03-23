@@ -277,17 +277,21 @@ MODULE dati_fisici
 				END DO
 			END IF
       ELSE IF ( crystal_cell=='quadr' ) THEN
-         i1=0
-         DO j = 1, N_cell_side, 1
-         DO i = 1, N_cell_side, 1
-            i1=i1+1
-            IF (MOD(i1,2)==1) THEN
-               r_crystal(1:3,i1/2+1)=(/ REAL(i,8), REAL(j,8), 0.d0 /)*DSQRT(PI/REAL(N_part,8))*r_s
-            ELSE
-               r_crystal(1:3,i1/2+H_N_part)=(/ REAL(i,8), REAL(j,8), 0.d0 /)*DSQRT(PI/REAL(N_part,8))*r_s
-            END IF
-         END DO
-         END DO
+         IF (.NOT. flag_molecular) THEN
+            i1=0
+            DO j = 1, N_cell_side, 1
+            DO i = 1, N_cell_side, 1
+               i1=i1+1
+               IF (MOD(i1,2)==1) THEN
+                  r_crystal(1:3,i1/2+1)=(/ REAL(i,8), REAL(j,8), 0.d0 /)*DSQRT(PI/REAL(N_part,8))*r_s
+               ELSE
+                  r_crystal(1:3,i1/2+H_N_part)=(/ REAL(i,8), REAL(j,8), 0.d0 /)*DSQRT(PI/REAL(N_part,8))*r_s
+               END IF
+            END DO
+            END DO
+         ELSE
+            STOP "crystal_cell='quad' con flag_molecular non ancora implementato"
+         END IF
 		ELSE
 			STOP "scegli un reticolo accettabile"
 		END IF
