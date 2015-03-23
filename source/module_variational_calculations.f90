@@ -5,7 +5,7 @@ MODULE variational_calculations
 	USE dati_fisici
 	USE dati_mc
 	IMPLICIT NONE
-   LOGICAL, PARAMETER :: OAV_ON_THE_FLY=.TRUE.  !If true will compute Oi, OiE, and OiOj (necessary for SR) on the fly, saving RAM
+   LOGICAL, SAVE, PROTECTED :: OAV_ON_THE_FLY=.FALSE.  !If true will compute Oi, OiE, and OiOj (necessary for SR) on the fly, saving RAM
 	TYPE variational_wave_function
 		COMPLEX (KIND=8), ALLOCATABLE :: SDe_up(:,:), ISDe_up(:,:)
 		INTEGER, ALLOCATABLE :: pvte_up(:)
@@ -73,6 +73,8 @@ MODULE variational_calculations
 		INTEGER, INTENT(IN) :: num_pt, num    !num_pt=numero punti da considerare per il gradiente (generalmente = num), num=numero di parametri variazionali
 		REAL (KIND=8) :: par_pt(1:num,0:num_pt)
 		INTEGER :: i
+
+      IF (flag_disk) OAV_ON_THE_FLY=.FALSE.
 		
 		num_par=num
 		IF (what_to_do=='congrad') THEN
@@ -208,7 +210,6 @@ MODULE variational_calculations
          ALLOCATE(Onow(1:num_par))
          IF (opt_Rp) THEN
             ALLOCATE(Hgradpnow(1:3*N_part))
-            !ALLOCATE(OiHgradpnow(1:num_par,1:3*N_part))
          END IF
          IF (OAV_ON_THE_FLY) THEN
             ALLOCATE(Oi_av(1:num_par),OiH_av(1:num_par),OiOj_av(1:num_par,1:num_par))
@@ -219,7 +220,7 @@ MODULE variational_calculations
             OiHOj_av=0.d0
             IF (opt_Rp) THEN
                ALLOCATE(Hgradp_av(1:3*N_part))
-               ALLOCATE(OiHgradp_av(1:num_par,1:3*N_part))
+               ALLOCATE(OiHgradp_av(num_par-3*N_part+1:num_par,1:3*N_part))
                Hgradp_av=0.d0
                OiHgradp_av=0.d0
             END IF
@@ -227,7 +228,6 @@ MODULE variational_calculations
             ALLOCATE(O(1:num_par,1:N_mc))
             IF (opt_Rp) THEN
                ALLOCATE(Hgradp(1:3*N_part,1:N_mc))
-               !ALLOCATE(OiHgradp(1:num_par,1:3*N_part,1:N_mc))
             END IF
          END IF
          ALLOCATE(flag_O(1:num_par))
@@ -1102,7 +1102,7 @@ MODULE variational_calculations
           IF (opt_Rp) THEN
              Hgradp_av(1:3*N_part)=Hgradp_av(1:3*N_part)+Hgradpnow(1:3*N_part)
              DO i = 1, 3*N_part, 1
-               DO j = 1, num_par, 1
+               DO j = num_par-3*N_part+1, num_par, 1
                   OiHgradp_av(j,i)=OiHgradp_av(j,i)+Onow(j)*Hgradpnow(i)
                END DO
              END DO

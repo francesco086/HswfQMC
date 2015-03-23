@@ -10,11 +10,11 @@ SR_min_change=0.               !minimum change (in percentage) of the variationa
 SR_max_change=10.              !maximum change (in percentage) of the variational parameters in a SR step
 SR_adaptative_beta=F           !use the adaptative beta scheme ? (increase beta when SR does not found a new minimum for too long)
 SR_lambda=F                    !use the lambda adaptative scheme ? (explained in reference ...)
-lambda_init=1.
+lambda_init=1.                 !initial value for lambda
 min_lambda=0.01                !minimum value for lambda
 max_lambda=10.                 !maximum value for lambda
 SR_lambda_Rp=F                 !use the lambda adaptative scheme for the protonic coordinates ?
-lambda_Rp_init=1.
+lambda_Rp_init=1.              !initial value for lambda_Rp
 min_lambda_Rp=0.01             !minimum value for lambda_Rp
 max_lambda_Rp=10.              !maximum value for lambda_Rp
 /

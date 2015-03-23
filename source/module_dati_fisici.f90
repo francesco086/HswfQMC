@@ -283,15 +283,16 @@ MODULE dati_fisici
             DO i = 1, N_cell_side, 1
                i1=i1+1
                IF (MOD(i1,2)==1) THEN
-                  r_crystal(1:3,i1/2+1)=(/ REAL(i,8), REAL(j,8), 0.d0 /)*DSQRT(PI/REAL(N_part,8))*r_s
+                  r_crystal(1:3,i1/2+1)=(/ REAL(i,8), REAL(j,8), 0.d0 /)*L(1:3)/REAL(N_cell_side,8)
                ELSE
-                  r_crystal(1:3,i1/2+H_N_part)=(/ REAL(i,8), REAL(j,8), 0.d0 /)*DSQRT(PI/REAL(N_part,8))*r_s
+                  r_crystal(1:3,i1/2+H_N_part)=(/ REAL(i,8), REAL(j,8), 0.d0 /)*L(1:3)/REAL(N_cell_side,8)
                END IF
             END DO
             END DO
          ELSE
             STOP "crystal_cell='quad' con flag_molecular non ancora implementato"
          END IF
+         CALL applica_pbc(r_crystal,N_part,L)
 		ELSE
 			STOP "scegli un reticolo accettabile"
 		END IF

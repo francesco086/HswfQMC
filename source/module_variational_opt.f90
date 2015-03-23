@@ -262,8 +262,7 @@ MODULE variational_opt
       ALLOCATE(used_par(1:num_par_var),M_used_par(1:num_par_var,1:num_par_var))
       ALLOCATE(Oi(1:num_par_var),HOi(1:num_par_var),OiOj(1:num_par_var,1:num_par_var))
       ALLOCATE(OiHOj(1:num_par_var,1:num_par_var))
-      ALLOCATE(Hi(1:num_coord_Rp),OiHj(1:num_par_var,1:num_coord_Rp))
-      !IF (.NOT. OAV_ON_THE_FLY) ALLOCATE(sigmaHOi(1:num_par_var))
+      ALLOCATE(Hi(1:num_coord_Rp),OiHj(num_par_var-num_coord_Rp+1:num_par_var,1:num_coord_Rp))
 		!!!!!!!
 		
 		IF (Jee_kind/='no_') THEN
@@ -1275,10 +1274,11 @@ MODULE variational_opt
       REAL(KIND=8) :: Usvd(1:N,1:N), VTsvd(1:N,1:N), Ssvd(1:N)
       REAL(KIND=8) :: a, b, c, fa(1:2), fb(1:2), fc(1:2)
 
-      lambda=1.d0
+      lambda=lambda_init
       lambda2=1.d0
       lambda3=1.d0
-      lambda_Rp=1.d0
+      lambda_Rp=lambda_Rp_init
+      lambda2_Rp=1.d0
       f_SR_beta=1.d0
 		i_orbit=1
 		AV_cont=0
@@ -3370,7 +3370,7 @@ MODULE variational_opt
                !!!Raccolgo i termini Hi
                CALL MPI_REDUCE(Hgradp_av(i),Hi(i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
                IF (NORMALIZE) Hi(i)=Hi(i)*quoz
-               DO j = 1, num_par_var, 1
+               DO j = num_par_var-num_coord_Rp+1, num_par_var, 1
                   IF (flag_O(j)) THEN
                      !!!Raccolgo i termini OiHj
                      CALL MPI_REDUCE(OiHgradp_av(j,i),OiHj(j,i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
@@ -3409,15 +3409,15 @@ MODULE variational_opt
          END DO
          IF (opt_Rp) THEN
             ALLOCATE(Hi_fast(1:N_mc,1:num_coord_Rp))
-            Hi_fast(1:N_mc,1:num_par_var)=TRANSPOSE(Hgradp(1:num_par_var,1:N_mc))
+            Hi_fast(1:N_mc,1:num_coord_Rp)=TRANSPOSE(Hgradp(1:num_coord_Rp,1:N_mc))
             DO i = 1, num_coord_Rp, 1
                !!!Calcolo i termini Hi
                dummy1(1)=SUM(Hi_fast(1:N_mc,i)*w(1:N_mc))
                CALL MPI_REDUCE(dummy1(1),Hi(i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
                IF (NORMALIZE) Hi(i)=Hi(i)*quoz
-               DO j = 1, num_par_var, 1
+               DO j = num_par_var-num_coord_Rp+1, num_par_var, 1
                   !!!Calcolo i termini OiHj
-                  dummy1(1)=SUM(O_fast(1:N_mc,j)*Hi_fast(1:N_mc,j)*w(1:N_mc))
+                  dummy1(1)=SUM(O_fast(1:N_mc,j)*Hi_fast(1:N_mc,i)*w(1:N_mc))
                   CALL MPI_REDUCE(dummy1(1),OiHj(j,i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
                   IF (NORMALIZE) OiHj(j,i)=OiHj(j,i)*quoz
                END DO
@@ -3432,8 +3432,8 @@ MODULE variational_opt
       CALL MPI_BCAST(HOi,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
       CALL MPI_BCAST(OiOj,num_par_var*num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
       CALL MPI_BCAST(OiHOj,num_par_var*num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
-      IF (opt_Rp) CALL MPI_BCAST(Hi,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
-      IF (opt_Rp) CALL MPI_BCAST(OiHj,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
+      IF (opt_Rp) CALL MPI_BCAST(Hi,num_coord_Rp,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
+      IF (opt_Rp) CALL MPI_BCAST(OiHj,num_coord_Rp*num_coord_Rp,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
 
       !Alloco s_kn e f_k
       IF (ALLOCATED(s_kn)) DEALLOCATE(s_kn)
@@ -3461,10 +3461,10 @@ MODULE variational_opt
       !!OiHj
       IF (opt_Rp) THEN
          IF (ALLOCATED(OiHj_eff)) DEALLOCATE(OiHj_eff)
-         ALLOCATE(OiHj_eff(1:num_par_var_eff,1:num_coord_Rp))
+         ALLOCATE(OiHj_eff(num_par_var_eff-num_coord_Rp+1:num_par_var_eff,1:num_coord_Rp))
          DO i = 1, num_coord_Rp, 1
-            j1=1
-            DO j = 1, num_par_var, 1
+            j1=num_par_var-num_coord_Rp+1
+            DO j = num_par_var-num_coord_Rp+1, num_par_var, 1
                IF (used_par(j)) THEN
                   OiHj_eff(j1,i)=OiHj(j,i)
                   j1=j1+1
