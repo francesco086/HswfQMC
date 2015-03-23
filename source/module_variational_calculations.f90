@@ -1109,7 +1109,7 @@ MODULE variational_calculations
           END IF
        ELSE
          O(1:num_par,i_mc)=Onow(1:num_par)
-         Hgradp(1:3*N_part,i_mc)=Hgradpnow(1:3*N_part)
+         IF (opt_Rp) Hgradp(1:3*N_part,i_mc)=Hgradpnow(1:3*N_part)
        END IF
 		
 	END SUBROUTINE calcola_termini_derivate_variazionali

@@ -3422,9 +3422,9 @@ MODULE variational_opt
                   IF (NORMALIZE) OiHj(j,i)=OiHj(j,i)*quoz
                END DO
             END DO
+            DEALLOCATE(Hi_fast)
          END IF
          DEALLOCATE(O_fast)
-         DEALLOCATE(Hi_fast)
       END IF
 
       !Distribuisco H, Oi, HOi, OiOj a tutti i processori
