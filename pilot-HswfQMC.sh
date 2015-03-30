@@ -80,8 +80,9 @@ do
             echo "ERROR: Impossible to find the folder posizioni/ . ABORT!"
             exit
          fi
-         \rm -r -f posizioni/*
-         \rm -f output.d
+	 PATHRANDOM="${pilot_PATH}/random_seed"
+	 sed -i.sedbak "s|RANDOM_SEED_FOLDER|${PATHRANDOM}|" dati_mc.d
+	 rm *.sedbak
          HswfQMC_exe > /dev/null 2>&1
          #Extract from the output file the size of the simulation box and save it in the file L.d
          cat output.d | grep "L=" | sed "s/L=   //" | sed "s/   \[bohr\]//" > L.d
