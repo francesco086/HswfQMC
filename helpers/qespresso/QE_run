@@ -1,2 +1,4 @@
+#!/bin/bash
+
 rm -f -r OUT.save
 pw.x < scf.in > scf.out

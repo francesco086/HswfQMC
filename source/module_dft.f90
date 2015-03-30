@@ -1,3 +1,14 @@
+!!!!SAMPLE OF A dati_dft.d file
+!&dati_dft
+!pw_exe="/home/kenzo/espresso-5.0.2/bin/pw.x"
+!pseudopot_dir="/home/kenzo/espresso-5.0.2/pseudo"
+!iotk_xml_exe="/home/kenzo/espresso-5.0.2/bin/iotk"
+!dft_work_dir="DFT/"
+!scf_in_file="scf.in"
+!dft_parallel=.FALSE.
+!dft_mpi_nprocs=4
+!/
+
 MODULE dft
 	IMPLICIT NONE
 	LOGICAL, PROTECTED, SAVE :: dft_parallel, iniz_dft=.FALSE., dft_lock=.FALSE.
@@ -159,3 +170,4 @@ MODULE dft
 	END SUBROUTINE chiudi_dft
 		
 END MODULE dft
+

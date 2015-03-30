@@ -61,7 +61,7 @@ MODULE VMC
 				WRITE (7, *) , 'N_part=', N_part, '       r_s=', r_s
 			END IF
 			PRINT * , 'L=', L, '   [bohr]'
-			IF (flag_output) WRITE (7, *), 'L=', L, '   [bohr]'
+			IF (flag_output) WRITE (7, '(1X,A2,3(3X,F12.8),3X,A6)'), 'L=', L, '[bohr]'
 			PRINT * , 'Tipo di reticolo: ', crystal_cell, '       Molecolare? ', flag_molecular
 			IF (flag_output) WRITE (7, *), 'Tipo di reticolo: ', crystal_cell, '       Molecolare? ', flag_molecular
 		END IF

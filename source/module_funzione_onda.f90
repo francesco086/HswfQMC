@@ -93,11 +93,13 @@ MODULE funzione_onda
 				
 		IF ((SDe_kind=='lda').OR.(SDse_kind=='lda')) THEN
 			
-			IF ( TRIM(lda_path)=="genera_on_the_fly" ) THEN
-				CALL genera_orbitali_lda()
-			END IF
+         !!DEPRECATED, it does not work to call Quantum Espresso internally
+			!IF ( TRIM(lda_path)=="genera_on_the_fly" ) THEN
+			!	CALL genera_orbitali_lda()
+			!END IF
 			
 			IF (flag_TABC) THEN
+            lda_path=TRIM(lda_path)//"/OUT.save"
 				flag_simm_lda=.FALSE.
 				IF ( mpi_myrank==0 ) THEN
 					INQUIRE(FILE=TRIM(lda_path)//'/.numero_cartelle_K',EXIST=flag_file)
@@ -143,6 +145,7 @@ MODULE funzione_onda
 					END DO
 				END DO
 			ELSE
+            lda_path=TRIM(lda_path)//"/OUT.save/K00001"
 				CALL leggi_N_pw(TRIM(lda_path)//'/gkvectors.xml',N_pw_lda)
 				ALLOCATE(k_pw_lda(0:3,1:N_pw_lda),fattori_orb_lda(1:H_N_part),fattori_pw_lda(1:N_pw_lda,1:H_N_part))
 				ALLOCATE(k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
