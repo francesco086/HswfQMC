@@ -3326,10 +3326,12 @@ MODULE variational_opt
       IF (mpi_myrank==0) THEN
          !assicuro che gli spostamenti per i parametri associati ai Rp non siano mascherati
          mask(num_par_var-num_coord_Rp+1:num_par_var)=.TRUE.
+         !aggiorno flag_O dai flag raccolti
          flag_O=mask
       END IF
       !!!Li ridistribuisco a tutti i processori
       CALL MPI_BCAST(flag_O,num_par_var,MPI_LOGICAL,0,MPI_COMM_WORLD,mpi_ierr)
+      !genero la matrice dei parametri usati
       used_par=flag_O
       DO j = 1, num_par_var, 1
       DO i = 1, num_par_var, 1

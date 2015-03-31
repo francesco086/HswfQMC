@@ -3929,10 +3929,8 @@ END SUBROUTINE derivata_Jep_ATM
 		INTEGER :: i, j, i_SD, j_SD
 		REAL (KIND=8) :: frf1(1:3), frf2(1:3), frf3
 		REAL (KIND=8) :: uep1, der1_up(1:3), der1_dw(1:3)
-      INTEGER, SAVE :: cont=0
       REAL(KIND=8) :: re(1:3,1:N_part), rp(1:3,1:N_part), rep(0:3,1:N_part,1:N_part)
 
-      cont=cont+1
 		
 		O=0.d0
 		
@@ -4013,7 +4011,41 @@ END SUBROUTINE derivata_Jep_ATM
 					O(3*(j-1)+1:3*j)=O(3*(j-1)+1:3*j)+0.5d0*uep1*frf2(1:3)
 				END DO
 			END DO
+      CASE('spl')
+			DO i = 1, N_part, 1
+				DO j = 1, N_part, 1
+               IF (split_Aep.OR.split_Fep) THEN
+                  IF (((i<=H_N_part).AND.(j<=H_N_part)).OR.((i>H_N_part).AND.(j>H_N_part))) THEN
+                     CALL MSPL_compute(SPL=Jsplep, DERIV=1, R=rij_ep_old(0,j,i), VAL=frf3)
+                  ELSE
+                     CALL MSPL_compute(SPL=Jsplep_ud, DERIV=1, R=rij_ep_old(0,j,i), VAL=frf3)
+                  END IF
+               ELSE
+                  CALL MSPL_compute(SPL=Jsplep, DERIV=1, R=rij_ep_old(0,j,i), VAL=frf3)
+               END IF
+               frf1(1:3)=rij_ep_old(1:3,j,i)/rij_ep_old(0,j,i)
+               O(3*(i-1)+1:3*i)=O(3*(i-1)+1:3*i)+0.5d0*frf1(1:3)*frf3
+				END DO
+			END DO
+		CASE ('spp')
+			DO i = 1, N_part, 1
+				DO j = 1, N_part, 1
+               IF (split_Aep.OR.split_Fep) THEN
+                  IF (((i<=H_N_part).AND.(j<=H_N_part)).OR.((i>H_N_part).AND.(j>H_N_part))) THEN
+                     CALL MSPL_compute(SPL=Jsplep, DERIV=1, R=rijpc_ep_old(0,j,i), VAL=frf3)
+                  ELSE
+                     CALL MSPL_compute(SPL=Jsplep_ud, DERIV=1, R=rijpc_ep_old(0,j,i), VAL=frf3)
+                  END IF
+               ELSE
+                  CALL MSPL_compute(SPL=Jsplep, DERIV=1, R=rijpc_ep_old(0,j,i), VAL=frf3)
+               END IF
+               frf1(1:3)=DCOS(frf2(1:3)*rij_ep_old(1:3,j,i))*rijpc_ep_old(1:3,j,i)/rijpc_ep_old(0,j,i)
+               O(3*(i-1)+1:3*i)=O(3*(i-1)+1:3*i)+0.5d0*frf1(1:3)*frf3
+				END DO
+         END DO
 		END SELECT
+
+
 		
 		SELECT CASE(SDe_kind)
 		CASE('bat')
