@@ -3323,7 +3323,11 @@ MODULE variational_opt
 
       !!!Metto insieme i flag_O di tutti i processori
       CALL MPI_REDUCE(flag_O,mask,num_par_var,MPI_LOGICAL,MPI_LOR,0,MPI_COMM_WORLD,mpi_ierr)
-      IF (mpi_myrank==0) flag_O=mask
+      IF (mpi_myrank==0) THEN
+         !assicuro che gli spostamenti per i parametri associati ai Rp non siano mascherati
+         mask(num_par_var-num_coord_Rp+1:num_par_var)=.TRUE.
+         flag_O=mask
+      END IF
       !!!Li ridistribuisco a tutti i processori
       CALL MPI_BCAST(flag_O,num_par_var,MPI_LOGICAL,0,MPI_COMM_WORLD,mpi_ierr)
       used_par=flag_O
