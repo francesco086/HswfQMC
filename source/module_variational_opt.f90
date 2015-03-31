@@ -1585,7 +1585,6 @@ MODULE variational_opt
 
                !stampo le informazioni
                IF (mpi_myrank==0) THEN
-                  PRINT *, "> > > > > dp = ", dp
                   PRINT *, "VAR_OPT: [fSR] usato fSR per determinare i parametri SR ottimali. Numero configurazioni:", &
                    INT2(SRopt_count)
                   IF (flag_output) WRITE(UNIT=7, FMT=*), &
@@ -3534,7 +3533,6 @@ MODULE variational_opt
          END IF
       END DO
       Is_kn=MATMUL(Usvd,MATMUL(Is_kn,VTsvd))
-      !Usvd=MATMUL(s_kn,Is_kn)
 
 		dp_eff=0.d0
 		DO j = 1, N, 1
