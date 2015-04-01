@@ -3346,7 +3346,7 @@ MODULE variational_opt
       dummy1(1)=SUM(E_tot(1:N_mc)*w(1:N_mc))
       CALL MPI_REDUCE(dummy1(1),H,1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
       IF (NORMALIZE) H=H*quoz
-		CALL MPI_BCAST(H,1,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
+      CALL MPI_BCAST(H,1,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
 
       IF (OAV_ON_THE_FLY) THEN
          DO i = 1, num_par_var, 1
@@ -3468,7 +3468,7 @@ MODULE variational_opt
          IF (ALLOCATED(OiHj_eff)) DEALLOCATE(OiHj_eff)
          ALLOCATE(OiHj_eff(num_par_var_eff-num_coord_Rp+1:num_par_var_eff,1:num_coord_Rp))
          DO i = 1, num_coord_Rp, 1
-            j1=num_par_var-num_coord_Rp+1
+            j1=num_par_var_eff-num_coord_Rp+1
             DO j = num_par_var-num_coord_Rp+1, num_par_var, 1
                IF (used_par(j)) THEN
                   OiHj_eff(j1,i)=OiHj(j,i)
@@ -3481,7 +3481,7 @@ MODULE variational_opt
       !IF (mpi_myrank==0) PRINT *, " > > > Oi: ", Oi
       !IF (mpi_myrank==0) PRINT *, " > > > HOi: ", HOi
 
-	END SUBROUTINE estrai_medie_SR
+   END SUBROUTINE estrai_medie_SR
 
 
    SUBROUTINE calcola_skn_fk()
@@ -3558,7 +3558,7 @@ MODULE variational_opt
       IMPLICIT NONE
       INTEGER, PARAMETER :: LWORK=10
       INTEGER, INTENT(IN) :: N, Ne, Np !number of effective variational parameters, electronic, and protonic
-      REAL(KIND=8), INTENT(OUT) :: dp(1:N)
+      REAL(KIND=8), INTENT(OUT) :: dp(1:num_par_var)
       REAL(KIND=8) :: dp_eff(1:N)
       INTEGER :: i, j
       INTEGER :: info
