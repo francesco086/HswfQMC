@@ -12,7 +12,7 @@ acceptance_rate=50                               !Target acceptance rate. The st
 flag_continua=F                                  !Resume a previous simulation (T or F)
 howtomove='1ppt'                                 !Walking method: 'allp'=all together    '1ppt'=single-particle moves
 propmove='gaus'                                  !Transition pdf: 'flat'=flat distribution   'gaus'=gaussian e^(-8*(x-x_0)^2/step^2)
-trimer_steps=F                                   !(NOT WORKING) Propose Trimers (electron-shadow1-shadow2) moves. Important if the Kernel is very tight 
+trimer_steps=F                                   !Propose Trimers (electron-shadow1-shadow2) moves. Important if the Kernel is very tight 
 flag_elettroni=T                                 !Integrate over the electronic coordinates (T or F)
 flag_protoni=F                                   !(NOT IMPLEMENTED YET) Integrate over the protonic coordinates
 flag_shadow=F                                    !Integrate over the electronic-shadow coordinates
@@ -22,19 +22,19 @@ flag_E_pot=T                                     !Compute the potential energy
 flag_somme_ewald=T                               !Use the Ewald summation
 alpha_ewald=-1.0d0                               !alpha parameters used in the Ewald summation. If it's equal to -1.d0, then it is set automatically
 num_k_ewald=515                                  !Number of k vectors used in the Ewald summation
-flag_gr=T                                        !Compute the pair correlation functions
+flag_gr=F                                        !Compute the pair correlation functions
 N_hist=250                                       !Number of points in the grid used for the pair correlation functions
-flag_posizioni=T                                 !Save into files located in positions/<...>.pos the final positions of the walkers (necessary for resuming the calculation later on) 
+flag_posizioni=F                                 !Save into files located in positions/<...>.pos the final positions of the walkers (necessary for resuming the calculation later on) 
 flag_normalizza_pos=T                            !Normalize the position coordinates so that they stay in the range [0,1]
 N_AV=-6400                                       !Number of data averaged before being written into file. If N_AV < 0, then data are packed into -N_AV elements (a good value is -6400)
 flag_MPI=T                                       !Use MPI
-what_to_do='simpcal'                             !Which task has to be performed: 'simpcal'=VMC calculation   'stocrec'=stochastic reconfiguration minimization (others are deprecated)
+what_to_do='stocrec'                             !Which task has to be performed: 'simpcal'=VMC calculation   'stocrec'=stochastic reconfiguration minimization (others are deprecated)
 stampa_dati_funzione_onda=T                      !Print informations about the wave function during minimization
 path_dati_funzione_onda='dati_funzione_onda.d'   !Path that specifies the file containing the informations about the trial wave function to be used
 accuracy_energy_opt=0.001d0                      !(DEPRECATED)
-flag_disk=T                                      !Save all the data on files for computing the mean and variance. If not, everything is made only using the RAM
+flag_disk=F                                      !Save all the data on files for computing the mean and variance. If not, everything is made only using the RAM
 flag_output=T                                    !Save all the outputs on the output.d file
-quick_error=0		                         !Number of blocks used to estimate the error with the blocking technique. If quick_error=0 then the optimal value is determined automatically
+quick_error=16		                         !Number of blocks used to estimate the error with the blocking technique. If quick_error=0 then the optimal value is determined automatically
 flag_random_file=T                               !Use a file with true random numbers to initialize the pseudo-random number generator
 random_seed_path='RANDOM_SEED_FOLDER/randomseed1.d'    !Path to the file used to initialized the pseudo-random number generator
 /
