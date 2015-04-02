@@ -1,3 +1,7 @@
+!!!NOT FINISHED TO IMPLEMENT YET, THERE 
+!!!ARE SOME TRACKS IN module_estimatori.f90
+
+
 MODULE grad_lapl_psi
    USE funzione_onda
    USE walkers

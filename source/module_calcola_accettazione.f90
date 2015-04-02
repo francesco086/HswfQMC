@@ -69,11 +69,11 @@ mODULE calcola_accettazione
 		IF (.NOT. iniz_walkers) STOP 'Prima devi inizializzare i walkers &
 		  [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
 		
-		CALL inizializza_momenta(H_N_part, num_k_ewald, L, mpi_myrank)
+		CALL inizializza_momenta(mpi_myrank)
 		CALL inizializza_dati_funzione_onda()
 				
 		IF (flag_TABC) THEN
-			CALL applica_twist(H_N_part, L)
+			CALL applica_twist()
 			IF ((SDe_kind=='prf').OR.(SDe_kind=='fre')) CALL applica_twist_dnfH()
 		END IF
 						

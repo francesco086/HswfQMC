@@ -600,7 +600,7 @@ MODULE VMC
 			CASE ('allp')
 				DO i = 2, num_sampling, 1
 					IF (flag_TABC .AND. (MOD(i,N_TABC)==0)) THEN     !applica TABC
-						IF (SDe_kind=='pw_') CALL applica_twist(H_N_part, L)
+						IF (SDe_kind=='pw_') CALL applica_twist()
 						IF ((SDe_kind=='prf').OR.(SDe_kind=='fre')) CALL applica_twist_dnfH()
 						IF (SDe_kind=='lda') CALL applica_twist_lda()
 						DO i1 = 1, N_mc_relax_TABC, 1
@@ -676,7 +676,7 @@ MODULE VMC
 			CASE ('1ppt')
 				DO i = 2, num_sampling, 1
 					IF ((MOD(i,N_TABC)==0) .AND. flag_TABC) THEN
-						IF (SDe_kind=='pw_') CALL applica_twist(H_N_part, L)
+						IF (SDe_kind=='pw_') CALL applica_twist()
 						IF ((SDe_kind=='prf').OR.(SDe_kind=='fre')) CALL applica_twist_dnfH()
 						IF (SDe_kind=='lda') CALL applica_twist_lda()
 						DO i1 = 1, N_mc_relax_TABC, 1

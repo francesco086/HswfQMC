@@ -1,5 +1,6 @@
 MODULE dnfH
 	USE dati_fisici
+   USE fermi_k
 	IMPLICIT NONE
 	REAL (KIND=8), PARAMETER, PRIVATE :: cutoff_quick_pw=0.0001d0
 	LOGICAL, PRIVATE, SAVE :: flag_inizializza=.FALSE.
@@ -15,6 +16,7 @@ MODULE dnfH
 	INTEGER, ALLOCATABLE, SAVE :: n_fpw_Hartee(:), i_fpw_Hartree(:,:)
 	REAL (KIND=8) :: k_cutoff
 	REAL (KIND=8), ALLOCATABLE, SAVE :: k_Hartree(:,:), autovalori_Hartree(:)
+   TYPE(KWaVe) :: kwv_Hartree
 	COMPLEX (KIND=8), ALLOCATABLE, SAVE :: M_Hartree(:,:)
 		
 	CONTAINS
@@ -39,7 +41,12 @@ MODULE dnfH
 		N_M_Hartree=magic_number(i2)
 		ALLOCATE(M_Hartree(1:N_M_Hartree,1:N_M_Hartree),k_Hartree(0:3,1:N_M_Hartree),n_fpw_Hartee(1:N_M_Hartree))
 		ALLOCATE(i_fpw_Hartree(1:N_M_Hartree,1:N_M_Hartree),autovalori_Hartree(1:N_M_Hartree))
-		CALL fermi_quantization(N_M_Hartree,k_Hartree)
+
+      !!!Made obsolete from the KWaVe class
+      !!!CALL fermi_quantization(N_M_Hartree,k_Hartree)
+      CALL kwv_Hartree%initializeKWaVe(N_M_Hartree,3)
+      CALL kwv_Hartree%buildBoxK(L)
+      k_Hartree=kwv_Hartree%k
 		
 		k_cutoff=k_Hartree(0,H_N_part)*k2_f_factor
 				
@@ -77,7 +84,10 @@ MODULE dnfH
 		
 		!!Se si vuole tenere costante il numero di k considerati
 		
-		CALL fermi_quantization_twist(N_M_Hartree,k_Hartree)
+      !!!Made obsolete from the KWaVe class
+		!!!CALL fermi_quantization_twist(N_M_Hartree,k_Hartree)
+      CALL kwv_Hartree%twistK()
+      k_Hartree=kwv_Hartree%k
 				
 	END SUBROUTINE twist_k_dnfH
 !-----------------------------------------------------------------------
@@ -171,180 +181,181 @@ MODULE dnfH
 		END DO
 		        		 
 	END SUBROUTINE trova_soluzioni_dnfH
-!-----------------------------------------------------------------------
-	SUBROUTINE fermi_quantization(N_fq,k)
-		IMPLICIT NONE
-		INTEGER, INTENT(IN) :: N_fq
-		INTEGER :: N, N_liv, res, p1, p2, p3, step_acc, part_num
-		REAL (KIND=8), PARAMETER :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
-		REAL (KIND=8) :: k_min(1:3)
-		REAL (KIND=8), INTENT(OUT) :: k(0:3, 1:N_fq)
-
-		!inizializzo il contatore sul numero di particelle
-		part_num=0
-		!determino il k minimo dato dalla quantizzazione
-		k_min(1:3)=2.D0*PI/L(1:3)
-		!k_min=1.D0
-		!fisso il numero massimo del livello che voglio raggiungere (NB deve essere abbastanza grande)
-		N_liv=10000
-
-		loop1: DO  N = 0, N_liv, 1
-			p1=0
-			DO WHILE ( p1*p1 < N )
-				p1=p1+1
-				IF ((p1+1)*(p1+1)>N) EXIT
-			END DO
-			DO p1=p1, 0, -1
-				res=N-p1*p1
-				p2=0
-				DO WHILE ( p2*p2 < res )
-					p2=p2+1
-					IF ((p2+1)*(p2+1)>res) EXIT
-				END DO
-				DO p2=p2, 0, -1
-					res=N-p1*p1-p2*p2
-					p3=0
-					DO WHILE ( p3*p3 < res )
-						p3=p3+1
-						IF ((p3+1)*(p3+1)>res) EXIT
-					END DO
-					DO p3=p3, 0, -1
-						res=N-p1*p1-p2*p2-p3*p3
-						IF (res==0) THEN
-							step_acc=1
-						ELSE
-							step_acc=0
-						END IF
-						IF (step_acc==1) THEN !qui dentro ho la combinazione giusta, solo attenzione ai segni
-							part_num=part_num+1
-							IF ( part_num>N_fq ) THEN
-								EXIT loop1
-							END IF
-							k(1:3,part_num)=(/ k_min(1)*p1,k_min(2)*p2,k_min(3)*p3 /)
-							IF (p3/=0) THEN
-								IF ( p2/=0 ) THEN
-									IF ( p1/=0 ) THEN
-										part_num=part_num+1
-										IF ( part_num>N_fq ) THEN
-											EXIT loop1
-										END IF
-										k(1:3,part_num)=(/ -k_min(1)*p1,-k_min(2)*p2,-k_min(3)*p3 /)
-									END IF
-									part_num=part_num+1
-									IF ( part_num>N_fq ) THEN
-										EXIT loop1
-									END IF
-									k(1:3,part_num)=(/ k_min(1)*p1,-k_min(2)*p2,-k_min(3)*p3 /)
-								END IF
-								IF (p1/=0) THEN
-									part_num=part_num+1
-									IF ( part_num>N_fq ) THEN
-										EXIT loop1
-									END IF
-									k(1:3,part_num)=(/ -k_min(1)*p1,k_min(2)*p2,-k_min(3)*p3 /)
-								END IF
-								part_num=part_num+1
-								IF ( part_num>N_fq ) THEN
-									EXIT loop1
-								END IF
-								k(1:3,part_num)=(/ k_min(1)*p1,k_min(2)*p2,-k_min(3)*p3 /)
-							END IF
-							IF (p2/=0) THEN
-								IF ( p1/=0 ) THEN
-									part_num=part_num+1
-									IF ( part_num>N_fq ) THEN
-										EXIT loop1
-									END IF
-									k(1:3,part_num)=(/ -k_min(1)*p1,-k_min(2)*p2,k_min(3)*p3 /)
-								END IF
-								part_num=part_num+1
-								IF ( part_num>N_fq ) THEN
-									EXIT loop1
-								END IF
-								k(1:3,part_num)=(/ k_min(1)*p1,-k_min(2)*p2,k_min(3)*p3 /)
-							END IF
-							IF (p1/=0) THEN
-								part_num=part_num+1
-								IF ( part_num>N_fq ) THEN
-									EXIT loop1
-								END IF
-								k(1:3,part_num)=(/ -k_min(1)*p1,k_min(2)*p2,k_min(3)*p3 /)
-							END IF
-						END IF
-					END DO
-				END DO
-			END DO
-		END DO loop1
-		DO part_num = 1, N_fq, 1
-			k(0,part_num)=DOT_PRODUCT(k(1:3,part_num),k(1:3,part_num))
-		END DO
-	END SUBROUTINE fermi_quantization
-!-----------------------------------------------------------------------
-	SUBROUTINE fermi_quantization_twist(N,k_fermi_twist)
-		IMPLICIT NONE
-		INTEGER, INTENT(IN) :: N
-		INTEGER, SAVE :: index, inc2, index_bigger, N_bigger, i
-		REAL (KIND=8), PARAMETER :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
-		REAL :: random
-		REAL (KIND=8) :: vect(0:3), twist(1:3)
-		REAL (KIND=8), ALLOCATABLE :: k(:,:), k_fermi_bigger(:,:)
-		REAL (KIND=8), INTENT(OUT) :: k_fermi_twist(0:3,1:N)
-		
-		index=1
-		DO WHILE (magic_number(index)<N)
-			index=index+1
-			IF (index>86) STOP 'N troppo grande [ module_momenta.f90 > fermi_quantization_twist ]'
-		END DO
-		inc2=FLOOR(0.75+SQRT(3.)*SQRT(REAL(n_shell(index))))
-		index_bigger=index
-		DO WHILE (n_shell(index_bigger)<n_shell(index)+inc2)
-			index_bigger=index_bigger+1
-		END DO
-		N_bigger=magic_number(index_bigger)
-		ALLOCATE(k_fermi_bigger(0:3,1:N_bigger))
-		CALL fermi_quantization(N_bigger, k_fermi_bigger)
-
-		ALLOCATE(k(0:3,1:N_bigger))
-		CALL RANDOM_NUMBER(twist)
-		twist(1:3)=(twist(1:3)-0.5d0)*2.d0*PI/L(1:3)
-		!traslo k
-		DO i = 1, N_bigger, 1
-			k(1:3,i)=k_fermi_bigger(1:3,i)+twist(1:3)
-			k(0,i)=DOT_PRODUCT(k(1:3,i),k(1:3,i))
-		END DO
-		!disordino in modo random i k oltre N con norma uguale
-		i=N+1
-		DO WHILE (i<N_bigger)
-			IF (k(0,i)==k(0,i+1)) THEN
-				CALL RANDOM_NUMBER(random)
-				IF (random>0.5) THEN
-					vect(0:3)=k(0:3,i)
-					k(0:3,i)=k(0:3,i+1)
-					k(0:3,i+1)=vect(0:3)
-					IF (i>N+1) i=i-2
-				END IF
-			END IF
-			i=i+1
-		END DO
-		!ordino in modo crescente le k
-		i=1
-		DO WHILE (i<N_bigger)
-			IF (k(0,i)>k(0,i+1)) THEN
-				vect(0:3)=k(0:3,i)
-				k(0:3,i)=k(0:3,i+1)
-				k(0:3,i+1)=vect(0:3)
-				IF (i>1) i=i-2
-			END IF
-			i=i+1
-		END DO
-		k_fermi_twist(0:3,1:N)=k(0:3,1:N)
-		DEALLOCATE(k,k_fermi_bigger)
-	END SUBROUTINE fermi_quantization_twist
-!-----------------------------------------------------------------------
+!!-----------------------------------------------------------------------
+!	SUBROUTINE fermi_quantization(N_fq,k)
+!		IMPLICIT NONE
+!		INTEGER, INTENT(IN) :: N_fq
+!		INTEGER :: N, N_liv, res, p1, p2, p3, step_acc, part_num
+!		REAL (KIND=8), PARAMETER :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
+!		REAL (KIND=8) :: k_min(1:3)
+!		REAL (KIND=8), INTENT(OUT) :: k(0:3, 1:N_fq)
+!
+!		!inizializzo il contatore sul numero di particelle
+!		part_num=0
+!		!determino il k minimo dato dalla quantizzazione
+!		k_min(1:3)=2.D0*PI/L(1:3)
+!		!k_min=1.D0
+!		!fisso il numero massimo del livello che voglio raggiungere (NB deve essere abbastanza grande)
+!		N_liv=10000
+!
+!		loop1: DO  N = 0, N_liv, 1
+!			p1=0
+!			DO WHILE ( p1*p1 < N )
+!				p1=p1+1
+!				IF ((p1+1)*(p1+1)>N) EXIT
+!			END DO
+!			DO p1=p1, 0, -1
+!				res=N-p1*p1
+!				p2=0
+!				DO WHILE ( p2*p2 < res )
+!					p2=p2+1
+!					IF ((p2+1)*(p2+1)>res) EXIT
+!				END DO
+!				DO p2=p2, 0, -1
+!					res=N-p1*p1-p2*p2
+!					p3=0
+!					DO WHILE ( p3*p3 < res )
+!						p3=p3+1
+!						IF ((p3+1)*(p3+1)>res) EXIT
+!					END DO
+!					DO p3=p3, 0, -1
+!						res=N-p1*p1-p2*p2-p3*p3
+!						IF (res==0) THEN
+!							step_acc=1
+!						ELSE
+!							step_acc=0
+!						END IF
+!						IF (step_acc==1) THEN !qui dentro ho la combinazione giusta, solo attenzione ai segni
+!							part_num=part_num+1
+!							IF ( part_num>N_fq ) THEN
+!								EXIT loop1
+!							END IF
+!							k(1:3,part_num)=(/ k_min(1)*p1,k_min(2)*p2,k_min(3)*p3 /)
+!							IF (p3/=0) THEN
+!								IF ( p2/=0 ) THEN
+!									IF ( p1/=0 ) THEN
+!										part_num=part_num+1
+!										IF ( part_num>N_fq ) THEN
+!											EXIT loop1
+!										END IF
+!										k(1:3,part_num)=(/ -k_min(1)*p1,-k_min(2)*p2,-k_min(3)*p3 /)
+!									END IF
+!									part_num=part_num+1
+!									IF ( part_num>N_fq ) THEN
+!										EXIT loop1
+!									END IF
+!									k(1:3,part_num)=(/ k_min(1)*p1,-k_min(2)*p2,-k_min(3)*p3 /)
+!								END IF
+!								IF (p1/=0) THEN
+!									part_num=part_num+1
+!									IF ( part_num>N_fq ) THEN
+!										EXIT loop1
+!									END IF
+!									k(1:3,part_num)=(/ -k_min(1)*p1,k_min(2)*p2,-k_min(3)*p3 /)
+!								END IF
+!								part_num=part_num+1
+!								IF ( part_num>N_fq ) THEN
+!									EXIT loop1
+!								END IF
+!								k(1:3,part_num)=(/ k_min(1)*p1,k_min(2)*p2,-k_min(3)*p3 /)
+!							END IF
+!							IF (p2/=0) THEN
+!								IF ( p1/=0 ) THEN
+!									part_num=part_num+1
+!									IF ( part_num>N_fq ) THEN
+!										EXIT loop1
+!									END IF
+!									k(1:3,part_num)=(/ -k_min(1)*p1,-k_min(2)*p2,k_min(3)*p3 /)
+!								END IF
+!								part_num=part_num+1
+!								IF ( part_num>N_fq ) THEN
+!									EXIT loop1
+!								END IF
+!								k(1:3,part_num)=(/ k_min(1)*p1,-k_min(2)*p2,k_min(3)*p3 /)
+!							END IF
+!							IF (p1/=0) THEN
+!								part_num=part_num+1
+!								IF ( part_num>N_fq ) THEN
+!									EXIT loop1
+!								END IF
+!								k(1:3,part_num)=(/ -k_min(1)*p1,k_min(2)*p2,k_min(3)*p3 /)
+!							END IF
+!						END IF
+!					END DO
+!				END DO
+!			END DO
+!		END DO loop1
+!		DO part_num = 1, N_fq, 1
+!			k(0,part_num)=DOT_PRODUCT(k(1:3,part_num),k(1:3,part_num))
+!		END DO
+!	END SUBROUTINE fermi_quantization
+!!!-----------------------------------------------------------------------
+!	SUBROUTINE fermi_quantization_twist(N,k_fermi_twist)
+!		IMPLICIT NONE
+!		INTEGER, INTENT(IN) :: N
+!		INTEGER, SAVE :: index, inc2, index_bigger, N_bigger, i
+!		REAL (KIND=8), PARAMETER :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
+!		REAL :: random
+!		REAL (KIND=8) :: vect(0:3), twist(1:3)
+!		REAL (KIND=8), ALLOCATABLE :: k(:,:), k_fermi_bigger(:,:)
+!		REAL (KIND=8), INTENT(OUT) :: k_fermi_twist(0:3,1:N)
+!		
+!		index=1
+!		DO WHILE (magic_number(index)<N)
+!			index=index+1
+!			IF (index>86) STOP 'N troppo grande [ module_momenta.f90 > fermi_quantization_twist ]'
+!		END DO
+!		inc2=FLOOR(0.75+SQRT(3.)*SQRT(REAL(n_shell(index))))
+!		index_bigger=index
+!		DO WHILE (n_shell(index_bigger)<n_shell(index)+inc2)
+!			index_bigger=index_bigger+1
+!		END DO
+!		N_bigger=magic_number(index_bigger)
+!		ALLOCATE(k_fermi_bigger(0:3,1:N_bigger))
+!		CALL fermi_quantization(N_bigger, k_fermi_bigger)
+!
+!		ALLOCATE(k(0:3,1:N_bigger))
+!		CALL RANDOM_NUMBER(twist)
+!		twist(1:3)=(twist(1:3)-0.5d0)*2.d0*PI/L(1:3)
+!		!traslo k
+!		DO i = 1, N_bigger, 1
+!			k(1:3,i)=k_fermi_bigger(1:3,i)+twist(1:3)
+!			k(0,i)=DOT_PRODUCT(k(1:3,i),k(1:3,i))
+!		END DO
+!		!disordino in modo random i k oltre N con norma uguale
+!		i=N+1
+!		DO WHILE (i<N_bigger)
+!			IF (k(0,i)==k(0,i+1)) THEN
+!				CALL RANDOM_NUMBER(random)
+!				IF (random>0.5) THEN
+!					vect(0:3)=k(0:3,i)
+!					k(0:3,i)=k(0:3,i+1)
+!					k(0:3,i+1)=vect(0:3)
+!					IF (i>N+1) i=i-2
+!				END IF
+!			END IF
+!			i=i+1
+!		END DO
+!		!ordino in modo crescente le k
+!		i=1
+!		DO WHILE (i<N_bigger)
+!			IF (k(0,i)>k(0,i+1)) THEN
+!				vect(0:3)=k(0:3,i)
+!				k(0:3,i)=k(0:3,i+1)
+!				k(0:3,i+1)=vect(0:3)
+!				IF (i>1) i=i-2
+!			END IF
+!			i=i+1
+!		END DO
+!		k_fermi_twist(0:3,1:N)=k(0:3,1:N)
+!		DEALLOCATE(k,k_fermi_bigger)
+!	END SUBROUTINE fermi_quantization_twist
+!!-----------------------------------------------------------------------
 	SUBROUTINE chiudi_dnfH()
 		IMPLICIT NONE
 		
 		DEALLOCATE(M_Hartree,k_Hartree,i_fpw_Hartree,autovalori_Hartree,n_fpw_Hartee)
+      CALL kwv_Hartree%deallocateKWaVe()
 		flag_inizializza=.FALSE.
 		
 	END SUBROUTINE chiudi_dnfH
