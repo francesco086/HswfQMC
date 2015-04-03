@@ -35,6 +35,7 @@ MODULE funzione_onda
 	INTEGER :: N_pw_lda, num_K_points
 	CHARACTER(LEN=3), PROTECTED, SAVE :: SDe_kind, Jee_kind, Jep_kind, Jpp_kind, SDse_kind, Jse_kind, Kse_kind, Jsesp_kind
 	CHARACTER(LEN=120) :: lda_path
+	CHARACTER(LEN=120) :: lda_path_complete
 	REAL (KIND=8), ALLOCATABLE :: fattori_orb_lda(:), k_pw_lda(:,:), twist_lda(:), pesi_K_points(:)
 	COMPLEX (KIND=8), ALLOCATABLE :: fattori_pw_lda(:,:)						!phi_i(x)= fatt_orb_i * ( sum_k [fatt_pw_i_k*EXP(ikx)] )
 	REAL (KIND=8), PROTECTED, SAVE :: kf_coeff_dnfH
@@ -57,7 +58,6 @@ MODULE funzione_onda
 		IMPLICIT NONE
 		REAL (KIND=8), PARAMETER :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
 		LOGICAL :: flag_file
-	   CHARACTER(LEN=120) :: lda_path_complete
 		CHARACTER(LEN=4) :: istring
 		INTEGER :: M, i, j, max_num_pw, i1, i_twist, ios
 		REAL (KIND=8) :: dummy1, SL
@@ -1430,13 +1430,13 @@ MODULE funzione_onda
 			END DO
 			WRITE (*, FMT='(A1)', ADVANCE='NO'), '.'
 			CALL chiudi_dft()
-			lda_path=TRIM(dft_work_dir)//"OUT.save/"
+			!!!lda_path=TRIM(dft_work_dir)//"OUT.save/"  !use lda_path_complete instead
 			IF (.NOT. flag_TABC) CALL change_flag_TABC(.TRUE.)
 			WRITE (*, FMT='(A1)', ADVANCE='YES'), '!'
 		END IF
 		CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
 		
-		lda_path=TRIM(dft_work_dir)//"OUT.save"
+		!!!lda_path=TRIM(dft_work_dir)//"OUT.save"  !use lda_path_complete instead
 		IF (.NOT. flag_TABC) CALL change_flag_TABC(.TRUE.)
 		
 	END SUBROUTINE genera_orbitali_lda
@@ -1609,13 +1609,15 @@ MODULE funzione_onda
 		!num_chiamata_twist_lda=num_chiamata_twist_lda+1
 		!WRITE (istring, '(I4.4)'), MOD(mpi_nprocs*num_chiamata_twist_lda+mpi_myrank,260)+1
 		
-		CALL leggi_N_pw(TRIM(lda_path)//'/K0'//istring//'/gkvectors.xml',N_pw_lda)
+		CALL leggi_N_pw(TRIM(lda_path_complete)//'/K0'//istring//'/gkvectors.xml',N_pw_lda)
 		DEALLOCATE(k_pw_lda,fattori_orb_lda,fattori_pw_lda)
 		DEALLOCATE(twist_lda)
 		ALLOCATE(k_pw_lda(0:3,1:N_pw_lda),fattori_orb_lda(1:H_N_part),fattori_pw_lda(1:N_pw_lda,1:H_N_part))
 		ALLOCATE(k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
-		CALL leggi_evc_xml(H_N_part,N_pw_lda,TRIM(lda_path)//'/K0'//istring//'/evc.xml',fattori_pw_lda)       !o!
-		CALL leggi_gkvectors_xml(N_pw_lda,TRIM(lda_path)//'/K0'//istring//'/gkvectors.xml',k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
+		CALL leggi_evc_xml(H_N_part,N_pw_lda,TRIM(lda_path_complete)&
+                   //'/K0'//istring//'/evc.xml',fattori_pw_lda)       !o!
+		CALL leggi_gkvectors_xml(N_pw_lda,TRIM(lda_path_complete)//'/K0'//&
+                   istring//'/gkvectors.xml',k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
 		DO i = 1, 3, 1
 			twist_lda(i)=twist_lda(i)/r_s
 		END DO
