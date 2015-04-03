@@ -42,7 +42,7 @@ PROGRAM main
 	task_to_perform=what_to_do
 	accuracy_energy=accuracy_energy_opt
 	CALL chiudi_dati_mc()
-	
+
 	SELECT CASE(task_to_perform)
 	CASE('simpcal')
 		CALL inizializza_VMC('eva01')

@@ -10,10 +10,11 @@ MODULE fermi_k
 
    TYPE KWaVe
 	
-		REAL(KIND=8), ALLOCATABLE :: k(:,:)                    !k-vectors. They will be of dimension (0:num_dim,1:num_part)
+		REAL(KIND=8), ALLOCATABLE :: k(:,:)                    !k-vectors. They will be of dimension (0:num_dim,1:num_k)
                                                              !The elements (0,i) are reserved for the squared modules k^2 of the k-vector i
 		INTEGER :: num_dim                                     !Number of dimensions
-		INTEGER :: num_part                                    !Number of particles
+		INTEGER :: num_k                                    !Number of particles
+      INTEGER :: num_shells
       LOGICAL, PRIVATE :: flag_init=.FALSE.                  !Flag indicating whether the KWaVe object has been initialized or not
       REAL(KIND=8), ALLOCATABLE :: L(:)
 		REAL(KIND=8), PRIVATE, ALLOCATABLE :: k_big(:,:)                !Extended grid for k, useful for Twist Averaged Boundary Conditions (TABC)
@@ -28,8 +29,10 @@ MODULE fermi_k
       PROCEDURE :: shuffleK                           !Shuffle the k-vectors k, i.e. randomly exchange them if they have the same module
       PROCEDURE, PRIVATE :: putInOrderKBig                     !Reorder the k-vectors k_big according to their module
       PROCEDURE, PRIVATE :: shuffleKBig                        !Shuffle the k-vectors k_big
-      PROCEDURE, PRIVATE :: copyFromKBig                       !Copy the first num_part k-vectors from k_big to k
+      PROCEDURE, PRIVATE :: copyFromKBig                       !Copy the first num_k k-vectors from k_big to k
       PROCEDURE :: twistK                             !Apply Twist Averaged Boundary Conditions
+      PROCEDURE :: countShells                        !Count the number of shells
+      PROCEDURE :: getPopulationShells                !Provide the population of each shell
 
 	END TYPE KWaVe
    
@@ -45,7 +48,7 @@ CONTAINS
 ! - - - INITIALIZER - - - !
 	SUBROUTINE initializeKWaVe(k,n,d)
 		IMPLICIT NONE
-		CLASS(KWaVe), TARGET :: k
+		CLASS(KWaVe) :: k
 		INTEGER, INTENT(IN) :: n, d
       
       !check that the target object k has not been previously initialized
@@ -55,14 +58,15 @@ CONTAINS
          STOP
       END IF
 		
-      !Set num_dim and num_part
+      !Set num_dim and num_k
       k%num_dim=d
-		k%num_part=n
+		k%num_k=n
       !Allocate the k vectors
 		ALLOCATE(k%k(0:d,1:n))
 		k%k=0.d0
       !Succesfully initialized
       k%flag_init=.TRUE.
+      k%num_shells=-1
 
 	END SUBROUTINE initializeKWaVe
 	
@@ -72,7 +76,7 @@ CONTAINS
 	SUBROUTINE buildBoxK(k,L)
 		!Build the the wave vectors for a fermi gas in a box with sides L
 		IMPLICIT NONE
-		CLASS(KWaVe), TARGET :: k
+		CLASS(KWaVe) :: k
 		REAL(KIND=8), INTENT(IN) :: L(1:k%num_dim)
       INTEGER :: i1, i2
 		INTEGER :: numk
@@ -89,11 +93,11 @@ CONTAINS
       ALLOCATE(k%L(1:k%num_dim))
       k%L=L
 		
-      !determine the number of k required to close a shell numk, which is larger than num_part
+      !determine the number of k required to close a shell numk, which is larger than num_k
       numk=0
       kmin=2.d0*PI/MAXVAL(L)
       k2=0.d0
-      DO WHILE(numk<k%num_part)
+      DO WHILE(numk<k%num_k)
          numk=countBoxK(k2,k%num_dim,L)
          k2=k2+kmin
       END DO
@@ -112,7 +116,7 @@ CONTAINS
       CALL k%putInOrderKBig()
       !shuffle them for isotropy
       CALL k%shuffleKBig(10)
-      !assign the first num_part k of k_big to k
+      !assign the first num_k k of k_big to k
       CALL k%copyFromKBig()
 
 	END SUBROUTINE buildBoxK
@@ -120,7 +124,7 @@ CONTAINS
 	
    SUBROUTINE putInOrder(k)
       IMPLICIT NONE
-      CLASS(KWaVe), TARGET :: k
+      CLASS(KWaVe) :: k
       REAL(KIND=8) :: foo(0:k%num_dim)
       INTEGER :: i1
       
@@ -132,7 +136,7 @@ CONTAINS
       END IF
 		
       i1=0
-      DO WHILE (i1<k%num_part-1)
+      DO WHILE (i1<k%num_k-1)
          i1=i1+1
          IF (k%k(0,i1)>k%k(0,i1+1)) THEN
             foo(0:k%num_dim)=k%k(0:k%num_dim,i1)
@@ -147,7 +151,7 @@ CONTAINS
    
    SUBROUTINE putInOrderKBig(k)
       IMPLICIT NONE
-      CLASS(KWaVe), TARGET :: k
+      CLASS(KWaVe) :: k
       REAL(KIND=8) :: foo(0:k%num_dim)
       INTEGER :: i1
       
@@ -174,7 +178,7 @@ CONTAINS
 
    SUBROUTINE shuffleK(k,n_iterations)
       IMPLICIT NONE
-      CLASS(KWaVe), TARGET :: k
+      CLASS(KWaVe) :: k
       REAL(KIND=8) :: foo(0:k%num_dim)
       INTEGER, INTENT(IN) :: n_iterations
       INTEGER :: i1, i2
@@ -189,7 +193,7 @@ CONTAINS
 		
       DO i2 = 1, n_iterations, 1
          i1=0
-         DO WHILE (i1<k%num_part-1)
+         DO WHILE (i1<k%num_k-1)
             i1=MAX(i1,0)
             i1=i1+1
             IF (k%k(0,i1)==k%k(0,i1+1)) THEN
@@ -208,7 +212,7 @@ CONTAINS
 
    SUBROUTINE shuffleKBig(k,n_iterations)
       IMPLICIT NONE
-      CLASS(KWaVe), TARGET :: k
+      CLASS(KWaVe) :: k
       REAL(KIND=8) :: foo(0:k%num_dim)
       INTEGER, INTENT(IN) :: n_iterations
       INTEGER :: i1, i2
@@ -242,7 +246,7 @@ CONTAINS
 	
    SUBROUTINE copyFromKBig(k)
       IMPLICIT NONE
-      CLASS(KWaVe), TARGET :: k
+      CLASS(KWaVe) :: k
       
       !check that the target object k has been initialized
       IF (.NOT. k%flag_init) THEN
@@ -251,20 +255,20 @@ CONTAINS
          STOP
       END IF
       !check that k_big has been correctly allocated
-      IF ((.NOT. ALLOCATED(k%k_big)) .OR. (k%num_big < k%num_part)) THEN
+      IF ((.NOT. ALLOCATED(k%k_big)) .OR. (k%num_big < k%num_k)) THEN
          PRINT *, "Error called by: quantum_momenta > buildBoxK()"
          PRINT *, "The k-vectors k_big do not exist or are not enough."
          STOP
       END IF
 		
-      k%k(0:k%num_dim,1:k%num_part)=k%k_big(0:k%num_dim,1:k%num_part)
+      k%k(0:k%num_dim,1:k%num_k)=k%k_big(0:k%num_dim,1:k%num_k)
 
    END SUBROUTINE copyFromKBig
 
 
    SUBROUTINE twistK(k)
       IMPLICIT NONE
-      CLASS(KWaVe), TARGET :: k
+      CLASS(KWaVe) :: k
       REAL(KIND=8) :: twist_angle(1:k%num_dim)
       REAL(KIND=8) :: backup_k_big(0:k%num_dim,1:k%num_big)
       INTEGER :: i1
@@ -298,12 +302,47 @@ CONTAINS
    END SUBROUTINE twistK
 
 
+   SUBROUTINE countShells(k)
+      IMPLICIT NONE
+      CLASS(KWaVe) :: k
+      INTEGER :: i1
+
+      k%num_shells=1
+      DO i1 = 2, k%num_k, 1
+         IF (k%k(0,i1)/=k%k(0,i1-1)) THEN
+            k%num_shells=k%num_shells+1
+         END IF
+      END DO
+      
+   END SUBROUTINE countShells
+
+
+   SUBROUTINE getPopulationShells(k,population)
+      IMPLICIT NONE
+      CLASS(KWaVe) :: k
+      INTEGER, INTENT(OUT) :: population(1:k%num_shells)
+      INTEGER :: i1, idx_sh
+
+      idx_sh=1
+      population(idx_sh)=1
+      DO i1 = 2, k%num_k, 1
+         IF (k%k(0,i1)==k%k(0,i1-1)) THEN
+             population(idx_sh)= population(idx_sh)+1
+         ELSE
+            idx_sh=idx_sh+1
+            population(idx_sh)=1
+         END IF
+      END DO
+      
+   END SUBROUTINE getPopulationShells
+
+
 ! - - - DESTRUCTOR - - - !
 
 	SUBROUTINE deallocateKWaVe(k)
 		!DESTRUCTOR
 		IMPLICIT NONE
-		CLASS(KWaVe), TARGET :: k
+		CLASS(KWaVe) :: k
 		
       !check that the target object k has been initialized
       IF (.NOT. k%flag_init) THEN
@@ -416,5 +455,7 @@ CONTAINS
 		
 	END SUBROUTINE provideBoxK
 	
+
 	
+
 END MODULE fermi_k
