@@ -53,7 +53,7 @@ MODULE momenta
          CALL kwv_fermi%buildBoxK(L(1:3))
          k_fermi=kwv_fermi%k
       END IF
-		
+
 		IF (save_momenta) THEN
 			IF (mpi_myrank==0) THEN
 				CALL salva_posizioni_su_file(k_pw(1:3,1:H_N_part),H_N_part,'posizioni/k_pw')
@@ -288,7 +288,7 @@ MODULE momenta
 		
 		DEALLOCATE(k_pw,k_fermi)
 		IF (fqt_called) DEALLOCATE(k_fermi_bigger)
-      
+
       CALL kwv_fermi%deallocateKWaVe()
       CALL kwv_pw%deallocateKWaVe()
 		

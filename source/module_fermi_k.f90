@@ -32,7 +32,7 @@ MODULE fermi_k
       PROCEDURE, PRIVATE :: copyFromKBig                       !Copy the first num_k k-vectors from k_big to k
       PROCEDURE :: twistK                             !Apply Twist Averaged Boundary Conditions
       PROCEDURE :: countShells                        !Count the number of shells
-      PROCEDURE :: getPopulationShells                !Provide the population of each shell
+      PROCEDURE :: getPopulationShells                !Provide the population of each shell (WARNING: it requires the subroutine countShells to be called before)
 
 	END TYPE KWaVe
    
@@ -353,6 +353,7 @@ CONTAINS
 		
 		IF (ALLOCATED(k%k)) DEALLOCATE(k%k)
       IF (ALLOCATED(k%k_big)) DEALLOCATE(k%k_big) 
+      IF (ALLOCATED(k%L)) DEALLOCATE(k%L)
       k%flag_init=.FALSE.
 
 	END SUBROUTINE deallocateKWaVe
