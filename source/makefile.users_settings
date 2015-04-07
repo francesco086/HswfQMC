@@ -30,11 +30,19 @@ ifeq ($(IDENTIFIER),jakessle@jmbprow.home)
         EXEC=$(EXEC1)
         LIBS=-llapackHswfQMC -lblasHswfQMC -lmarkusplineHswfQMC
         LDFLAGS=-L/Users/jakessle/AeroFS/TCM/Code/HswfQMC/lapack_lib -I/Users/jakessle/AeroFS/TCM/Code/HswfQMC/markuspline -L/Users/jakessle/AeroFS/TCM/Code/HswfQMC/markuspline
+endif
 
 ifeq ($(IDENTIFIER),kenzo@roothan)
         EXEC=$(EXEC1)
         LIBS=-llapackHswfQMC -lblasHswfQMC -lmarkusplineHswfQMC
         LDFLAGS=-L/home/kenzo/HswfQMC/lapack_lib -I/home/kenzo/HswfQMC/markuspline -L/home/kenzo/HswfQMC/markuspline
+        FC=mpif90
+endif
+
+ifeq ($(IDENTIFIER),jakessle@login01.mogon)
+        EXEC=$(EXEC1)
+        LIBS=-llapackHswfQMC -lblasHswfQMC -lmarkusplineHswfQMC
+        LDFLAGS=-L/home/jakessle/HswfQMC/lapack_lib -I/home/jakessle/HswfQMC/markuspline -L/home/jakessle/HswfQMC/markuspline
         FC=mpif90
 endif
 
