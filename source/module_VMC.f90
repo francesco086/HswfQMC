@@ -4,6 +4,7 @@ MODULE VMC
 	USE dati_fisici
 	USE dati_mc
 	USE estimatori
+   USE grad_lapl_psi
 	USE generic_tools
 	USE walkers
 	IMPLICIT NONE
@@ -60,7 +61,7 @@ MODULE VMC
 				WRITE (7, *) , 'N_part=', N_part, '       r_s=', r_s
 			END IF
 			PRINT * , 'L=', L, '   [bohr]'
-			IF (flag_output) WRITE (7, *), 'L=', L, '   [bohr]'
+			IF (flag_output) WRITE (7, '(1X,A2,3(3X,F12.8),3X,A6)'), 'L=', L, '[bohr]'
 			PRINT * , 'Tipo di reticolo: ', crystal_cell, '       Molecolare? ', flag_molecular
 			IF (flag_output) WRITE (7, *), 'Tipo di reticolo: ', crystal_cell, '       Molecolare? ', flag_molecular
 		END IF
@@ -214,6 +215,7 @@ MODULE VMC
 			END IF
 		END IF
 		
+      !CALL inizializza_grad_lapl_psi()
 		CALL inizializza_estimatori()
 		
 		IF (flag_gr) THEN
@@ -598,7 +600,7 @@ MODULE VMC
 			CASE ('allp')
 				DO i = 2, num_sampling, 1
 					IF (flag_TABC .AND. (MOD(i,N_TABC)==0)) THEN     !applica TABC
-						IF (SDe_kind=='pw_') CALL applica_twist(H_N_part, L)
+						IF (SDe_kind=='pw_') CALL applica_twist()
 						IF ((SDe_kind=='prf').OR.(SDe_kind=='fre')) CALL applica_twist_dnfH()
 						IF (SDe_kind=='lda') CALL applica_twist_lda()
 						DO i1 = 1, N_mc_relax_TABC, 1
@@ -674,7 +676,7 @@ MODULE VMC
 			CASE ('1ppt')
 				DO i = 2, num_sampling, 1
 					IF ((MOD(i,N_TABC)==0) .AND. flag_TABC) THEN
-						IF (SDe_kind=='pw_') CALL applica_twist(H_N_part, L)
+						IF (SDe_kind=='pw_') CALL applica_twist()
 						IF ((SDe_kind=='prf').OR.(SDe_kind=='fre')) CALL applica_twist_dnfH()
 						IF (SDe_kind=='lda') CALL applica_twist_lda()
 						DO i1 = 1, N_mc_relax_TABC, 1
@@ -823,6 +825,7 @@ MODULE VMC
 		IF (.NOT. iniz_VMC) STOP 'Prima di valutare gli estimatori devi inizializzare il VMC &
 		  [ module_VMC.f90 > calcola_nuovi_estimatori ]'
 		
+      !CALL calcola_grad_lapl_psi(i)
 		CALL valuta_estimatori(i)
 				
 		IF (flag_gr) THEN
@@ -870,6 +873,7 @@ MODULE VMC
 		IF (.NOT. iniz_VMC) STOP 'Prima di valutare gli estimatori devi inizializzare il VMC &
 		  [ module_VMC.f90 > conferma_estimatori ]'
 		
+      !CALL conferma_grad_lapl_psi(i)
 		CALL mantieni_stessi_estimatori(i)
 		
 		IF (flag_gr) THEN
@@ -1594,6 +1598,7 @@ MODULE VMC
 		END IF
 		
 		CALL chiudi_estimatori()
+      !CALL chiudi_grad_lapl_psi()
 		
 		IF (flag_gr) THEN
 			DEALLOCATE(geeuu,geeuu_new,geeud,geeud_new)
