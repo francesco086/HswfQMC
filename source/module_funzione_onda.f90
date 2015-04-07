@@ -35,6 +35,7 @@ MODULE funzione_onda
 	INTEGER :: N_pw_lda, num_K_points
 	CHARACTER(LEN=3), PROTECTED, SAVE :: SDe_kind, Jee_kind, Jep_kind, Jpp_kind, SDse_kind, Jse_kind, Kse_kind, Jsesp_kind
 	CHARACTER(LEN=120) :: lda_path
+	CHARACTER(LEN=120) :: lda_path_complete
 	REAL (KIND=8), ALLOCATABLE :: fattori_orb_lda(:), k_pw_lda(:,:), twist_lda(:), pesi_K_points(:)
 	COMPLEX (KIND=8), ALLOCATABLE :: fattori_pw_lda(:,:)						!phi_i(x)= fatt_orb_i * ( sum_k [fatt_pw_i_k*EXP(ikx)] )
 	REAL (KIND=8), PROTECTED, SAVE :: kf_coeff_dnfH
@@ -93,17 +94,20 @@ MODULE funzione_onda
 				
 		IF ((SDe_kind=='lda').OR.(SDse_kind=='lda')) THEN
 			
-			IF ( TRIM(lda_path)=="genera_on_the_fly" ) THEN
-				CALL genera_orbitali_lda()
-			END IF
+         !!DEPRECATED, it does not work to call Quantum Espresso internally
+			!IF ( TRIM(lda_path)=="genera_on_the_fly" ) THEN
+			!	CALL genera_orbitali_lda()
+			!END IF
 			
 			IF (flag_TABC) THEN
+            lda_path_complete=TRIM(lda_path)//"/OUT.save"
 				flag_simm_lda=.FALSE.
 				IF ( mpi_myrank==0 ) THEN
-					INQUIRE(FILE=TRIM(lda_path)//'/.numero_cartelle_K',EXIST=flag_file)
-					IF ( flag_file ) CALL SYSTEM ('rm -f '//TRIM(lda_path)//'/.numero_cartelle_K')
-					CALL SYSTEM ('ls -d  '//TRIM(lda_path)//'/K* | wc -w > '//TRIM(lda_path)//'/.numero_cartelle_K')
-					OPEN(UNIT=66, FILE=TRIM(lda_path)//'/.numero_cartelle_K', STATUS='OLD', IOSTAT=ios)
+					INQUIRE(FILE=TRIM(lda_path_complete)//'/.numero_cartelle_K',EXIST=flag_file)
+					IF ( flag_file ) CALL SYSTEM ('rm -f '//TRIM(lda_path_complete)//'/.numero_cartelle_K')
+					CALL SYSTEM ('ls -d  '//TRIM(lda_path_complete)//'/K* | wc -w > '//&
+                  TRIM(lda_path_complete)//'/.numero_cartelle_K')
+					OPEN(UNIT=66, FILE=TRIM(lda_path_complete)//'/.numero_cartelle_K', STATUS='OLD', IOSTAT=ios)
 					IF ( ios /= 0 ) STOP "Errore ad aprire il file per determinare il numero di cartelle K &
 					  [inizializza_dati_funzione_onda.f90]"
 					READ (UNIT=66, FMT=*, IOSTAT=ios) num_K_points
@@ -113,9 +117,9 @@ MODULE funzione_onda
 				!PRINT * , 'iniz_wf: ', mpi_myrank, num_K_points
 				CALL MPI_BCAST(num_K_points,1,MPI_INTEGER,0,MPI_COMM_WORLD,mpi_ierr)
 				!PRINT * , 'iniz_wf fine. ', mpi_myrank, num_K_points
-				!CALL determina_numero_cartelle_K(TRIM(lda_path),mpi_myrank,num_K_points)
+				!CALL determina_numero_cartelle_K(TRIM(lda_path_complete),mpi_myrank,num_K_points)
 				ALLOCATE(pesi_K_points(1:num_K_points))
-				CALL leggi_pesi_K(TRIM(lda_path),num_K_points,pesi_K_points(1:num_K_points))
+				CALL leggi_pesi_K(TRIM(lda_path_complete),num_K_points,pesi_K_points(1:num_K_points))
 				dummy1=SUM(pesi_K_points)
 				pesi_K_points=pesi_K_points/dummy1
 				DO i1 = 2, num_K_points, 1
@@ -129,11 +133,13 @@ MODULE funzione_onda
 				IF (i_twist>num_K_points) STOP 'Errore: i_twist é maggiore di num_K_points &
 				  [ module_funzione_onda.f90 > inizializza_dati_funzione_onda ]'
 				WRITE (istring, '(I4.4)'), i_twist
-				CALL leggi_N_pw(TRIM(lda_path)//'/K0'//istring//'/gkvectors.xml',N_pw_lda)
+				CALL leggi_N_pw(TRIM(lda_path_complete)//'/K0'//istring//'/gkvectors.xml',N_pw_lda)
 				ALLOCATE(k_pw_lda(0:3,1:N_pw_lda),fattori_orb_lda(1:H_N_part),fattori_pw_lda(1:N_pw_lda,1:H_N_part))
 				ALLOCATE(k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
-				CALL leggi_evc_xml(H_N_part,N_pw_lda,TRIM(lda_path)//'/K0'//istring//'/evc.xml',fattori_pw_lda)       !o!
-				CALL leggi_gkvectors_xml(N_pw_lda,TRIM(lda_path)//'/K0'//istring//'/gkvectors.xml',k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
+				CALL leggi_evc_xml(H_N_part,N_pw_lda,TRIM(lda_path_complete)//&
+               '/K0'//istring//'/evc.xml',fattori_pw_lda)
+				CALL leggi_gkvectors_xml(N_pw_lda,TRIM(lda_path_complete)//&
+               '/K0'//istring//'/gkvectors.xml',k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
 				DO i = 1, 3, 1
 					twist_lda(i)=twist_lda(i)/r_s
 				END DO
@@ -143,11 +149,13 @@ MODULE funzione_onda
 					END DO
 				END DO
 			ELSE
-				CALL leggi_N_pw(TRIM(lda_path)//'/K00001/gkvectors.xml',N_pw_lda)
+            			lda_path_complete=TRIM(lda_path)//"/OUT.save/K00001"
+				CALL leggi_N_pw(TRIM(lda_path_complete)//'/gkvectors.xml',N_pw_lda)
 				ALLOCATE(k_pw_lda(0:3,1:N_pw_lda),fattori_orb_lda(1:H_N_part),fattori_pw_lda(1:N_pw_lda,1:H_N_part))
 				ALLOCATE(k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
-				CALL leggi_evc_xml(H_N_part,N_pw_lda,TRIM(lda_path)//'/K00001/evc.xml',fattori_pw_lda)
-				CALL leggi_gkvectors_xml(N_pw_lda,TRIM(lda_path)//'/K00001/gkvectors.xml',k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
+				CALL leggi_evc_xml(H_N_part,N_pw_lda,TRIM(lda_path_complete)//'/evc.xml',fattori_pw_lda)
+				CALL leggi_gkvectors_xml(N_pw_lda,TRIM(lda_path_complete)//'/gkvectors.xml',k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
+
 				DO i = 1, 3, 1
 					twist_lda(i)=twist_lda(i)/r_s
 				END DO
@@ -1423,13 +1431,13 @@ MODULE funzione_onda
 			END DO
 			WRITE (*, FMT='(A1)', ADVANCE='NO'), '.'
 			CALL chiudi_dft()
-			lda_path=TRIM(dft_work_dir)//"OUT.save/"
+			!!!lda_path=TRIM(dft_work_dir)//"OUT.save/"  !use lda_path_complete instead
 			IF (.NOT. flag_TABC) CALL change_flag_TABC(.TRUE.)
 			WRITE (*, FMT='(A1)', ADVANCE='YES'), '!'
 		END IF
 		CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
 		
-		lda_path=TRIM(dft_work_dir)//"OUT.save"
+		!!!lda_path=TRIM(dft_work_dir)//"OUT.save"  !use lda_path_complete instead
 		IF (.NOT. flag_TABC) CALL change_flag_TABC(.TRUE.)
 		
 	END SUBROUTINE genera_orbitali_lda
@@ -1602,13 +1610,15 @@ MODULE funzione_onda
 		!num_chiamata_twist_lda=num_chiamata_twist_lda+1
 		!WRITE (istring, '(I4.4)'), MOD(mpi_nprocs*num_chiamata_twist_lda+mpi_myrank,260)+1
 		
-		CALL leggi_N_pw(TRIM(lda_path)//'/K0'//istring//'/gkvectors.xml',N_pw_lda)
+		CALL leggi_N_pw(TRIM(lda_path_complete)//'/K0'//istring//'/gkvectors.xml',N_pw_lda)
 		DEALLOCATE(k_pw_lda,fattori_orb_lda,fattori_pw_lda)
 		DEALLOCATE(twist_lda)
 		ALLOCATE(k_pw_lda(0:3,1:N_pw_lda),fattori_orb_lda(1:H_N_part),fattori_pw_lda(1:N_pw_lda,1:H_N_part))
 		ALLOCATE(k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
-		CALL leggi_evc_xml(H_N_part,N_pw_lda,TRIM(lda_path)//'/K0'//istring//'/evc.xml',fattori_pw_lda)       !o!
-		CALL leggi_gkvectors_xml(N_pw_lda,TRIM(lda_path)//'/K0'//istring//'/gkvectors.xml',k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
+		CALL leggi_evc_xml(H_N_part,N_pw_lda,TRIM(lda_path_complete)&
+                   //'/K0'//istring//'/evc.xml',fattori_pw_lda)       !o!
+		CALL leggi_gkvectors_xml(N_pw_lda,TRIM(lda_path_complete)//'/K0'//&
+                   istring//'/gkvectors.xml',k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
 		DO i = 1, 3, 1
 			twist_lda(i)=twist_lda(i)/r_s
 		END DO
@@ -1813,7 +1823,6 @@ MODULE funzione_onda
 		SUBROUTINE valuta_SD_bat(num,updw,rij,N,SD,detSD,ISD,pvt,ISD_old,detSD_old)
 			USE generic_tools
 			IMPLICIT NONE
-			REAL (KIND=8), PARAMETER :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
 			CHARACTER (LEN=2) :: updw
 			INTEGER, INTENT(IN) :: N, num
 			REAL (KIND=8), INTENT(IN) :: rij(1:N+N,1:N+N)
@@ -1826,7 +1835,7 @@ MODULE funzione_onda
 			IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
 			  [ module_funzione_onda.f90 > valuta_SD_bat ]'
 		
-			norm=1.d0 !/DSQRT(PI)
+			norm=1.d0
 			
 			SELECT CASE(updw)
 			CASE('up')
