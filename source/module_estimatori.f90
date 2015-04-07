@@ -4005,9 +4005,9 @@ END SUBROUTINE derivata_Jep_ATM
                 DO j = 1, H_N_part, 1
                     j_SD=j+H_N_part
 
-                    der1_up(1:3)=-DCOS(frfs1(1:3)*rij_ep_old(1:3,j,i))* &
+                    der1_up(1:3)= DCOS(frfs1(1:3)*rij_ep_old(1:3,j,i))* &
                         rijpc_ep_old(1:3,j,i)*C_atm/rijpc_ep_old(0,j,i)
-                    der1_dw(1:3)=-DCOS(frfs1(1:3)*rij_ep_old(1:3,j_SD,i_SD))* &
+                    der1_dw(1:3)= DCOS(frfs1(1:3)*rij_ep_old(1:3,j_SD,i_SD))* &
                         rijpc_ep_old(1:3,j_SD,i_SD)*C_atm/rijpc_ep_old(0,j_SD,i_SD)
 
                     O(3*(i-1)+1:3*i)=O(3*(i-1)+1:3*i) + SDe_up_old(j,i)*der1_up*ISDe_up_old(i,j)
@@ -4079,14 +4079,8 @@ END SUBROUTINE derivata_Jep_ATM
          DO il = 1, H_N_part, 1
             DO j = 1, H_N_part, 1
             DO i = 1, H_N_part, 1
-               O(3*(il-1)+1:3*il)=O(3*(il-1)+1:3*il)+Gphi(1:3,i,j,il,1)*ISDe_up_old(j,i)
-            END DO
-            END DO
-         END DO
-         DO il = 1, H_N_part, 1
-            DO j = 1, H_N_part, 1
-            DO i = 1, H_N_part, 1
             i_SD=il+H_N_part
+               O(3*(il-1)+1:3*il)=O(3*(il-1)+1:3*il)+Gphi(1:3,i,j,il,1)*ISDe_up_old(j,i)
                O(3*(i_SD-1)+1:3*i_SD)=O(3*(i_SD-1)+1:3*i_SD)+Gphi(1:3,i,j,il,2)*ISDe_dw_old(j,i)
             END DO
             END DO
