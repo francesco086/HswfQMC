@@ -16,7 +16,7 @@ MODULE dati_fisici
 		USE generic_tools
 		IMPLICIT NONE
 		CHARACTER(LEN=*), OPTIONAL :: file_reticolo_opt     !per ottimizzare le posizioni protoniche con SR
-		INTEGER :: i, j, i_seed
+		INTEGER :: i, j, i1, i_seed
 		INTEGER, ALLOCATABLE :: seed(:), seed_provv(:)
 		CHARACTER(LEN=100) :: file_reticolo
 		REAL (KIND=8) :: vect(1:3), sigma_w, eta_w(1:1,1:1), L_w, dist(0:3)
@@ -60,6 +60,9 @@ MODULE dati_fisici
 		ELSE IF ( crystal_cell=='grp__' ) THEN
 			N_part=4*(N_cell_side**2)
 			flag_2D=.TRUE.
+      ELSE IF ( crystal_cell=='quadr' ) THEN
+         N_part=N_cell_side**2
+         flag_2D=.TRUE.
 		ELSE
 			STOP "DATI_FISICI: scegli un reticolo accettabile"
 		END IF
@@ -82,6 +85,10 @@ MODULE dati_fisici
 			L(2)=L(2)*DSQRT(3.d0)/DSQRT(DSQRT(27.d0))
 			L(3)=L(1)
 		END IF
+      IF ( crystal_cell=='quadr' ) THEN
+         L(1:2)=DSQRT(PI*REAL(N_part,8))*r_s
+         L(3)=100.d0 !very large number, so that the layer can be considered isolated
+      END IF
 		H_L=0.5d0*L
 		
 		ALLOCATE(r_crystal(1:3,1:N_part),app(1:3,1:N_part))
@@ -269,6 +276,23 @@ MODULE dati_fisici
 					END IF
 				END DO
 			END IF
+      ELSE IF ( crystal_cell=='quadr' ) THEN
+         IF (.NOT. flag_molecular) THEN
+            i1=0
+            DO j = 1, N_cell_side, 1
+            DO i = 1, N_cell_side, 1
+               i1=i1+1
+               IF (MOD(i1,2)==1) THEN
+                  r_crystal(1:3,i1/2+1)=(/ REAL(i,8), REAL(j,8), 0.d0 /)*L(1:3)/REAL(N_cell_side,8)
+               ELSE
+                  r_crystal(1:3,i1/2+H_N_part)=(/ REAL(i,8), REAL(j,8), 0.d0 /)*L(1:3)/REAL(N_cell_side,8)
+               END IF
+            END DO
+            END DO
+         ELSE
+            STOP "crystal_cell='quad' con flag_molecular non ancora implementato"
+         END IF
+         CALL applica_pbc(r_crystal,N_part,L)
 		ELSE
 			STOP "scegli un reticolo accettabile"
 		END IF

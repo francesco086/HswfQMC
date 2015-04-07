@@ -42,7 +42,7 @@ PROGRAM main
 	task_to_perform=what_to_do
 	accuracy_energy=accuracy_energy_opt
 	CALL chiudi_dati_mc()
-	
+
 	SELECT CASE(task_to_perform)
 	CASE('simpcal')
 		CALL inizializza_VMC('eva01')
@@ -65,6 +65,9 @@ PROGRAM main
 			IF (flag_output) WRITE (7, '(1X,A19,E12.5,A6)'), &
 			  '< < < EFFICIENZA = ', 1./(t_sum*variance_efficiency), ' > > >'
 		END IF
+   CASE('q-e_gen')
+      CALL inizializza_VMC('QEgen')
+      CALL chiudi_VMC()
 	CASE('congrad')
 		CALL minimizza_energia(accuracy_energy,task_to_perform)
 	CASE('axisopt')

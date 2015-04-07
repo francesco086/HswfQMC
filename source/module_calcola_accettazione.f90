@@ -3,9 +3,11 @@ mODULE calcola_accettazione
 	LOGICAL, PARAMETER, PRIVATE :: verbose_mode=.FALSE.
 	LOGICAL, SAVE, PRIVATE :: iniz_calcola_accettazione=.FALSE.
 	COMPLEX (KIND=8), ALLOCATABLE, SAVE, PROTECTED :: SDe_up_new(:,:), SDe_up_old(:,:), ISDe_up_new(:,:), ISDe_up_old(:,:)
-	INTEGER, ALLOCATABLE, SAVE, PROTECTED :: pvte_up_new(:), pvte_up_old(:)
+	!INTEGER, ALLOCATABLE, SAVE, PROTECTED :: pvte_up_new(:), pvte_up_old(:)
+	INTEGER, ALLOCATABLE, SAVE :: pvte_up_new(:), pvte_up_old(:)
 	COMPLEX (KIND=8), ALLOCATABLE, SAVE, PROTECTED :: SDe_dw_new(:,:), SDe_dw_old(:,:), ISDe_dw_new(:,:), ISDe_dw_old(:,:)
-	INTEGER, ALLOCATABLE, SAVE, PROTECTED :: pvte_dw_new(:), pvte_dw_old(:)
+	!INTEGER, ALLOCATABLE, SAVE, PROTECTED :: pvte_dw_new(:), pvte_dw_old(:)
+	INTEGER, ALLOCATABLE, SAVE :: pvte_dw_new(:), pvte_dw_old(:)
 	COMPLEX (KIND=8), SAVE, PROTECTED ::  detSDe_up_new, detSDe_up_old, detSDe_dw_new, detSDe_dw_old
 	REAL (KIND=8), ALLOCATABLE, SAVE, PROTECTED :: u_ee_new(:,:), u_ee_old(:,:), u_ep_new(:,:), u_ep_old(:,:)
 	REAL (KIND=8), SAVE, PROTECTED :: Uee_new, Uee_old, Uep_new, Uep_old
@@ -67,11 +69,11 @@ mODULE calcola_accettazione
 		IF (.NOT. iniz_walkers) STOP 'Prima devi inizializzare i walkers &
 		  [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
 		
-		CALL inizializza_momenta(H_N_part, num_k_ewald, L, mpi_myrank)
+		CALL inizializza_momenta(mpi_myrank)
 		CALL inizializza_dati_funzione_onda()
 				
 		IF (flag_TABC) THEN
-			CALL applica_twist(H_N_part, L)
+			CALL applica_twist()
 			IF ((SDe_kind=='prf').OR.(SDe_kind=='fre')) CALL applica_twist_dnfH()
 		END IF
 						
@@ -2840,77 +2842,60 @@ mODULE calcola_accettazione
 					Uese2_new=Uese2_old
 				ELSE IF ((Kse_kind=='gsd').OR.(Kse_kind=='gdc').OR.(Kse_kind=='gdp')) THEN
 					!TO DO
+               STOP "NOT IMPLEMENTED YET (A16816735545)"
 				ELSE IF ((Kse_kind=='atm').OR.(Kse_kind=='atc')) THEN
 					!TO DO
+               STOP "NOT IMPLEMENTED YET (B15874563554)"
 				END IF
 				IF (SDse_kind/='no_') THEN
 					IF (num<=H_N_part) THEN
 						SDse1_up_new(num,1:H_N_part)=SDse1_up_old(num,1:H_N_part)
 						detSDse1_up_new=detSDse1_up_old
+						SDse2_up_new(num,1:H_N_part)=SDse2_up_old(num,1:H_N_part)
+						detSDse2_up_new=detSDse2_up_old
 					ELSE
 						SDse1_dw_new(num-H_N_part,1:H_N_part)=SDse1_dw_old(num-H_N_part,1:H_N_part)
 						detSDse1_dw_new=detSDse1_dw_old
+						SDse2_dw_new(num-H_N_part,1:H_N_part)=SDse2_dw_old(num-H_N_part,1:H_N_part)
+						detSDse2_dw_new=detSDse2_dw_old
 					END IF
 				END IF
 				IF ((Jse_kind/='no_') .AND. (Jse_kind/='bou') .AND. (Jse_kind/='pot')) THEN
 					u_se1_new(num,1:N_part)=u_se1_old(num,1:N_part)
 					u_se1_new(1:N_part,num)=u_se1_old(1:N_part,num)
 					Use1_new=Use1_old
-				END IF
-				IF ((Jse_kind=='bou').OR.(Jse_kind=='ppb')) THEN
-					!b_se1_new(num,1:N_part)=b_se1_old(num,1:N_part)
-					!b_se1_new(1:N_part,num)=b_se1_old(1:N_part,num)
-					!Bse1_new=Bse1_old
-				END IF
-				IF (Jse_kind=='pot') THEN
-					u_POT_se1_new(index_mol_num)=u_POT_se1_old(index_mol_num)
-					u_POT_se1_new(index_mol_num)=u_POT_se1_old(index_mol_num)
-					Use1_new=Use1_old
-				END IF
-				IF ((Jsesp_kind/='no_').AND.(Jsesp_kind/='gsd')) THEN
-					u_sesp1_new(num,1:N_part)=u_sesp1_old(num,1:N_part)
-					Usesp1_new=Usesp1_old
-				ELSE IF (Jsesp_kind=='gsd') THEN
-					IF (num<=H_N_part) THEN
-						GDsp1_up_new(num,1:H_N_part)=GDsp1_up_old(num,1:H_N_part)
-						detGDsp1_up_new=detGDsp1_up_old
-					ELSE
-						GDsp1_dw_new(num-H_N_part,1:H_N_part)=GDsp1_dw_old(num-H_N_part,1:H_N_part)
-						detGDsp1_dw_new=detGDsp1_dw_old
-					END IF
-				END IF
-				IF (SDse_kind/='no_') THEN
-					IF (num<=H_N_part) THEN
-						SDse2_up_new(num,1:H_N_part)=SDse2_up_old(num,1:H_N_part)
-						detSDse2_up_new=detSDse2_up_old
-					ELSE
-						SDse2_dw_new(num-H_N_part,1:H_N_part)=SDse2_dw_old(num-H_N_part,1:H_N_part)
-						detSDse2_dw_new=detSDse2_dw_old
-					END IF
-				END IF
-				IF ((Jse_kind/='no_') .AND. (Jse_kind/='bou') .AND. (Jse_kind/='pot')) THEN
 					u_se2_new(num,1:N_part)=u_se2_old(num,1:N_part)
 					u_se2_new(1:N_part,num)=u_se2_old(1:N_part,num)
 					Use2_new=Use2_old
 				END IF
 				IF ((Jse_kind=='bou').OR.(Jse_kind=='ppb')) THEN
-					!b_se2_new(num,1:N_part)=b_se2_old(num,1:N_part)
-					!b_se2_new(1:N_part,num)=b_se2_old(1:N_part,num)
-					!Bse2_new=Bse2_old
+					!b_se1_new(num,1:N_part)=b_se1_old(num,1:N_part)
+					!b_se1_new(1:N_part,num)=b_se1_old(1:N_part,num)
+					!Bse1_new=Bse1_old
+               STOP "NOT IMPLEMENTED YET (C35774536655)"
 				END IF
 				IF (Jse_kind=='pot') THEN
+					u_POT_se1_new(index_mol_num)=u_POT_se1_old(index_mol_num)
+					u_POT_se1_new(index_mol_num)=u_POT_se1_old(index_mol_num)
+					Use1_new=Use1_old
 					u_POT_se2_new(index_mol_num)=u_POT_se2_old(index_mol_num)
 					u_POT_se2_new(index_mol_num)=u_POT_se2_old(index_mol_num)
 					Use2_new=Use2_old
 				END IF
 				IF ((Jsesp_kind/='no_').AND.(Jsesp_kind/='gsd')) THEN
+					u_sesp1_new(num,1:N_part)=u_sesp1_old(num,1:N_part)
+					Usesp1_new=Usesp1_old
 					u_sesp2_new(num,1:N_part)=u_sesp2_old(num,1:N_part)
 					Usesp2_new=Usesp2_old
 				ELSE IF (Jsesp_kind=='gsd') THEN
 					IF (num<=H_N_part) THEN
+						GDsp1_up_new(num,1:H_N_part)=GDsp1_up_old(num,1:H_N_part)
+						detGDsp1_up_new=detGDsp1_up_old
 						GDsp2_up_new(num,1:H_N_part)=GDsp2_up_old(num,1:H_N_part)
 						detGDsp2_up_new=detGDsp2_up_old
 					ELSE
+						GDsp1_dw_new(num-H_N_part,1:H_N_part)=GDsp1_dw_old(num-H_N_part,1:H_N_part)
+						detGDsp1_dw_new=detGDsp1_dw_old
 						GDsp2_dw_new(num-H_N_part,1:H_N_part)=GDsp2_dw_old(num-H_N_part,1:H_N_part)
 						detGDsp2_dw_new=detGDsp2_dw_old
 					END IF
@@ -3375,7 +3360,7 @@ mODULE calcola_accettazione
 		END IF
 		
 		!Jsesp
-		IF ((tipo=='all') .OR. (tipo=='se_') .OR. (tipo=='se1') .OR. (tipo=='se2')) THEN
+		IF ((tipo=='all') .OR. (tipo=='se_') .OR. (tipo=='se1') .OR. (tipo=='se2') .OR. (tipo=='tre')) THEN
 			IF ((Jsesp_kind/='no_') .AND. (Jsesp_kind/='gsd')) THEN
 				IF ((tipo=='all') .OR. (tipo=='se_')) THEN
 					IF (num==-1) THEN

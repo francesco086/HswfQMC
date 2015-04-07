@@ -33,7 +33,7 @@ do
 			echo "These are the options you have:
 								"
 			echo "      --- Build and set the HswfQMC code ---"
-			echo "set_path - set the PATH shell variable in order to be able to use the pilot script and the HswfQMC_exe executalbe"
+			echo "set_path - set the PATH shell variable in order to be able to use the pilot script, the HswfQMC_exe executalbe, and the helpers"
          echo "install_markuspline - Download and compile the markuspline library (https://github.com/francesco086/markuspline)"
 			echo "install_lapack - Download and compile the lapack library (recommended) "
 			echo "set_makefile - Set the Makefile automatically"
@@ -44,7 +44,7 @@ do
 			echo ""
 			echo "      --- Use HswfQMC ---"
 			echo "set_dir - Make the current folder a working folder (with all necessary input files and folders)"
-			echo "set_orbitals - Calculate LDA orbitals via Quantum Espresso and place them in the folder ./orbitals"
+         echo "generate_orbitals - Compute the DFT orbitals corresponding to the given input file dati_fisici.d and dati_DFT.d using Quantum Espresso (it requires pw.x and iotk from Quantum Espresso)"
 			echo "clean - Clean all old data from previous simulations"
 			echo "wash - Clean all old data from previous simulations but the optimized wf and lattice positions"
 			
@@ -63,46 +63,83 @@ do
 			rm *.sedbak
 			exit
 			;;
-		set_orbitals)
-			echo "Calculates LDA orbitals via Quantum Espresso and places them in the folder ./orbitals. pw.x and iotk programs (from QEspresso) must be in your PATH."
-			echo "Existing orbitals folder will be deleted, are you sure? [y/n]"
-			read ANSW
-			if [ "$ANSW" = "y" ]
-			then
-				echo "pw.x input file name? [scf.in]"
-				read SCFIN
-				if [ -z "$SCFIN" ] || [ "$SCFIN" == " " ]; then
-					SCFIN=scf.in
-				fi
-				echo "$SCFIN"
-				if [[ -e $SCFIN ]]
-				then
-					echo "Do you plan to use TABC with these orbitals? [y/n]"
-					read USETABC
-					rm -r -f orbitals
-					mkdir -v orbitals
-					mkdir -v orbitals/qework
-					cp $SCFIN orbitals/qework/scf.in
-					qework_PATH="$CURRENT_PATH/orbitals/qework/"
-					cd $qework_PATH
-					cp "$HswfQMC_PATH/helpers/qespresso/run" "$HswfQMC_PATH/helpers/qespresso/out_xml.sh" ./
-					chmod u+x run
-					chmod u+x out_xml.sh
-					./run
-					./out_xml.sh
-					cd $qework_PATH
-					if [ "$USETABC" = "y" ]
-					then
-						cp -r OUT.save/* "$CURRENT_PATH/orbitals/"
-					else
-						cp -r OUT.save/K00001/* "$CURRENT_PATH/orbitals/"
-					fi
-					cd $CURRENT_PATH
-					rm -r $qework_PATH
-				else
-					echo "pw.x input file not found."
-				fi
-			fi
+		generate_orbitals)
+			echo "### Calculate LDA orbitals via Quantum Espresso and place them in the folder orbitals ###"
+         #generate the crystal structure with HswfQMC
+         FLAG=$(ls | grep -w dati_mc.d)
+         if [ "${FLAG}" == "" ]
+         then
+            echo "ERROR: Impossible to find a file dati_mc.d . ABORT!"
+            exit
+         fi
+         cp dati_mc.d dati_mc.original
+         cp ${pilot_PATH}/helpers/qespresso/dati_mc.generate_crystal dati_mc.d
+         FLAG=$(ls | grep -w posizioni)
+         if [ "${FLAG}" == "" ]
+         then
+            echo "ERROR: Impossible to find the folder posizioni/ . ABORT!"
+            exit
+         fi
+	 PATHRANDOM="${pilot_PATH}/random_seed"
+	 sed -i.sedbak "s|RANDOM_SEED_FOLDER|${PATHRANDOM}|" dati_mc.d
+	 rm *.sedbak
+         HswfQMC_exe > /dev/null 2>&1
+         #Extract from the output file the size of the simulation box and save it in the file L.d
+         cat output.d | grep "L=" | sed "s/L=   //" | sed "s/   \[bohr\]//" > L.d
+         #Get the file which contains the crystal structure and put it in the file crystal.d
+         mv posizioni/inizio-QEgen_p_0000.pos crystal.d
+         #Delete the useless temporary files
+         \rm -r -f posizioni/*
+         \rm -f output.d
+         echo "Generated the crystal structure with HswfQMC"
+         #go back to the original dati_mc.d
+         mv dati_mc.original dati_mc.d
+         #fetch the ORBITALS_FOLDER variable from dati_DFT.d
+         ORBITALS_FOLDER=$( cat dati_DFT.d | grep -w "ORBITALS_FOLDER" | sed "s/ORBITALS_FOLDER\=//" | sed "s/\"//g" | sed "s/'//g" )
+         if [ "${ORBITALS_FOLDER}" == ""  ]
+         then
+            echo "WARNING: the ORBITALS_FOLDER provided in dati_DFT.d was an empty string, therefore the default has been adopted (qespresso)"
+            ORBITALS_FOLDER=qespresso
+         fi
+
+         #Build the folders where the orbitals will be created
+         mkdir -p orbitals
+         cd orbitals/
+            #fetch the OVERWRITE variable from dati_DFT.d
+            OVERWRITE=$( cat ../dati_DFT.d | grep -w "OVERWRITE" | sed "s/OVERWRITE\=//" )
+            #if OVERWRITE is equal to T, then the following check is skipped
+            if [ "${OVERWRITE}" != "T" ] 
+            then
+               #check if there is already a folder with the same name, abort if OVERWRITE=T
+               FLAG=$(ls | grep -w ${ORBITALS_FOLDER})
+               if [ "${FLAG}" != "" ]
+               then
+                  echo "ERROR: A folder with the provided name already exist. ABORT!"
+                  exit
+               fi
+            fi
+            #create the folder to be used to store the DFT orbitals
+            \rm -r -f ${ORBITALS_FOLDER}
+            mkdir ${ORBITALS_FOLDER}
+            echo "Created the folder orbitals/"${ORBITALS_FOLDER}
+            #enter in the folder where the DFT orbitals will be stored
+            cd ${ORBITALS_FOLDER}
+               #generate the scf.in file, i.e. the input file for Quantum Espresso
+               mv ../../L.d .
+               mv ../../crystal.d .
+               generate_scf.in_from_dati_DFT.d.py
+               #run Quantum Espresso
+               QE_run
+               echo "Quantum Espresso (pw.x) has been executed"
+               #convert output .dat files into .xml
+               QE_convert_dat_into_xml
+               echo "Converted the *.dat files into *.xml (readable for HswfQMC)"
+            cd ..
+         cd ..
+         #fetch the WF variable from dati_DFT.d
+         WF=$( cat dati_DFT.d | grep -w "WF" | sed "s/WF\=//" | sed "s/\"//g" | sed "s/'//g" )
+         sed -i.bak "s/lda_path=.*/lda_path='orbitals\/${ORBITALS_FOLDER}'/" dati_funzione_onda.d
+         echo "Set "${WF}" for using the generated orbitals"
 			exit
 			;;
 		build)
@@ -231,15 +268,15 @@ do
 						;;
 				esac
 			fi
-			PATH=${CURRENT_PATH}:\$PATH
+			PATH=${CURRENT_PATH}:${CURRENT_PATH}/helpers/qespresso:\$PATH
 			echo "
 #add path for HswfQMC
-export PATH=/Users/kenzo/Applications/HswfQMC:$PATH
+export PATH=$PATH
 #introduce autocompletation feature to pilot-HswfQMC
 _pilot-HswfQMC.sh()
 {
     local cur=\${COMP_WORDS[COMP_CWORD]}
-    COMPREPLY=( \$(compgen -W \"git_pull set_path install_markuspline install_lapack set_makefile build rebuild set_dir set_orbitals clean wash commit\" -- \$cur) )
+    COMPREPLY=( \$(compgen -W \"git_pull set_path install_markuspline install_lapack set_makefile build rebuild set_dir generate_orbitals clean wash commit\" -- \$cur) )
 }
 complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh" >> ~/.${FILE_TO_SET}
 			exit

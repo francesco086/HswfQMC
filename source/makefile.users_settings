@@ -19,3 +19,10 @@ ifeq ($(IDENTIFIER),francesco086@Tesla.local)
         FC=mpif90-openmpi-gcc49
 endif
 
+ifeq ($(IDENTIFIER),kenzo@roothan)
+        EXEC=$(EXEC1)
+        LIBS=-llapackHswfQMC -lblasHswfQMC -lmarkusplineHswfQMC
+        LDFLAGS=-L/home/kenzo/HswfQMC/lapack_lib -I/home/kenzo/HswfQMC/markuspline -L/home/kenzo/HswfQMC/markuspline
+        FC=mpif90
+endif
+
