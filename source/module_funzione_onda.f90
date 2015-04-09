@@ -285,10 +285,9 @@ MODULE funzione_onda
       IF ((Jee_kind=='spl').OR.(Jee_kind=='spp')) THEN
          SELECT CASE(Jee_kind)
          CASE('spl')
-            SL=DSQRT(DOT_PRODUCT(H_L,H_L))
-            !IF (crystal_cell=='mol__') SL=MIN(SL,DSQRT(3.d0*20.d0))
+            SL=MINVAL(H_L)
          CASE('spp')
-            SL=DSQRT(DOT_PRODUCT(L,L))/PI
+            SL=MINVAL(L)/PI
          END SELECT
 
          CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=SL , SPL=Jsplee, &
