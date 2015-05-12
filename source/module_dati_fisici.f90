@@ -63,6 +63,9 @@ MODULE dati_fisici
       ELSE IF ( crystal_cell=='quadr' ) THEN
          N_part=N_cell_side**2
          flag_2D=.TRUE.
+      ELSE IF ( crystal_cell=='trian' ) THEN
+         N_part=2*(N_cell_side**2)
+         flag_2D=.TRUE.
 		ELSE
 			STOP "DATI_FISICI: scegli un reticolo accettabile"
 		END IF
@@ -87,6 +90,11 @@ MODULE dati_fisici
 		END IF
       IF ( crystal_cell=='quadr' ) THEN
          L(1:2)=DSQRT(PI*REAL(N_part,8))*r_s
+         L(3)=100.d0 !very large number, so that the layer can be considered isolated
+      END IF
+      IF ( crystal_cell=='trian' ) THEN
+         L(1)=DSQRT(PI*REAL(N_part,8)/DSQRT(2.d0))*r_s
+         L(2)=DSQRT(2.d0)*L(1)
          L(3)=100.d0 !very large number, so that the layer can be considered isolated
       END IF
 		H_L=0.5d0*L
@@ -291,6 +299,21 @@ MODULE dati_fisici
             END DO
          ELSE
             STOP "crystal_cell='quad' con flag_molecular non ancora implementato"
+         END IF
+         CALL applica_pbc(r_crystal,N_part,L)
+      ELSE IF ( crystal_cell=='trian' ) THEN
+         IF (.NOT. flag_molecular) THEN
+            i1=1
+            DO j = 1, N_cell_side, 1
+            DO i = 1, N_cell_side, 1
+                  r_crystal(1:3,i1)=(/ REAL(i,8), REAL(j,8), 0.d0 /)*L(1:3)/REAL(N_cell_side,8)
+                  r_crystal(1:3,i1+H_N_part)=(/ REAL(i,8), REAL(j,8), 0.d0 /)*L(1:3)/REAL(N_cell_side,8) &
+                                              + (/ 0.5d0*L(1), 0.5d0*DSQRT(2.d0)*L(1), 0.d0 /)
+                  i1=i1+1
+            END DO
+            END DO
+         ELSE
+            STOP "crystal_cell='trian' con flag_molecular non ancora implementato"
          END IF
          CALL applica_pbc(r_crystal,N_part,L)
 		ELSE
