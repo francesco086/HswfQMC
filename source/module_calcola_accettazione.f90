@@ -474,6 +474,37 @@ mODULE calcola_accettazione
          SDe_dw_old=1.d0
          detSDe_dw_old=1.d0
          ISDe_dw_old=1.d0
+		CASE ('gss')
+			CALL valuta_SD_gauss(-1,rij_ep_old(0,1:H_N_part,1:H_N_part),H_N_part, &
+			  SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,SDe_up_new,detSDe_up_new)
+			CALL valuta_SD_gauss(-1,rij_ep_old(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
+			  SDe_dw_old,detSDe_dw_old,ISDe_dw_old,pvte_dw_old,SDe_dw_new,detSDe_dw_new)
+			CALL ZGETRI( H_N_part, ISDe_up_old, H_N_part, pvte_up_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA SE1 UP. INFO=', info
+				STOP
+			END IF
+			CALL ZGETRI( H_N_part, ISDe_dw_old, H_N_part, pvte_dw_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA SE1 DOWN. INFO=', info
+				STOP
+			END IF
+		CASE ('gsp')
+			CALL attiva_pc()
+			CALL valuta_SD_gauss(-1,rijpc_ep_old(0,1:H_N_part,1:H_N_part),H_N_part, &
+			  SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,SDe_up_new,detSDe_up_new)
+			CALL valuta_SD_gauss(-1,rijpc_ep_old(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
+			  SDe_dw_old,detSDe_dw_old,ISDe_dw_old,pvte_dw_old,SDe_dw_new,detSDe_dw_new)
+			CALL ZGETRI( H_N_part, ISDe_up_old, H_N_part, pvte_up_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA SE1 UP. INFO=', info
+				STOP
+			END IF
+			CALL ZGETRI( H_N_part, ISDe_dw_old, H_N_part, pvte_dw_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA SE1 DOWN. INFO=', info
+				STOP
+			END IF
 		CASE ('no_') 
 			detSDe_up_old=1.d0
 			detSDe_dw_old=1.d0
@@ -1277,6 +1308,17 @@ mODULE calcola_accettazione
                   SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
             CASE ('hl_')
                CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
+				CASE ('gss')
+					CALL valuta_SD_gauss(num,rij_ep_new(0,1:H_N_part,1:H_N_part),H_N_part, &
+					  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,SDe_up_old,detSDe_up_old)
+					CALL valuta_SD_gauss(num,rij_ep_new(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
+					  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+				CASE ('gsp')
+					CALL calcola_nuove_distanze_pc(tipo,num,'e_p_')
+					CALL valuta_SD_gauss(num,rijpc_ep_new(0,1:H_N_part,1:H_N_part),H_N_part, &
+					  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,SDe_up_old,detSDe_up_old)
+					CALL valuta_SD_gauss(num,rijpc_ep_new(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
+					  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
 				CASE ('no_')
 					detSDe_up_new=1.d0
 					detSDe_dw_new=1.d0
@@ -1676,6 +1718,33 @@ mODULE calcola_accettazione
                END IF
             CASE('hl_')
                CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
+				CASE ('gss')
+					IF (num==-1) THEN
+						CALL valuta_SD_gauss(num,rij_ep_new(0,1:H_N_part,1:H_N_part),H_N_part, &
+						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+						CALL valuta_SD_gauss(num,rij_ep_new(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
+						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+					ELSE IF ((num>0) .AND. (num<=H_N_part)) THEN
+						CALL valuta_SD_gauss(num,rij_ep_new(0,1:H_N_part,1:H_N_part),H_N_part, &
+						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+					ELSE IF ((num>H_N_part) .AND. (num<=N_part)) THEN
+						CALL valuta_SD_gauss(num-H_N_part,rij_ep_new(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
+						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+					END IF
+				CASE ('gsp')
+					CALL calcola_nuove_distanze_pc(tipo,num,'e_p_')
+					IF (num==-1) THEN
+						CALL valuta_SD_gauss(num,rijpc_ep_new(0,1:H_N_part,1:H_N_part),H_N_part, &
+						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+						CALL valuta_SD_gauss(num,rijpc_ep_new(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
+						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+					ELSE IF ((num>0) .AND. (num<=H_N_part)) THEN
+						CALL valuta_SD_gauss(num,rijpc_ep_new(0,1:H_N_part,1:H_N_part),H_N_part, &
+						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+					ELSE IF ((num>H_N_part) .AND. (num<=N_part)) THEN
+						CALL valuta_SD_gauss(num-H_N_part,rijpc_ep_new(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
+						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+					END IF
 				CASE ('no_')
 					detSDe_up_new=1.d0
 					detSDe_dw_new=1.d0

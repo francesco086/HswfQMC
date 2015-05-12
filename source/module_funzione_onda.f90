@@ -27,7 +27,7 @@ MODULE funzione_onda
 	REAL (KIND=8), SAVE :: c_sesp                               			    !per il Jastrow tra shadow elettroniche e protoniche
 	REAL (KIND=8), SAVE :: Asesp_yuk, Asesp_ud_yuk, Fsesp_yuk, Fsesp_ud_yuk     !per il Jastrow di Yukawa per le Shadow
 	REAL (KIND=8), SAVE :: Gsesp												!per il "Jastrow" gaussiano. In questo caso S_p==R_p
-	REAL (KIND=8), SAVE :: Gswf, C_atm
+	REAL (KIND=8), SAVE :: Ggaus, C_atm
 	LOGICAL, PARAMETER, PRIVATE :: verbose_mode=.FALSE.
 	LOGICAL :: split_Aee, split_Aep, split_Asese, split_Asesp, split_Fee, split_Fep, split_Fsese, split_Fsesp
 	LOGICAL :: flag_usa_coeff_dnfH
@@ -68,7 +68,7 @@ MODULE funzione_onda
         m_Jsplee, nknots_Jsplee, cutoff_Jsplee, m_Jsplep, nknots_Jsplep, cutoff_Jsplep, &
 		  Aee_yuk, Aee_ud_yuk, Fee_yuk, Fee_ud_yuk, Aep_yuk, Aep_ud_yuk, Fep_yuk, Fep_ud_yuk, &
 		  C_kern_e, Asese_yuk, Asese_ud_yuk, Fsese_yuk, Fsese_ud_yuk, Asesp_yuk, Asesp_ud_yuk, Fsesp_yuk, &
-		  Fsesp_ud_yuk, Gswf, C_atm, N_ritraccia_coppie, N_mc_relax_traccia_coppie, A_POT_se, D_POT_se, Gsesp, c_se, &
+		  Fsesp_ud_yuk, Ggaus, C_atm, N_ritraccia_coppie, N_mc_relax_traccia_coppie, A_POT_se, D_POT_se, Gsesp, c_se, &
 		  B_se, D_se, c_sesp, lda_path, kf_coeff_dnfH, flag_usa_coeff_dnfH
 		
 		IF (iniz_funzione_onda) STOP 'funzione_onda é giá inizializzato &
@@ -522,7 +522,7 @@ MODULE funzione_onda
         cutoff_Jsplee, m_Jsplep, nknots_Jsplep, cutoff_Jsplep, &
         Aee_yuk, Aee_ud_yuk, Fee_yuk, Fee_ud_yuk, Aep_yuk, Aep_ud_yuk, Fep_yuk, Fep_ud_yuk, &
 		  C_kern_e, Asese_yuk, Asese_ud_yuk, Fsese_yuk, Fsese_ud_yuk, Asesp_yuk, Asesp_ud_yuk, Fsesp_yuk, &
-		  Fsesp_ud_yuk, Gswf, C_atm, N_ritraccia_coppie, N_mc_relax_traccia_coppie, A_POT_se, D_POT_se, Gsesp, c_se, &
+		  Fsesp_ud_yuk, Ggaus, C_atm, N_ritraccia_coppie, N_mc_relax_traccia_coppie, A_POT_se, D_POT_se, Gsesp, c_se, &
 		  B_se, D_se, c_sesp, lda_path, kf_coeff_dnfH, flag_usa_coeff_dnfH
 		
 		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
@@ -1044,6 +1044,10 @@ MODULE funzione_onda
 	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A7,I1,5X,A7,I4,5X,A7,L1,2(5X,A9,F9.3))'), &
 	  			  'SDe: ', SDe_kind,'  -  m=', m_Bsplep, 'nknots=', nknots_Bsplep, 'cutoff=', cutoff_Bsplep,&
               'A_POT_se=', A_POT_se, 'D_POT_se=', D_POT_se
+         CASE ('gss','gsp')
+			   PRINT '(6X,A5,A3,A10,F9.3)' , 'SDe: ', SDe_kind,'  -  Ggaus=', Ggaus
+			   IF (flag_output) WRITE (7, '(6X,A5,A3,A10,F9.3)'), &
+			     'SDe: ', SDe_kind,'  -  Ggaus=', Ggaus
 			END SELECT
 		END IF
 
@@ -1389,17 +1393,17 @@ MODULE funzione_onda
 		END IF
 		
 		IF (SDse_kind=='gem') THEN
-			PRINT '(6X,A6,A3,A10,F9.3)' , 'SDse: ', SDse_kind,'  -  Gswf=', Gswf
+			PRINT '(6X,A6,A3,A10,F9.3)' , 'SDse: ', SDse_kind,'  -  Ggaus=', Ggaus
 			IF (flag_output) WRITE (7, '(6X,A6,A3,A10,F9.3)'), &
-			  'SDse: ', SDse_kind,'  -  Gswf=', Gswf
+			  'SDse: ', SDse_kind,'  -  Ggaus=', Ggaus
 		ELSE IF (SDse_kind=='gss') THEN
-			PRINT '(6X,A6,A3,A10,F9.3)' , 'SDse: ', SDse_kind,'  -  Gswf=', Gswf
+			PRINT '(6X,A6,A3,A10,F9.3)' , 'SDse: ', SDse_kind,'  -  Ggaus=', Ggaus
 			IF (flag_output) WRITE (7, '(6X,A6,A3,A10,F9.3)'), &
-			  'SDse: ', SDse_kind,'  -  Gswf=', Gswf
+			  'SDse: ', SDse_kind,'  -  Ggaus=', Ggaus
 		ELSE IF (SDse_kind=='gsp') THEN
-			PRINT '(6X,A6,A3,A10,F9.3)' , 'SDse: ', SDse_kind,'  -  Gswf=', Gswf
+			PRINT '(6X,A6,A3,A10,F9.3)' , 'SDse: ', SDse_kind,'  -  Ggaus=', Ggaus
 			IF (flag_output) WRITE (7, '(6X,A6,A3,A10,F9.3)'), &
-			  'SDse: ', SDse_kind,'  -  Gswf=', Gswf
+			  'SDse: ', SDse_kind,'  -  Ggaus=', Ggaus
 		ELSE IF ((SDse_kind=='atm').OR.(SDse_kind=='atp')) THEN
 			PRINT '(6X,A6,A3,A11,F9.3)' , 'SDse: ', SDse_kind,'  -  C_atm=', C_atm
 			IF (flag_output) WRITE (7, '(6X,A6,A3,A11,F9.3)'), &
@@ -1732,7 +1736,7 @@ MODULE funzione_onda
 			!Calcolo i termini matriciali di SD_new
 			DO j = 1, N, 1
 				DO i = 1, N, 1
-					SD(i,j)=norm*DEXP(-Gswf*rij(i,j)*rij(i,j))
+					SD(i,j)=norm*DEXP(-Ggaus*rij(i,j)*rij(i,j))
 					ISD(i,j)=SD(i,j)
 				END DO
 			END DO
@@ -1750,7 +1754,7 @@ MODULE funzione_onda
 			END DO
 		ELSE IF ((num>0) .AND. (num<=N)) THEN
 			DO i = 1, N, 1
-				SD(num,i)=norm*norm*DEXP(-Gswf*rij(num,i)*rij(num,i))
+				SD(num,i)=norm*norm*DEXP(-Ggaus*rij(num,i)*rij(num,i))
 			END DO
 			CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD)
 		ELSE
@@ -2113,7 +2117,7 @@ MODULE funzione_onda
 			!Calcolo i termini matriciali di SD_new
 			DO j = 1, N, 1
 				DO i = 1, N, 1
-					SD(i,j)=norm*DEXP(-Gswf*rij(i,j+N)*rij(i,j+N))
+					SD(i,j)=norm*DEXP(-Ggaus*rij(i,j+N)*rij(i,j+N))
 					ISD(i,j)=SD(i,j)
 				END DO
 			END DO
@@ -2132,12 +2136,12 @@ MODULE funzione_onda
 		ELSE IF ((num>0) .AND. (num<=2*N)) THEN
 			IF ( num<=N ) THEN
 				DO j = 1, N, 1
-					SD(num,j)=norm*DEXP(-Gswf*rij(num,j+N)*rij(num,j+N))
+					SD(num,j)=norm*DEXP(-Ggaus*rij(num,j+N)*rij(num,j+N))
 				END DO
 				CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD)
 			ELSE
 				DO i = 1, N, 1
-					SD(i,num-N)=norm*DEXP(-Gswf*rij(i,num)*rij(i,num))
+					SD(i,num-N)=norm*DEXP(-Ggaus*rij(i,num)*rij(i,num))
 				END DO
 				CALL aggiorna_determinante_C_col_1ppt(N,num-N,ISD_old,detSD_old,SD,detSD)
 			END IF

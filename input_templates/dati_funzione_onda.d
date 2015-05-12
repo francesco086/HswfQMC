@@ -1,5 +1,5 @@
 &dati_funzione_onda
-SDe_kind='bat'        !Electronic Slater Determinant: 'pw_'=simple plane waves, 'lda'=DFT orbitals (to be specifies), 'prf'=diagonalized nuclear field Hamiltonian (dnfH), 'fre'=dnfH without interactions, 'atm'/'atp'=exp(-r*C_atm) with or without PC, 'bat'=bi-atomic, '1sb'=dynamic e-p backflow with 1s orbitals, 'spb'=dynamic e-p backflow with spline orbital, 'hl_'=Heitler-London (only for 2 electrons), 'no_'=no SD
+SDe_kind='bat'        !Electronic Slater Determinant: 'pw_'=simple plane waves, 'lda'=DFT orbitals (to be specifies), 'prf'=diagonalized nuclear field Hamiltonian (dnfH), 'fre'=dnfH without interactions, 'atm'/'atp'=exp(-r*C_atm) with or without PC, 'bat'=bi-atomic, '1sb'=dynamic e-p backflow with 1s orbitals, 'spb'=dynamic e-p backflow with spline orbital, 'hl_'=Heitler-London (only for 2 electrons), 'gss/gsp'=gaussian centered on proton position, 'no_'=no SD
 Jee_kind='spp'        !Electron-Electron Jastrow: 'yuk'/'yup'=Yukawa with or without PC, 'spl'/'spp'=spline with or without PC, inizialized to fit the Yukawa Jastrow, 'no_'=no Jee
 Jep_kind='spp'        !Electronic-Proton Jastrow: 'yuk'/'yup'=Yukawa, 'spl'/'spp'=spline with or without PC, 'atm'/'atp'=exp(-F*r), 'no_'=no Jep
 Jpp_kind='no_'        !Proton-Proton Jastrow: 'no_'=no Jpp
@@ -41,7 +41,7 @@ ASESP_YUK= -0.45378310533588501     ,
 ASESP_UD_YUK= -0.45833583582447029     ,
 FSESP_YUK=  3.8627648124100249     ,
 FSESP_UD_YUK= 3.8228039597443910     ,
-GSWF=1.                           !For SDse='gss'/'gsd'
+Ggaus=1.                           !For SDse='gss'/'gsd'
 C_ATM=1.                          !For SDse='atm'
 N_ritraccia_coppie=1000           !(DEPRECATED) if < 0 the molecular pairs are not tracked
 N_mc_relax_traccia_coppie=10      !(DEPRECATED)

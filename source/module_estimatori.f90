@@ -1008,6 +1008,70 @@ MODULE estimatori
 					
 				END DO
 			END DO
+
+		CASE ('gss')
+			DO i = 1, H_N_part, 1
+				i_SD=i+H_N_part
+				DO j = 1, H_N_part, 1
+					j_SD=j+H_N_part
+					der1_up(1:3)=-2.d0*Ggaus*rij_ep_old(1:3,j,i)
+					der1_dw(1:3)=-2.d0*Ggaus*rij_ep_old(1:3,j_SD,i_SD)
+               der2_up=DOT_PRODUCT(der1_up(1:3),der1_up(1:3))-6.d0*Ggaus
+               der2_dw=DOT_PRODUCT(der1_dw(1:3),der1_dw(1:3))-6.d0*Ggaus
+					gsdee_up(1:3,j)=gsdee_up(1:3,j)+SDe_up_old(j,i)*der1_up*ISDe_up_old(i,j)
+					gsdee_dw(1:3,j)=gsdee_dw(1:3,j)+SDe_dw_old(j,i)*der1_dw*ISDe_dw_old(i,j)
+					lsdee=lsdee+(SDe_up_old(j,i)*der2_up*ISDe_up_old(i,j)+SDe_dw_old(j,i)*der2_dw*ISDe_dw_old(i,j))
+				END DO
+			END DO
+		CASE ('gsp')
+			!DO i = 1, H_N_part, 1
+			!	i_SD=i+H_N_part
+			!	DO j = 1, H_N_part, 1
+			!		j_SD=j+H_N_part
+			!		der1_up(1:3)=-2.d0*Ggaus*rij_ep_old(1:3,j,i)
+			!		der1_dw(1:3)=-2.d0*Ggaus*rij_ep_old(1:3,j_SD,i_SD)
+         !      der2_up=DOT_PRODUCT(der1_up(1:3),der1_up(1:3))-6.d0*Ggaus
+         !      der2_dw=DOT_PRODUCT(der1_dw(1:3),der1_dw(1:3))-6.d0*Ggaus
+			!		gsdee_up(1:3,j)=gsdee_up(1:3,j)+SDe_up_old(j,i)*der1_up*ISDe_up_old(i,j)
+			!		gsdee_dw(1:3,j)=gsdee_dw(1:3,j)+SDe_dw_old(j,i)*der1_dw*ISDe_dw_old(i,j)
+			!		lsdee=lsdee+(SDe_up_old(j,i)*der2_up*ISDe_up_old(i,j)+SDe_dw_old(j,i)*der2_dw*ISDe_dw_old(i,j))
+			!	END DO
+			!END DO
+
+			frfs1(1:3)=PI/L(1:3)
+			DO i = 1, H_N_part, 1
+				i_SD=i+H_N_part
+				DO j = 1, H_N_part, 1
+					j_SD=j+H_N_part
+					
+					der1_up(1:3)=-DCOS(frfs1(1:3)*rij_ep_old(1:3,j,i))* &
+					  2.d0*Ggaus*rijpc_ep_old(1:3,j,i)
+					der1_dw(1:3)=-DCOS(frfs1(1:3)*rij_ep_old(1:3,j_SD,i_SD))* &
+					  2.d0*Ggaus*rijpc_ep_old(1:3,j_SD,i_SD)
+               ! ---------------------------------------------------------------
+               ! Automatic consequences from der1
+					der2_up=DOT_PRODUCT(der1_up(1:3),der1_up(1:3)) &
+                       -SUM( frfs1(1:3)*DSIN(frfs1(1:3)*rij_ep_old(1:3,j,i)) &
+                             *der1_up(1:3)/DCOS(frfs1(1:3)*rij_ep_old(1:3,j,i)) )
+					der2_dw=DOT_PRODUCT(der1_dw(1:3),der1_dw(1:3)) &
+                       -SUM( frfs1(1:3)*DSIN(frfs1(1:3)*rij_ep_old(1:3,j_SD,i_SD)) &
+                             *der1_dw(1:3)/DCOS(frfs1(1:3)*rij_ep_old(1:3,j_SD,i_SD)) )
+               ! ---------------------------------------------------------------
+               ! New terms of der2
+					DO i3= 1, 3, 1
+                   der2_up=der2_up-( (DCOS(frfs1(i3)*rij_ep_old(i3,j,i)))**2 ) &
+                                   *2.d0*Ggaus
+                   der2_dw=der2_dw-( (DCOS(frfs1(i3)*rij_ep_old(i3,j_SD,i_SD)))**2 ) &
+                                   *2.d0*Ggaus
+					END DO
+					! Gradient and Laplacian
+					gsdee_up(1:3,j)=gsdee_up(1:3,j)+SDe_up_old(j,i)*der1_up*ISDe_up_old(i,j)
+					gsdee_dw(1:3,j)=gsdee_dw(1:3,j)+SDe_dw_old(j,i)*der1_dw*ISDe_dw_old(i,j)
+					lsdee=lsdee+(SDe_up_old(j,i)*der2_up*ISDe_up_old(i,j)+SDe_dw_old(j,i)*der2_dw*ISDe_dw_old(i,j))
+					
+				END DO
+			END DO
+
 		END SELECT
 		
 		!calcolo la parte del Jastrow ee
