@@ -307,8 +307,9 @@ MODULE dati_fisici
             DO j = 1, N_cell_side, 1
             DO i = 1, N_cell_side, 1
                   r_crystal(1:3,i1)=(/ REAL(i,8), REAL(j,8), 0.d0 /)*L(1:3)/REAL(N_cell_side,8)
-                  r_crystal(1:3,i1+H_N_part)=(/ REAL(i,8), REAL(j,8), 0.d0 /)*L(1:3)/REAL(N_cell_side,8) &
-                                              + (/ 0.5d0*L(1), 0.5d0*DSQRT(2.d0)*L(1), 0.d0 /)
+                  r_crystal(1:3,i1+H_N_part)=(  (/ REAL(i,8), REAL(j,8), 0.d0 /)*L(1:3) &
+                                                + (/ 0.5d0*L(1), 0.5d0*DSQRT(2.d0)*L(1), 0.d0 /)  ) &
+                                             /REAL(N_cell_side,8)
                   i1=i1+1
             END DO
             END DO
