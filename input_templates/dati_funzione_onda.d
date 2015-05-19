@@ -53,7 +53,7 @@ B_se=-1.4                         !(DEPRECATED)
 D_se=-0.7                         !(DEPRECATED) For the bounding in the Jse
 C_sesp=1.                         !(DEPRECATED)
 lda_path='orbitals'               !Path to the file (or files, with TABC) that specifies the DFT orbitals generated with Quantum Espresso
-kf_coeff_dnfH=1.                  !(DEPRECATED)
+kf_coeff_dnfH=1.                  !cut-off for SDe_kind='prf'
 flag_usa_coeff_dnfH=.FALSE.       !(DEPRECATED)
 /
 
