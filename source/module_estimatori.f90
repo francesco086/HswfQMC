@@ -187,7 +187,7 @@ MODULE estimatori
       REAL(KIND=8) :: Bspl1(H_N_part,H_N_part), Bspl2(H_N_part,H_N_part)
 		REAL (KIND=8) :: frf1(0:3), frf2(1:3), frf3, frf5, frf6, mix_prod, norm
 		REAL (KIND=8) :: frfs1(0:3), frfs2(0:3), frf2s1(1:3), frf2s2(1:3), frf3s1(1:3), frf3s2(1:3)
-		REAL (KIND=8) :: uee1, uee2, uep1, uep2
+		REAL (KIND=8) :: uee1, uee2, uep1, uep2, u1_up, u1_dw, u2_up, u2_dw
 		REAL (KIND=8) :: gee(1:3,1:N_part), lee
 		REAL (KIND=8) :: gep(1:3,1:N_part), lep
 		REAL (KIND=8) :: gkernse1(1:3,1:N_part), gkernse2(1:3,1:N_part), lkernse
@@ -350,20 +350,6 @@ MODULE estimatori
 					gsdee_up(1:3,j)=gsdee_up(1:3,j)+der1_up*ISDe_up_old(i,j)
 					gsdee_dw(1:3,j)=gsdee_dw(1:3,j)+der1_dw*ISDe_dw_old(i,j)
 					lsdee=lsdee+(der2_up*ISDe_up_old(i,j)+der2_dw*ISDe_dw_old(i,j))
-				END DO
-			END DO
-		CASE ('atm')
-			DO i = 1, H_N_part, 1
-				i_SD=i+H_N_part
-				DO j = 1, H_N_part, 1
-					j_SD=j+H_N_part
-					der1_up(1:3)=-rij_ep_old(1:3,j,i)*C_atm/rij_ep_old(0,j,i)
-					der1_dw(1:3)=-rij_ep_old(1:3,j_SD,i_SD)*C_atm/rij_ep_old(0,j_SD,i_SD)
-					der2_up=-2.d0*C_atm/rij_ep_old(0,j,i)+C_atm*C_atm
-					der2_dw=-2.d0*C_atm/rij_ep_old(0,j_SD,i_SD)+C_atm*C_atm
-					gsdee_up(1:3,j)=gsdee_up(1:3,j)+SDe_up_old(j,i)*der1_up*ISDe_up_old(i,j)
-					gsdee_dw(1:3,j)=gsdee_dw(1:3,j)+SDe_dw_old(j,i)*der1_dw*ISDe_dw_old(i,j)
-					lsdee=lsdee+(SDe_up_old(j,i)*der2_up*ISDe_up_old(i,j)+SDe_dw_old(j,i)*der2_dw*ISDe_dw_old(i,j))
 				END DO
 			END DO
 		CASE ('bat')
@@ -974,40 +960,87 @@ MODULE estimatori
          !!!!FINE CHECK LAPLACIANO
          !!!STOP
 
-
-		CASE ('atp')
-			frfs1(1:3)=PI/L(1:3)
+		CASE ('atm')
 			DO i = 1, H_N_part, 1
 				i_SD=i+H_N_part
 				DO j = 1, H_N_part, 1
 					j_SD=j+H_N_part
-					
-					der1_up(1:3)=-DCOS(frfs1(1:3)*rij_ep_old(1:3,j,i))* &
-					  rijpc_ep_old(1:3,j,i)*C_atm/rijpc_ep_old(0,j,i)
-					der1_dw(1:3)=-DCOS(frfs1(1:3)*rij_ep_old(1:3,j_SD,i_SD))* &
-					  rijpc_ep_old(1:3,j_SD,i_SD)*C_atm/rijpc_ep_old(0,j_SD,i_SD)
-					der2_up=DOT_PRODUCT(der1_up(1:3),der1_up(1:3))
-					der2_dw=DOT_PRODUCT(der1_dw(1:3),der1_dw(1:3))
-					
-					DO i3= 1, 3, 1
-						frf1(i3)=((DCOS(frfs1(i3)*rij_ep_old(i3,j,i)))**2) * &
-						  (1.d0-(rijpc_ep_old(i3,j,i)/rijpc_ep_old(0,j,i))**2)/rijpc_ep_old(0,j,i)
-						frf1(i3)=frf1(i3)-frfs1(i3)*DSIN(frfs1(i3)*rij_ep_old(i3,j,i))* &
-						  rijpc_ep_old(i3,j,i)/rijpc_ep_old(0,j,i)
-						frf2(i3)=((DCOS(frfs1(i3)*rij_ep_old(i3,j_SD,i_SD)))**2) * &
-						  (1.d0-(rijpc_ep_old(i3,j_SD,i_SD)/rijpc_ep_old(0,j_SD,i_SD))**2)/rijpc_ep_old(0,j_SD,i_SD)
-						frf2(i3)=frf1(i3)-frfs1(i3)*DSIN(frfs1(i3)*rij_ep_old(i3,j_SD,i_SD))* &
-						  rijpc_ep_old(i3,j_SD,i_SD)/rijpc_ep_old(0,j_SD,i_SD)
-						der2_up=der2_up-C_atm*frf1(i3)
-						der2_dw=der2_dw-C_atm*frf2(i3)
-					END DO
-					
+					der1_up(1:3)=-rij_ep_old(1:3,j,i)*C_atm/rij_ep_old(0,j,i)
+					der1_dw(1:3)=-rij_ep_old(1:3,j_SD,i_SD)*C_atm/rij_ep_old(0,j_SD,i_SD)
+					der2_up=-2.d0*C_atm/rij_ep_old(0,j,i)+C_atm*C_atm
+					der2_dw=-2.d0*C_atm/rij_ep_old(0,j_SD,i_SD)+C_atm*C_atm
 					gsdee_up(1:3,j)=gsdee_up(1:3,j)+SDe_up_old(j,i)*der1_up*ISDe_up_old(i,j)
 					gsdee_dw(1:3,j)=gsdee_dw(1:3,j)+SDe_dw_old(j,i)*der1_dw*ISDe_dw_old(i,j)
 					lsdee=lsdee+(SDe_up_old(j,i)*der2_up*ISDe_up_old(i,j)+SDe_dw_old(j,i)*der2_dw*ISDe_dw_old(i,j))
-					
 				END DO
 			END DO
+
+		CASE ('atp')
+			frfs1(1:3)=PI/L(1:3)
+
+			DO i = 1, H_N_part, 1
+				i_SD=i+H_N_part
+				DO j = 1, H_N_part, 1
+					j_SD=j+H_N_part
+
+               !!! PART TO FILL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+               ! d(u)/d(r_PC)
+               u1_up=-C_atm
+               u1_dw=-C_atm
+               ! d^2(u)/d(r_PC)^2
+               u2_up=0.d0
+               u2_dw=0.d0
+               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+               ! (x_PC)/(r_PC)
+               frf1(1:3)=rijpc_ep_old(1:3,j,i)/rijpc_ep_old(0,j,i)
+               frf2(1:3)=rijpc_ep_old(1:3,j_SD,i_SD)/rijpc_ep_old(0,j_SD,i_SD)
+					
+               ! d(phi)/d(x_i)
+					der1_up(1:3)=DCOS(frfs1(1:3)*rij_ep_old(1:3,j,i))*frf1(1:3)*u1_up
+					der1_dw(1:3)=DCOS(frfs1(1:3)*rij_ep_old(1:3,j_SD,i_SD))*frf2(1:3)*u1_dw
+
+               ! d^2(phi)/d(x_i)^2
+               der2_up=0.d0
+               der2_dw=0.d0
+					DO i3= 1, 3, 1
+                  der2_up=der2_up - der1_up(i3) * frfs1(i3) * DTAN(frfs1(i3)*rij_ep_old(i3,j,i)) &
+                                  + (DCOS(frfs1(i3)*rij_ep_old(i3,j,i))**2) * &
+                                    (1.d0-((rijpc_ep_old(i3,j,i)/rijpc_ep_old(0,j,i))**2)) * &
+                                    (u1_up/rijpc_ep_old(0,j,i)) &
+                                  + (DCOS(frfs1(i3)*rij_ep_old(i3,j,i))**2) * &
+                                    ((rijpc_ep_old(i3,j,i)/rijpc_ep_old(0,j,i))**2) * u2_up &
+                                  + der1_up(i3)**2
+                  der2_dw=der2_dw - der1_dw(i3) * frfs1(i3) * DTAN(frfs1(i3)*rij_ep_old(i3,j_SD,i_SD))  &
+                                  + (DCOS(frfs1(i3)*rij_ep_old(i3,j_SD,i_SD))**2) * &
+                                    (1.d0-((rijpc_ep_old(i3,j_SD,i_SD)/rijpc_ep_old(0,j_SD,i_SD))**2)) * &
+                                    (u1_up/rijpc_ep_old(0,j_SD,i_SD)) &
+                                  + (DCOS(frfs1(i3)*rij_ep_old(i3,j_SD,i_SD))**2) * &
+                                    ((rijpc_ep_old(i3,j_SD,i_SD)/rijpc_ep_old(0,j_SD,i_SD))**2) * u2_dw &
+                                  + der1_dw(i3)**2
+                  !!!! (EXTREMELY SLIGHTLY!, NEGLECTABLE) FASTER CODE
+                  !der2_up=der2_up + der1_up(i3) * ( - frfs1(i3)*DTAN(frfs1(i3)*rij_ep_old(i3,j,i)) &
+                  !                                  + der1_up(i3) ) &
+                  !                + (DCOS(frfs1(i3)*rij_ep_old(i3,j,i))**2) * &
+                  !                  ( (u1_up/rijpc_ep_old(0,j,i)) &
+                  !                    + ((rijpc_ep_old(i3,j,i)/rijpc_ep_old(0,j,i))**2) * &
+                  !                      (u2_up-(u1_up/rijpc_ep_old(0,j,i))) )
+
+                  !der2_dw=der2_dw + der1_dw(i3) * ( - frfs1(i3)*DTAN(frfs1(i3)*rij_ep_old(i3,j_SD,i_SD)) &
+                  !                                  + der1_dw(i3) ) &
+                  !                + (DCOS(frfs1(i3)*rij_ep_old(i3,j_SD,i_SD))**2) * &
+                  !                  ( (u1_dw/rijpc_ep_old(0,j_SD,i_SD)) &
+                  !                    + ((rijpc_ep_old(i3,j_SD,i_SD)/rijpc_ep_old(0,j_SD,i_SD))**2) * &
+                  !                      (u2_dw-(u1_dw/rijpc_ep_old(0,j_SD,i_SD))) )
+					END DO
+
+					! Gradient and Laplacian
+					gsdee_up(1:3,j)=gsdee_up(1:3,j)+SDe_up_old(j,i)*der1_up*ISDe_up_old(i,j)
+					gsdee_dw(1:3,j)=gsdee_dw(1:3,j)+SDe_dw_old(j,i)*der1_dw*ISDe_dw_old(i,j)
+					lsdee=lsdee+(SDe_up_old(j,i)*der2_up*ISDe_up_old(i,j)+SDe_dw_old(j,i)*der2_dw*ISDe_dw_old(i,j))
+
+            END DO
+         END DO
 
 		CASE ('gss')
 			DO i = 1, H_N_part, 1
@@ -1024,20 +1057,6 @@ MODULE estimatori
 				END DO
 			END DO
 		CASE ('gsp')
-			!DO i = 1, H_N_part, 1
-			!	i_SD=i+H_N_part
-			!	DO j = 1, H_N_part, 1
-			!		j_SD=j+H_N_part
-			!		der1_up(1:3)=-2.d0*Ggaus*rij_ep_old(1:3,j,i)
-			!		der1_dw(1:3)=-2.d0*Ggaus*rij_ep_old(1:3,j_SD,i_SD)
-         !      der2_up=DOT_PRODUCT(der1_up(1:3),der1_up(1:3))-6.d0*Ggaus
-         !      der2_dw=DOT_PRODUCT(der1_dw(1:3),der1_dw(1:3))-6.d0*Ggaus
-			!		gsdee_up(1:3,j)=gsdee_up(1:3,j)+SDe_up_old(j,i)*der1_up*ISDe_up_old(i,j)
-			!		gsdee_dw(1:3,j)=gsdee_dw(1:3,j)+SDe_dw_old(j,i)*der1_dw*ISDe_dw_old(i,j)
-			!		lsdee=lsdee+(SDe_up_old(j,i)*der2_up*ISDe_up_old(i,j)+SDe_dw_old(j,i)*der2_dw*ISDe_dw_old(i,j))
-			!	END DO
-			!END DO
-
 			frfs1(1:3)=PI/L(1:3)
 			DO i = 1, H_N_part, 1
 				i_SD=i+H_N_part
@@ -2211,57 +2230,78 @@ MODULE estimatori
 	SUBROUTINE derivata_SDe_atp(O)
 		USE walkers
 		IMPLICIT NONE
-		INTEGER :: i, j, i_sd, j_sd
+		INTEGER :: i, j
 		REAL (KIND=8) :: O      !O(1) - Gsesp
-		INTEGER :: pvt(1:H_N_part), info, perm
-		REAL (KIND=8) :: SD(1:H_N_part,1:H_N_part), ISD(1:H_N_part,1:H_N_part), detSD
 		O=0.d0
 		
-		!up
 		DO j = 1, H_N_part, 1
 			DO i = 1, H_N_part, 1
-				SD(i,j)=-rijpc_ep_old(0,i,j)*DEXP(-C_atm*rijpc_ep_old(0,i,j))
-				ISD(i,j)=SD(i,j)
+				O=O-rijpc_ep_old(0,i,j)*SDe_up_old(i,j)*ISDe_up_old(j,i)
 			END DO
 		END DO
-		!Calcolo il determinante di SD_new
-		CALL DGETRF( H_N_part, H_N_part, ISD, H_N_part, pvt, info )
-		IF (info/=0) STOP 'ERRORE NELLA DECOMPOSIZIONE LU SDe_atp_up'
-		perm=0
-		detSD=1.d0
-		DO  i = 1, H_N_part, 1
-			IF (pvt(i) /= i) perm=perm+1
-		END DO
-		IF (MOD(perm,2) == 1 ) detSD=-detSD
-		DO  i = 1, H_N_part, 1
-			detSD=detSD*ISD(i,i)
-		END DO
-		O=O+detSD/REAL(detSDe_up_old,8)
 		
-		!dw
-		DO j = H_N_part+1, N_part, 1
-			j_sd=j-H_N_part
-			DO i = H_N_part+1, N_part, 1
-				i_sd=i-H_N_part
-				SD(i_sd,j_sd)=-rijpc_ep_old(0,i,j)*DEXP(-C_atm*rijpc_ep_old(0,i,j))
-				ISD(i_sd,j_sd)=SD(i_sd,j_sd)
+		DO j = 1, H_N_part, 1
+			DO i = 1, H_N_part, 1
+				O=O-rijpc_ep_old(0,i+H_N_part,j+H_N_part)*SDe_dw_old(i,j)*ISDe_dw_old(j,i)
 			END DO
 		END DO
-		!Calcolo il determinante di SD_new
-		CALL DGETRF( H_N_part, H_N_part, ISD, H_N_part, pvt, info )
-		IF (info/=0) STOP 'ERRORE NELLA DECOMPOSIZIONE LU SDe_atp_dw'
-		perm=0
-		detSD=1.d0
-		DO  i = 1, H_N_part, 1
-			IF (pvt(i) /= i) perm=perm+1
-		END DO
-		IF (MOD(perm,2) == 1 ) detSD=-detSD
-		DO  i = 1, H_N_part, 1
-			detSD=detSD*ISD(i,i)
-		END DO
-		O=O+detSD/REAL(detSDe_dw_old,8)
 		
 	END SUBROUTINE derivata_SDe_atp
+
+	!SUBROUTINE derivata_SDe_atp(O)
+	!	USE walkers
+	!	IMPLICIT NONE
+	!	INTEGER :: i, j, i_sd, j_sd
+	!	REAL (KIND=8) :: O      !O(1) - Gsesp
+	!	INTEGER :: pvt(1:H_N_part), info, perm
+	!	REAL (KIND=8) :: SD(1:H_N_part,1:H_N_part), ISD(1:H_N_part,1:H_N_part), detSD
+	!	O=0.d0
+	!	
+	!	!up
+	!	DO j = 1, H_N_part, 1
+	!		DO i = 1, H_N_part, 1
+	!			SD(i,j)=-rijpc_ep_old(0,i,j)*DEXP(-C_atm*rijpc_ep_old(0,i,j))
+	!			ISD(i,j)=SD(i,j)
+	!		END DO
+	!	END DO
+	!	!Calcolo il determinante di SD_new
+	!	CALL DGETRF( H_N_part, H_N_part, ISD, H_N_part, pvt, info )
+	!	IF (info/=0) STOP 'ERRORE NELLA DECOMPOSIZIONE LU SDe_atp_up'
+	!	perm=0
+	!	detSD=1.d0
+	!	DO  i = 1, H_N_part, 1
+	!		IF (pvt(i) /= i) perm=perm+1
+	!	END DO
+	!	IF (MOD(perm,2) == 1 ) detSD=-detSD
+	!	DO  i = 1, H_N_part, 1
+	!		detSD=detSD*ISD(i,i)
+	!	END DO
+	!	O=O+detSD/REAL(detSDe_up_old,8)
+	!	
+	!	!dw
+	!	DO j = H_N_part+1, N_part, 1
+	!		j_sd=j-H_N_part
+	!		DO i = H_N_part+1, N_part, 1
+	!			i_sd=i-H_N_part
+	!			SD(i_sd,j_sd)=-rijpc_ep_old(0,i,j)*DEXP(-C_atm*rijpc_ep_old(0,i,j))
+	!			ISD(i_sd,j_sd)=SD(i_sd,j_sd)
+	!		END DO
+	!	END DO
+	!	!Calcolo il determinante di SD_new
+	!	CALL DGETRF( H_N_part, H_N_part, ISD, H_N_part, pvt, info )
+	!	IF (info/=0) STOP 'ERRORE NELLA DECOMPOSIZIONE LU SDe_atp_dw'
+	!	perm=0
+	!	detSD=1.d0
+	!	DO  i = 1, H_N_part, 1
+	!		IF (pvt(i) /= i) perm=perm+1
+	!	END DO
+	!	IF (MOD(perm,2) == 1 ) detSD=-detSD
+	!	DO  i = 1, H_N_part, 1
+	!		detSD=detSD*ISD(i,i)
+	!	END DO
+	!	O=O+detSD/REAL(detSDe_dw_old,8)
+	!	
+	!END SUBROUTINE derivata_SDe_atp
 !-----------------------------------------------------------------------
 
 	SUBROUTINE derivata_SDe_HAR(O)
