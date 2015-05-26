@@ -45,7 +45,11 @@ MODULE dnfH
       !!!Made obsolete from the KWaVe class
       !!!CALL fermi_quantization(N_M_Hartree,k_Hartree)
       CALL kwv_Hartree%initializeKWaVe(N_M_Hartree,3)
-      CALL kwv_Hartree%buildBoxK(L)
+      IF (flag_2D) THEN
+         CALL kwv_Hartree%buildBoxK((/ L(1), L(2), MIN(L(1),L(2)) /))
+      ELSE 
+         CALL kwv_Hartree%buildBoxK(L)
+      END IF
       k_Hartree=kwv_Hartree%k
 		
 		k_cutoff=k_Hartree(0,H_N_part)*k2_f_factor
