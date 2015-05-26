@@ -73,19 +73,23 @@ do
             exit
          fi
          cp dati_mc.d dati_mc.original
+         cp dati_funzione_onda.d dati_funzione_onda.original
          cp ${pilot_PATH}/helpers/qespresso/dati_mc.generate_crystal dati_mc.d
+         cp ${pilot_PATH}/helpers/qespresso/dati_funzione_onda.generate_crystal dati_funzione_onda.d
          FLAG=$(ls | grep -w posizioni)
          if [ "${FLAG}" == "" ]
          then
             echo "ERROR: Impossible to find the folder posizioni/ . ABORT!"
             exit
          fi
-	 PATHRANDOM="${pilot_PATH}/random_seed"
-	 sed -i.sedbak "s|RANDOM_SEED_FOLDER|${PATHRANDOM}|" dati_mc.d
-	 rm *.sedbak
+	      PATHRANDOM="${pilot_PATH}/random_seed"
+	      sed -i.sedbak "s|RANDOM_SEED_FOLDER|${PATHRANDOM}|" dati_mc.d
+	      \rm -f *.sedbak
+         \rm -f output.d
          HswfQMC_exe > /dev/null 2>&1
          #Extract from the output file the size of the simulation box and save it in the file L.d
          cat output.d | grep "L=" | sed "s/L=   //" | sed "s/   \[bohr\]//" > L.d
+         cat output.d | grep "L=" | sed "s/L=   //" | sed "s/   \[bohr\]//"
          #Get the file which contains the crystal structure and put it in the file crystal.d
          mv posizioni/inizio-QEgen_p_0000.pos crystal.d
          #Delete the useless temporary files
@@ -94,6 +98,7 @@ do
          echo "Generated the crystal structure with HswfQMC"
          #go back to the original dati_mc.d
          mv dati_mc.original dati_mc.d
+         mv dati_funzione_onda.original dati_funzione_onda.d
          #fetch the ORBITALS_FOLDER variable from dati_DFT.d
          ORBITALS_FOLDER=$( cat dati_DFT.d | grep -w "ORBITALS_FOLDER" | sed "s/ORBITALS_FOLDER\=//" | sed "s/\"//g" | sed "s/'//g" )
          if [ "${ORBITALS_FOLDER}" == ""  ]
@@ -138,7 +143,7 @@ do
          cd ..
          #fetch the WF variable from dati_DFT.d
          WF=$( cat dati_DFT.d | grep -w "WF" | sed "s/WF\=//" | sed "s/\"//g" | sed "s/'//g" )
-         sed -i.bak "s/lda_path=.*/lda_path='orbitals\/${ORBITALS_FOLDER}'/" dati_funzione_onda.d
+         sed -i.sedbak "s/lda_path=.*/lda_path='orbitals\/${ORBITALS_FOLDER}'/" dati_funzione_onda.d
          echo "Set "${WF}" for using the generated orbitals"
 			exit
 			;;
