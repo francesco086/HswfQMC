@@ -4315,6 +4315,108 @@ END SUBROUTINE derivata_Jep_ATM
 		
 	END SUBROUTINE derivataRp_energia_potenziale
 !-----------------------------------------------------------------------
+   SUBROUTINE derivataL_wf_e_energia_potenziale(gradLwf,gradLH)
+      IMPLICIT NONE
+      REAL(KIND=8), INTENT(OUT) :: gradLwf(1:3), gradLH(1:3)
+      REAL (KIND=8), PARAMETER :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
+      INTEGER :: i, numdim
+      REAL(KIND=8) :: u1
+      REAL(KIND=8) :: dL, L0(1:3), L1(1:3)
+      REAL(KIND=8) :: Uee(0:3), Uep(0:3), detGDse(0:3), Epot(0:3)
+      REAL(KIND=8) :: Uese1(0:3), Uese2(0:3), Usese1(0:3), Usese2(0:3), Usesp1(0:3), Usesp2(0:3)
+      COMPLEX(KIND=8) :: SDe(0:3), SDse(0:3)
+      
+      numdim=3
+      IF (flag_2D) numdim=2 
+
+      dL=0.001d0
+      L0=L
+      L1=L0
+      DO i = 1, numdim, 1
+         L1(i)=L0(i)+dL
+         CALL cambia_L_simulation_box(L1)
+         CALL prima_valutazione_funzione_onda()
+         
+         CALL energia_potenziale(Epot(i))
+         IF (SDe_kind/='no_') SDe(i)=detSDe_up_old*detSDe_dw_old
+         IF (Jee_kind/='no_') Uee(i)=Uee_old
+         IF (Jep_kind/='no_') Uep(i)=Uep_old
+         IF (SDse_kind/='no_') SDse(i)=detSDse1_up_old*detSDse1_dw_old*detSDse2_up_old*detSDse2_dw_old
+         IF ((Kse_kind=='gss').OR.(Kse_kind=='gsc').OR.(Kse_kind=='gsp')&
+             .OR.(Kse_kind=='atm').OR.(Kse_kind=='atc')) THEN
+            Uese1(i)=Uese1_old
+            Uese2(i)=Uese2_old
+         ELSE IF ((Kse_kind=='gsd').OR.(Kse_kind=='gdc').OR.(Kse_kind=='gdp')) THEN
+            detGDse(i)=detGDse1_up_old*detGDse1_dw_old*detGDse2_up_old*detGDse2_dw_old
+         END IF
+         IF (Jse_kind/='no_') THEN
+            Usese1(i)=Use1_old
+            Usese2(i)=Use2_old
+         END IF
+         IF (Jsesp_kind/='no_') THEN
+            Usesp1(i)=Usesp1_old
+            Usesp2(i)=Usesp2_old
+         END IF
+         L1(i)=L0(i)
+      END DO
+
+      CALL cambia_L_simulation_box(L0)
+      CALL prima_valutazione_funzione_onda()
+      gradLwf=0.d0
+      gradLH=0.d0
+
+      !Compute gradient of the Hamiltonian
+      CALL energia_potenziale(Epot(0))
+      gradLH(1:3)=gradLH(1:3)+(Epot(1:3)-Epot(0))/dL
+
+      !Compute gradient of the wave function
+      IF (SDe_kind/='no_') THEN
+         SDe(0)=detSDe_up_old*detSDe_dw_old
+         gradLwf(1:3)=gradLwf(1:3)+(SDe(1:3)-SDe(0))/(dL*SDe(0))
+      END IF
+      IF (Jee_kind/='no_') THEN
+         Uee(0)=Uee_old
+         gradLwf(1:3)=gradLwf(1:3)-0.5d0*(Uee(1:3)-Uee(0))/dL
+      END IF
+      IF (Jep_kind/='no_') THEN
+         Uep(0)=Uep_old
+         gradLwf(1:3)=gradLwf(1:3)-0.5d0*(Uep(1:3)-Uep(0))/dL
+      END IF
+      IF (SDse_kind/='no_') THEN
+         SDse(0)=detSDse1_up_old*detSDse1_dw_old*detSDse2_up_old*detSDse2_dw_old
+         gradLwf(1:3)=gradLwf(1:3)+(SDse(1:3)-SDse(0))/(dL*SDse(0))
+      END IF
+      IF ((Kse_kind=='gss').OR.(Kse_kind=='gsc').OR.(Kse_kind=='gsp')&
+          .OR.(Kse_kind=='atm').OR.(Kse_kind=='atc')) THEN
+         Uese1(0)=Uese1_old
+         Uese2(0)=Uese2_old
+         gradLwf(1:3)=gradLwf(1:3)-(Uese1(1:3)-Uese1(0))/dL
+         gradLwf(1:3)=gradLwf(1:3)-(Uese2(1:3)-Uese2(0))/dL
+      ELSE IF ((Kse_kind=='gsd').OR.(Kse_kind=='gdc').OR.(Kse_kind=='gdp')) THEN
+         detGDse(0)=detGDse1_up_old*detGDse1_dw_old*detGDse2_up_old*detGDse2_dw_old
+         gradLwf(1:3)=gradLwf(1:3)-(detGDse(1:3)-detGDse(0))/(dL*detGDse(0))
+      END IF
+      IF (Jse_kind/='no_') THEN
+         Usese1(0)=Use1_old
+         Usese2(0)=Use2_old
+         gradLwf(1:3)=gradLwf(1:3)-0.5d0*(Usese1(1:3)-Usese1(0))/dL
+         gradLwf(1:3)=gradLwf(1:3)-0.5d0*(Usese2(1:3)-Usese2(0))/dL
+      END IF
+      IF (Jsesp_kind/='no_') THEN
+         Usesp1(0)=Usesp1_old
+         Usesp2(0)=Usesp2_old
+         gradLwf(1:3)=gradLwf(1:3)-0.5d0*(Usesp1(1:3)-Usesp1(0))/dL
+         gradLwf(1:3)=gradLwf(1:3)-0.5d0*(Usesp2(1:3)-Usesp2(0))/dL
+      END IF
+
+      IF (flag_2D) THEN
+         gradLH(3)=0.d0
+         gradLwf(3)=0.d0
+      END IF
+      
+   END SUBROUTINE derivataL_wf_e_energia_potenziale
+
+!-----------------------------------------------------------------------
 
 	SUBROUTINE chiudi_estimatori()
 		IMPLICIT NONE

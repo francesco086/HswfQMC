@@ -145,7 +145,8 @@ mODULE calcola_accettazione
 			pvtse2_dw_new=0.d0
 			pvtse2_dw_old=0.d0
 		END IF
-		IF ((Kse_kind=='gss').OR.(Kse_kind=='gsc').OR.(Kse_kind=='gsp')) THEN
+		IF ((Kse_kind=='gss').OR.(Kse_kind=='gsc').OR.(Kse_kind=='gsp')&
+          .OR.(Kse_kind=='atm').OR.(Kse_kind=='atc')) THEN
 			ALLOCATE(u_ese1_new(1:N_part), u_ese1_old(1:N_part))
 			u_ese1_new=0.d0
 			u_ese1_old=0.d0
@@ -189,13 +190,6 @@ mODULE calcola_accettazione
 			ALLOCATE(pvtgdse2_dw_new(1:H_N_part), pvtgdse2_dw_old(1:H_N_part))
 			pvtgdse2_dw_new=0.d0
 			pvtgdse2_dw_old=0.d0
-		ELSE IF ((Kse_kind=='atm').OR.(Kse_kind=='atc')) THEN
-			ALLOCATE(u_ese1_new(1:N_part), u_ese1_old(1:N_part))
-			u_ese1_new=0.d0
-			u_ese1_old=0.d0
-			ALLOCATE(u_ese2_new(1:N_part), u_ese2_old(1:N_part))
-			u_ese2_new=0.d0
-			u_ese2_old=0.d0
 		END IF
 		IF (Jse_kind/='no_') THEN
 			IF ((Jse_kind/='no_') .AND. (Jse_kind/='bou') .AND. (Jse_kind/='pot')) THEN
@@ -207,7 +201,7 @@ mODULE calcola_accettazione
 				u_se2_old=0.d0
 			END IF
 			IF ((Jse_kind=='bou') .OR. (Jse_kind=='ppb')) THEN
-				STOP 'Jse_kin=bou e ppt ancora da implementare &
+				STOP 'Jse_kind=bou e ppt ancora da implementare &
 				  [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
 				!ALLOCATE(partner_se1(1:N_part),partner_se2(1:N_part))
 				!ALLOCATE(b_se1_new(1:N_part,1:N_part), b_se1_old(1:N_part,1:N_part))
@@ -218,6 +212,8 @@ mODULE calcola_accettazione
 				!b_se2_old=0.d0
 			END IF
 			IF ( Jse_kind=='pot' ) THEN
+				STOP 'Jse_kind=pot deprecated &
+				  [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
 				ALLOCATE(u_POT_se1_new(1:H_N_part), u_POT_se1_old(1:H_N_part))
 				u_POT_se1_new=0.d0
 				u_POT_se1_old=0.d0
@@ -238,6 +234,8 @@ mODULE calcola_accettazione
 			u_sesp2_new=0.d0
 			u_sesp2_old=0.d0
 		ELSE IF (Jsesp_kind=='gsd') THEN
+				STOP 'Jsesp_kind=gsd deprecated &
+				  [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
 			ALLOCATE(GDsp1_up_new(1:H_N_part,1:H_N_part), GDsp1_up_old(1:H_N_part,1:H_N_part))
 			GDsp1_up_new=0.d0
 			GDsp1_up_old=0.d0

@@ -578,6 +578,11 @@ MODULE funzione_onda
 		
 		cont=1
 		
+      IF ( opt_L ) THEN
+         CALL cambia_L_simulation_box(nuovi_parametri(cont:cont+2))
+         cont=cont+3
+      END IF
+		
 		IF (Jee_kind/='no_') THEN
 			SELECT CASE (Jee_kind)
 			CASE ('yuk')
@@ -985,8 +990,9 @@ MODULE funzione_onda
 			IF (.NOT. iniz_walkers) STOP 'Prima di settare Rp devi aver inizializzato i walkers &
 			  [ module_funzione_onda.f90 > setta_parametri ]'
 			CALL setta_Rcrystal(nuovi_parametri(cont:cont+3*N_part-1))
+         cont=cont+3*N_part
 		END IF
-		
+
 	END SUBROUTINE setta_parametri
 !-----------------------------------------------------------------------
 

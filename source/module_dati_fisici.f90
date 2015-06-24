@@ -331,6 +331,15 @@ MODULE dati_fisici
 		iniz_dati_fisici=.TRUE.
 	END SUBROUTINE inizializza_dati_fisici
 !-----------------------------------------------------------------------
+   SUBROUTINE setta_L(Lnew)
+      IMPLICIT NONE
+      REAL(KIND=8), INTENT(IN) :: Lnew(1:3)
+      
+      L=Lnew
+      H_L=L*0.5d0
+
+   END SUBROUTINE setta_L
+!-----------------------------------------------------------------------
 	SUBROUTINE chiudi_dati_fisici()
 		IMPLICIT NONE
 		IF (.NOT. iniz_dati_fisici) STOP 'Prima di chiudere avresti dovuto inizializzare &
