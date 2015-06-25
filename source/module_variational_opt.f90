@@ -3416,15 +3416,16 @@ MODULE variational_opt
             END DO
          END IF
          IF (opt_Rp) THEN
-            DO i = num_coord_L+1, num_coord_L+num_coord_Rp, 1
+            DO i = 1, num_coord_Rp, 1
                !!!Raccolgo i termini Hi
-               CALL MPI_REDUCE(Hgradp_av(i),Hi(i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
-               IF (NORMALIZE) Hi(i)=Hi(i)*quoz
-               DO j = num_coord_L+1, num_coord_L+num_coord_Rp, 1
+               CALL MPI_REDUCE(Hgradp_av(i),Hi(i+num_coord_L),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+               IF (NORMALIZE) Hi(i+num_coord_L)=Hi(i+num_coord_L)*quoz
+               DO j = 1, num_coord_Rp, 1
                   IF (flag_O(j)) THEN
                      !!!Raccolgo i termini OiHj
-                     CALL MPI_REDUCE(OiHgradp_av(j,i),OiHj(j,i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
-                     IF (NORMALIZE) OiHj(j,i)=OiHj(j,i)*quoz
+                     CALL MPI_REDUCE(OiHgradp_av(j,i),OiHj(j+num_coord_L,i+num_coord_L),&
+                        1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+                     IF (NORMALIZE) OiHj(j+num_coord_L,i+num_coord_L)=OiHj(j+num_coord_L,i+num_coord_L)*quoz
                   END IF
                END DO
             END DO
@@ -3468,8 +3469,8 @@ MODULE variational_opt
                DO j = 1, 3, 1
                   !!!Calcolo i termini OiHj
                   dummy1(1)=SUM(O_fast(1:N_mc,j)*Hi_fast(1:N_mc,i)*w(1:N_mc))
-                  CALL MPI_REDUCE(dummy1(1),OiHj(j,i+num_coord_Rp),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
-                  IF (NORMALIZE) OiHj(j,i+num_coord_Rp)=OiHj(j,i+num_coord_Rp)*quoz
+                  CALL MPI_REDUCE(dummy1(1),OiHj(j,i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+                  IF (NORMALIZE) OiHj(j,i)=OiHj(j,i)*quoz
                END DO
             END DO
             DEALLOCATE(Hi_fast)
@@ -3477,16 +3478,16 @@ MODULE variational_opt
          IF (opt_Rp) THEN
             ALLOCATE(Hi_fast(1:N_mc,1:num_coord_Rp))
             Hi_fast(1:N_mc,1:num_coord_Rp)=TRANSPOSE(Hgradp(1:num_coord_Rp,1:N_mc))
-            DO i = 1+num_coord_L, num_coord_L+num_coord_Rp, 1
+            DO i = 1, num_coord_Rp, 1
                !!!Calcolo i termini Hi
                dummy1(1)=SUM(Hi_fast(1:N_mc,i)*w(1:N_mc))
-               CALL MPI_REDUCE(dummy1(1),Hi(i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
-               IF (NORMALIZE) Hi(i)=Hi(i)*quoz
-               DO j = num_coord_L+1, num_coord_L+num_coord_Rp, 1
+               CALL MPI_REDUCE(dummy1(1),Hi(i+num_coord_L),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+               IF (NORMALIZE) Hi(i+num_coord_L)=Hi(i+num_coord_L)*quoz
+               DO j = 1, num_coord_Rp, 1
                   !!!Calcolo i termini OiHj
                   dummy1(1)=SUM(O_fast(1:N_mc,j)*Hi_fast(1:N_mc,i)*w(1:N_mc))
-                  CALL MPI_REDUCE(dummy1(1),OiHj(j,i),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
-                  IF (NORMALIZE) OiHj(j,i)=OiHj(j,i)*quoz
+                  CALL MPI_REDUCE(dummy1(1),OiHj(j+num_coord_L,i+num_coord_L),1,MPI_REAL8,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
+                  IF (NORMALIZE) OiHj(j+num_coord_L,i+num_coord_L)=OiHj(j+num_coord_L,i+num_coord_L)*quoz
                END DO
             END DO
             DEALLOCATE(Hi_fast)
