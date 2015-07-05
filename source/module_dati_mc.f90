@@ -108,10 +108,7 @@ MODULE dati_mc
 			mpi_nprocs=1
 			mpi_myrank=0
 		END IF
-		IF ((mpi_nprocs>1400).AND.(flag_random_file)) THEN
-			STOP 'Il file random_seed.d contiene dati per al massimo 1400 processori &
-					  [ module_dati.f90 > inizializza_MPI ]'
-		END IF
+		
 	END SUBROUTINE inizializza_MPI
 !-----------------------------------------------------------------------
 
