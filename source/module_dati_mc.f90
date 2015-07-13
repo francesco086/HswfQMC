@@ -17,6 +17,8 @@ MODULE dati_mc
 	REAL (KIND=8), PROTECTED, SAVE :: alpha_ewald, accuracy_energy_opt
 	LOGICAL, PROTECTED, SAVE :: opt_c_eff_dnfH, opt_A_Jee, opt_F_Jee, opt_A_Jep, opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp
 	LOGICAL, PROTECTED, SAVE :: opt_rp, opt_SDse, opt_SDe, opt_orbital, opt_dynamic_backflow
+	CHARACTER (LEN=6), SAVE  :: costri_rp
+	REAL (KIND=8), PROTECTED, SAVE :: costri_rp_param
 	REAL (KIND=8), SAVE :: time_VMC_start
    CHARACTER (LEN=9) :: SR_kind
    LOGICAL, PROTECTED, SAVE :: SR_adaptative_beta, SR_lambda, SR_lambda_Rp
@@ -40,7 +42,7 @@ MODULE dati_mc
 		  quick_error, flag_random_file, random_seed_path
 		
 		NAMELIST /dati_ottimizzazione/ opt_SDe, opt_orbital, opt_dynamic_backflow, opt_A_Jee, opt_F_Jee, opt_A_Jep, &
-         opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp, opt_SDse, opt_c_eff_dnfH, opt_rp
+         opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp, opt_SDse, opt_c_eff_dnfH, opt_rp, costri_rp, costri_rp_param
 
       NAMELIST /dati_SR/ SR_kind, SR_num_max_WO_MIN, SR_beta, SR_beta_Rp, SR_maxdeltaPsi, SR_max_SVD_MIN, &
          SR_change_bound, SR_min_change, SR_max_change, SR_adaptative_beta, &

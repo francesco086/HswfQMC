@@ -254,7 +254,7 @@ MODULE variational_opt
 			num_par_var=num_par_var+3*N_part
 			num_coord_Rp=3*N_part
       ELSE
-         num_coord_Rp=0.d0
+         num_coord_Rp=0
 		END IF
 		
 		!!!!!!!
@@ -2883,6 +2883,42 @@ MODULE variational_opt
 
 	END SUBROUTINE parabgold_search_multidim
 
+    SUBROUTINE costrizione_rp(nuovi_rp)
+        IMPLICIT NONE
+        REAL (KIND=8), INTENT(INOUT) :: nuovi_rp(1:num_coord_rp)
+
+        REAL (KIND=8)                :: rp_rshaped(3,num_coord_rp/3)
+        REAL (KIND=8), ALLOCATABLE   :: h2coms(:,:), h2vecs(:,:)
+        INTEGER                      :: itp, nump, numph
+
+        nump = num_coord_rp/3
+        numph = nump/2
+        rp_rshaped = RESHAPE(nuovi_rp, (/3,nump/))
+
+        SELECT CASE (costri_rp)
+
+        CASE ('ring__')
+            rp_rshaped(3,:) = 0.d0  !prevent movement in z dir
+            DO itp=1,nump
+                rp_rshaped(1:2,itp) = costri_rp_param * rp_rshaped(1:2, itp) / &
+                sqrt(dot_product(rp_rshaped(1:2, itp), rp_rshaped(1:2, itp)))
+            ENDDO
+        CASE ('h2ring')
+            ALLOCATE(h2coms(3, num_coord_rp/6), h2vecs(3, num_coord_rp/6))
+            h2coms = 0.5d0 * (rp_rshaped(:,1:numph) + rp_rshaped(:,numph+1:nump))
+            h2vecs = rp_rshaped(:, 1:numph) - h2coms
+            h2coms(3,:) = 0.d0  !prevent movement in z dir
+            DO itp=1,numph
+                h2coms(1:2,itp) = costri_rp_param * h2coms(1:2, itp) / &
+                sqrt(dot_product(h2coms(1:2, itp), h2coms(1:2, itp)))
+                rp_rshaped(:,itp) = h2coms(:, itp) + h2vecs(:, itp)
+                rp_rshaped(:,itp+numph) = h2coms(:, itp) - h2vecs(:, itp)
+            ENDDO
+
+        END SELECT
+
+    END SUBROUTINE
+
 	SUBROUTINE controlla_punto(nuovi_parametri)
 		USE funzione_onda
 		IMPLICIT NONE
@@ -3063,8 +3099,13 @@ MODULE variational_opt
 				IF (nuovi_parametri(cont)<0.d0) nuovi_parametri(cont)=0.d0
 				cont=cont+1
 			END SELECT
+
 		END IF
-		
+
+		IF ( opt_rp ) THEN
+		    call costrizione_rp(nuovi_parametri(num_par_var-num_coord_rp+1 : num_par_var))
+		END IF
+
 	END SUBROUTINE controlla_punto
 
 	SUBROUTINE controlla_punto_e_parametro(P_old,P_new,a,dir)
@@ -3293,7 +3334,7 @@ MODULE variational_opt
 				cont=cont+1
 			END SELECT
 		END IF
-		
+
 	END SUBROUTINE controlla_punto_e_parametro
 
 	SUBROUTINE estrai_medie_SR()
