@@ -2917,6 +2917,8 @@ MODULE variational_opt
 
         END SELECT
 
+        nuovi_rp = RESHAPE(rp_rshaped, (/3*nump/))
+
     END SUBROUTINE
 
 	SUBROUTINE controlla_punto(nuovi_parametri)
