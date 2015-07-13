@@ -1889,7 +1889,11 @@ MODULE variational_opt
 
             !aggiorno i parametri variazionali
 				p0=p0+dp
-            
+
+                IF ( opt_rp ) THEN
+                    call costrizione_rp(p0(num_par_var-num_coord_rp+1 : num_par_var))
+                END IF
+
             !parte che gestisce AVERAGE
 				IF ( AV_accu ) THEN
                !se AV_accu=T (stoc_av) allora accumulo tutto indiscriminatamente
@@ -2896,13 +2900,13 @@ MODULE variational_opt
         rp_rshaped = RESHAPE(nuovi_rp, (/3,nump/))
 
         SELECT CASE (costri_rp)
-
         CASE ('ring__')
             rp_rshaped(3,:) = 0.d0  !prevent movement in z dir
             DO itp=1,nump
                 rp_rshaped(1:2,itp) = costri_rp_param * rp_rshaped(1:2, itp) / &
                 sqrt(dot_product(rp_rshaped(1:2, itp), rp_rshaped(1:2, itp)))
             ENDDO
+
         CASE ('h2ring')
             ALLOCATE(h2coms(3, num_coord_rp/6), h2vecs(3, num_coord_rp/6))
             h2coms = 0.5d0 * (rp_rshaped(:,1:numph) + rp_rshaped(:,numph+1:nump))
