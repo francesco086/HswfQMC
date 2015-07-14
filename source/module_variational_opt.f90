@@ -2919,6 +2919,19 @@ MODULE variational_opt
                 rp_rshaped(:,itp+numph) = h2coms(:, itp) - h2vecs(:, itp)
             ENDDO
 
+        CASE ('hprism')
+            ALLOCATE(h2coms(3, num_coord_rp/6), h2vecs(3, num_coord_rp/6))
+            h2coms = 0.5d0 * (rp_rshaped(:,1:numph) + rp_rshaped(:,numph+1:nump))
+            h2vecs = rp_rshaped(:, 1:numph) - h2coms
+            h2vecs(1:2,:) = 0.d0 !prevent movement in xy dir for relative hvecs
+            h2coms(3,:) = 0.d0  !prevent movement in z dir for com
+            DO itp=1,numph
+                h2coms(1:2,itp) = costri_rp_param * h2coms(1:2, itp) / &
+                sqrt(dot_product(h2coms(1:2, itp), h2coms(1:2, itp)))
+                rp_rshaped(:,itp) = h2coms(:, itp) + h2vecs(:, itp)
+                rp_rshaped(:,itp+numph) = h2coms(:, itp) - h2vecs(:, itp)
+            ENDDO
+
         END SELECT
 
         nuovi_rp = RESHAPE(rp_rshaped, (/3*nump/))
