@@ -210,15 +210,15 @@ do
 			read ANSW
 			if [ "$ANSW" = "y" ]
 			then
-				rm -v -f -r estimatori posizioni ottimizzazione
-				rm -v -f output.d
-				rm -v -f nohup.out
-				rm -v -f reticolo/*.d
-				mkdir -v estimatori
-				mkdir -v posizioni
-				mkdir -v estimatori/gradiente
-				mkdir -v ottimizzazione
-            mkdir -v ottimizzazione/splines
+				rm -f -r estimatori posizioni ottimizzazione
+				rm -f output.d
+				rm -f nohup.out
+				rm -f reticolo/*.d
+				mkdir estimatori
+				mkdir posizioni
+				mkdir estimatori/gradiente
+				mkdir ottimizzazione
+            			mkdir ottimizzazione/splines
 			else
 				echo "Aborted"
 			fi
@@ -230,14 +230,14 @@ do
 			read ANSW
 			if [ "$ANSW" = "y" ]
 			then
-				rm -v -f -r estimatori posizioni
-				rm -v -f ottimizzazione/*.dat
-				rm -v -f output.d
-				rm -v -f nohup.out
-				rm -v -f reticolo/SR_Rp-*.d
-				mkdir -v estimatori
-				mkdir -v posizioni
-				mkdir -v estimatori/gradiente
+				rm -f -r estimatori posizioni
+				rm -f ottimizzazione/*.dat
+				rm -f output.d
+				rm -f nohup.out
+				rm -f reticolo/SR_Rp-*.d
+				mkdir estimatori
+				mkdir posizioni
+				mkdir estimatori/gradiente
 			else
 				echo "Aborted"
 			fi
