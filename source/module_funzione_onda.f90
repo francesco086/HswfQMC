@@ -936,7 +936,7 @@ MODULE funzione_onda
 					END DO
 					CALL chiudi_dnfH()
 				END IF
-			ELSE IF ((SDe_kind=='atm').OR.(SDe_kind=='atp').OR.(SDe_kind=='bat').OR.(SDe_kind=='hl_')) THEN
+			ELSE IF ((SDe_kind=='atm').OR.(SDe_kind=='atp').OR.(SDe_kind=='bat').OR.(SDe_kind=='bap').OR.(SDe_kind=='hl_')) THEN
 				IF ( opt_SDe ) THEN
 					C_atm=nuovi_parametri(cont)
 					cont=cont+1
@@ -1035,7 +1035,7 @@ MODULE funzione_onda
 				PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 				IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
 				  'SDe: ', SDe_kind,'  -  C_atm=', C_atm
-	  		CASE ('bat','hl_')
+	  		CASE ('bat','bap','hl_')
 	  			PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
 	  			  'SDe: ', SDe_kind,'  -  C_atm=', C_atm

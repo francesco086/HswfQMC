@@ -434,6 +434,22 @@ mODULE calcola_accettazione
 				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E DOWN. INFO=', info
 				STOP
 			END IF
+		CASE ('bap')
+         CALL attiva_pc()
+			CALL valuta_SD_bat(-1,'up',rijpc_ep_old(0,:,:),H_N_part, &
+			  SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,SDe_up_new,detSDe_up_new)
+			CALL valuta_SD_bat(-1,'dw',rijpc_ep_old(0,:,:),H_N_part, &
+			  SDe_dw_old,detSDe_dw_old,ISDe_dw_old,pvte_dw_old,SDe_dw_new,detSDe_dw_new)
+			CALL ZGETRI( H_N_part, ISDe_up_old, H_N_part, pvte_up_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E UP. INFO=', info
+				STOP
+			END IF
+			CALL ZGETRI( H_N_part, ISDe_dw_old, H_N_part, pvte_dw_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E DOWN. INFO=', info
+				STOP
+			END IF
       CASE ('1sb')
          CALL valuta_SD_1s_backflow(-1,'up',L,re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
             SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,ISDe_up_new,detSDe_up_new)
@@ -1294,6 +1310,12 @@ mODULE calcola_accettazione
 	  				  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,SDe_up_old,detSDe_up_old)
 	  				CALL valuta_SD_bat(num,'dw',rij_ep_new(0,:,:),H_N_part, &
 	  				  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+	  			CASE ('bap')
+					CALL calcola_nuove_distanze_pc(tipo,num,'e_p_')
+	  				CALL valuta_SD_bat(num,'up',rijpc_ep_new(0,:,:),H_N_part, &
+	  				  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,SDe_up_old,detSDe_up_old)
+	  				CALL valuta_SD_bat(num,'dw',rijpc_ep_new(0,:,:),H_N_part, &
+	  				  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
             CASE ('1sb')
                CALL valuta_SD_1s_backflow(num,'up',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
                   SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
@@ -1686,6 +1708,20 @@ mODULE calcola_accettazione
 						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
 					ELSE IF ((num>H_N_part) .AND. (num<=N_part)) THEN
 						CALL valuta_SD_bat(num-H_N_part,'dw',rij_ep_new(0,:,:),H_N_part, &
+						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+					END IF
+				CASE ('bap')
+					CALL calcola_nuove_distanze_pc(tipo,num,'e_p_')
+					IF (num==-1) THEN
+						CALL valuta_SD_bat(num,'up',rijpc_ep_new(0,:,:),H_N_part, &
+						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+						CALL valuta_SD_bat(num,'dw',rijpc_ep_new(0,:,:),H_N_part, &
+						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+					ELSE IF ((num>0) .AND. (num<=H_N_part)) THEN
+						CALL valuta_SD_bat(num,'up',rijpc_ep_new(0,:,:),H_N_part, &
+						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+					ELSE IF ((num>H_N_part) .AND. (num<=N_part)) THEN
+						CALL valuta_SD_bat(num-H_N_part,'dw',rijpc_ep_new(0,:,:),H_N_part, &
 						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
 					END IF
             CASE ('1sb')
@@ -2431,9 +2467,16 @@ mODULE calcola_accettazione
 			  DABS( ((detGDsp1_up_new/detGDsp1_up_old)*((detGDsp2_up_new)/(detGDsp2_up_old))* &
 			  (detGDsp1_dw_new/detGDsp1_dw_old)*((detGDsp2_dw_new)/(detGDsp2_dw_old))) ) ,8)
 		END IF
+
+      IF (shadow_constr_domain) THEN
+         IF ( (REALPART(detSDse1_up_new)*REALPART(detSDse1_up_old)<0.d0) .OR. &
+              (REALPART(detSDse1_dw_new)*REALPART(detSDse1_dw_old)<0.d0) .OR. &
+              (REALPART(detSDse2_up_new)*REALPART(detSDse2_up_old)<0.d0) .OR. &
+              (REALPART(detSDse2_dw_new)*REALPART(detSDse2_dw_old)<0.d0) ) THEN
+            prob_acc=-1.d0
+         END IF
+      END IF
 		
-		CALL RANDOM_NUMBER(random)
-				
 		!prob_acc=REAL( DEXP(-(Uee_new-Uee_old)-(Uep_new-Uep_old)-(Use1_new-Use1_old)-(Use2_new-Use2_old)-(Bse1_new-Bse1_old)- &
 		!  (Bse2_new-Bse2_old)-(Uese1_new-Uese1_old)-(Uese2_new-Uese2_old)-(Usesp1_new-Usesp1_old)-(Usesp2_new-Usesp2_old)) * &
 		!  ( (detSDe_up_new*DCONJG(detSDe_up_new)/(detSDe_up_old*DCONJG(detSDe_up_old)))* &
@@ -2493,6 +2536,8 @@ mODULE calcola_accettazione
 		!END IF
 		!END IF
 		
+		CALL RANDOM_NUMBER(random)
+
 		IF (prob_acc>random) THEN
 			accettazione=.TRUE.
 			!PRINT * , 'PROB_ACC=', prob_acc, '     random=', random, '     ACCETTATO'

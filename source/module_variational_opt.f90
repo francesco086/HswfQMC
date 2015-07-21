@@ -227,11 +227,9 @@ MODULE variational_opt
 						END DO
 						num_par_var=num_par_var+ih
 					END IF
-				CASE ('atm')
+				CASE ('atm','atp')
 					num_par_var=num_par_var+1
-				CASE ('atp')
-					num_par_var=num_par_var+1
-				CASE ('bat')
+				CASE ('bat','bap')
 					num_par_var=num_par_var+1
 				CASE ('hl_')
 					num_par_var=num_par_var+1
@@ -599,13 +597,10 @@ MODULE variational_opt
 							parametri_var(ih)=REAL(c_eff_dnfH(i,j),8)
 						END DO
 					END IF
-				CASE ('atm')
+				CASE ('atm','atp')
 					parametri_var(cont)=C_atm
 					cont=cont+1
-				CASE ('atp')
-					parametri_var(cont)=C_atm
-					cont=cont+1
-				CASE ('bat')
+				CASE ('bat','bap')
 					parametri_var(cont)=C_atm
 					cont=cont+1
 				CASE ('hl_')

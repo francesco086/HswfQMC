@@ -13,6 +13,7 @@ flag_continua=F                                  !Resume a previous simulation (
 howtomove='1ppt'                                 !Walking method: 'allp'=all together    '1ppt'=single-particle moves
 propmove='gaus'                                  !Transition pdf: 'flat'=flat distribution   'gaus'=gaussian e^(-8*(x-x_0)^2/step^2)
 trimer_steps=F                                   !Propose Trimers (electron-shadow1-shadow2) moves. Important if the Kernel is very tight 
+shadow_constr_domain=T                           !Constrain the domain of the shadows to the same sign of SDse
 flag_elettroni=T                                 !Integrate over the electronic coordinates (T or F)
 flag_protoni=F                                   !(NOT IMPLEMENTED YET) Integrate over the protonic coordinates
 flag_shadow=F                                    !Integrate over the electronic-shadow coordinates

@@ -1048,6 +1048,9 @@ MODULE variational_calculations
 			CASE ('bat')
 				CALL derivata_SDe_bat(Onow(cont))
 				cont=cont+1
+			CASE ('bap')
+				CALL derivata_SDe_bap(Onow(cont))
+				cont=cont+1
          CASE ('hl_')
             CALL derivata_SDe_HL(Onow(cont))
             cont=cont+1

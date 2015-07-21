@@ -76,17 +76,20 @@ MODULE dati_fisici
 			file_reticolo=file_reticolo_opt
 		END IF
 		
+      !3D structures
 		L(1:3)=r_s*(4.d0*PI*N_part/3.d0)**(1.d0/3.d0)            !in bohr units
 		IF ((crystal_cell=='hcp__').OR.(crystal_cell=='mhcpo').OR.(crystal_cell=='hcp_w')) THEN
 			L(1)=L(1)*(2.d0**(1.d0/6.d0))
 			L(2)=L(2)*(((3.d0**3.d0)/(2.d0**5.d0))**(1.d0/6.d0))
 			L(3)=L(3)*((2.d0**(2.d0/3.d0))/(3**(1.d0/2.d0)))   *(1.58d0/DSQRT(8.d0/3.d0))
 		END IF
+
+      ! 2D structures
 		IF ( crystal_cell=='grp__' ) THEN
 			L(1:2)=r_s*DSQRT(PI*N_part)
 			L(1)=L(1)*3.d0/DSQRT(DSQRT(27.d0))
 			L(2)=L(2)*DSQRT(3.d0)/DSQRT(DSQRT(27.d0))
-			L(3)=L(1)
+         L(3)=100.d0 	!L(3)=L(1)
 		END IF
       IF ( crystal_cell=='quadr' ) THEN
          L(1:2)=DSQRT(PI*REAL(N_part,8))*r_s
