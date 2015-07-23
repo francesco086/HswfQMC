@@ -488,6 +488,12 @@ mODULE calcola_accettazione
          SDe_dw_old=1.d0
          detSDe_dw_old=1.d0
          ISDe_dw_old=1.d0
+      CASE('apo')
+         IF (N_part/=2) STOP "Non si puo' usare lo Slater di Antisymmetrical on Protons Orbitals &
+            con un numero di particelle diverso da 2&
+            [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]"
+         CALL valuta_SD_APO(rij_ep_old(0,1:2,1:2),re_old(1:3,1:2),rp_old(1:3,1:2),&
+            SDe_up_old,detSDe_up_old,ISDe_up_old,SDe_dw_old,detSDe_dw_old,ISDe_dw_old)
 		CASE ('gss')
 			CALL valuta_SD_gauss(-1,rij_ep_old(0,1:H_N_part,1:H_N_part),H_N_part, &
 			  SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,SDe_up_new,detSDe_up_new)
@@ -1328,6 +1334,9 @@ mODULE calcola_accettazione
                   SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
             CASE ('hl_')
                CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
+            CASE ('apo')
+               CALL valuta_SD_APO(rij_ep_new(0,1:2,1:2),re_new(1:3,1:2),rp_new(1:3,1:2),&
+                  SDe_up_new,detSDe_up_new,ISDe_up_new,SDe_dw_new,detSDe_dw_new,ISDe_dw_new)
 				CASE ('gss')
 					CALL valuta_SD_gauss(num,rij_ep_new(0,1:H_N_part,1:H_N_part),H_N_part, &
 					  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,SDe_up_old,detSDe_up_old)
@@ -1752,6 +1761,9 @@ mODULE calcola_accettazione
                END IF
             CASE('hl_')
                CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
+            CASE('apo')
+               CALL valuta_SD_APO(rij_ep_new(0,1:2,1:2),re_new(1:3,1:2),rp_new(1:3,1:2),&
+                  SDe_up_new,detSDe_up_new,ISDe_up_new,SDe_dw_new,detSDe_dw_new,ISDe_dw_new)
 				CASE ('gss')
 					IF (num==-1) THEN
 						CALL valuta_SD_gauss(num,rij_ep_new(0,1:H_N_part,1:H_N_part),H_N_part, &
@@ -2781,7 +2793,7 @@ mODULE calcola_accettazione
 		ELSE IF ((num>0) .AND. (num<=N_part)) THEN
 			SELECT CASE (tipo)
 			CASE ('e__')
-				IF ((SDe_kind/='no_').AND.(SDe_kind/='hl_')) THEN
+				IF ((SDe_kind/='no_').AND.(SDe_kind/='hl_').AND.(SDe_kind/='apo')) THEN
 					IF (num<=H_N_part) THEN
 						SDe_up_new(num,1:H_N_part)=SDe_up_old(num,1:H_N_part)
 						detSDe_up_new=detSDe_up_old
@@ -2793,6 +2805,13 @@ mODULE calcola_accettazione
                SDe_up_new=SDe_up_old
                ISDe_up_new=ISDe_up_old
                detSDe_up_new=detSDe_up_old
+            ELSE IF (SDe_kind=='apo') THEN
+					SDe_up_new=SDe_up_old
+					ISDe_up_new=ISDe_up_old
+					pvte_up_new=pvte_up_old
+					SDe_dw_new=SDe_dw_old
+					ISDe_dw_new=ISDe_dw_old
+					pvte_dw_new=pvte_dw_old
             END IF
 				IF (Jee_kind/='no_') THEN
 					u_ee_new(num,1:num-1)=u_ee_old(num,1:num-1)
@@ -3081,6 +3100,13 @@ mODULE calcola_accettazione
                ELSE IF (SDe_kind=='hl_') THEN
                   SDe_up_old=SDe_up_new
                   ISDe_up_old=ISDe_up_new
+               ELSE IF (SDe_kind=='apo') THEN
+					   SDe_up_old=SDe_up_new
+					   ISDe_up_old=ISDe_up_new
+					   pvte_up_old=pvte_up_new
+					   SDe_dw_old=SDe_dw_new
+					   ISDe_dw_old=ISDe_dw_new
+					   pvte_dw_old=pvte_dw_new
                ELSE
 					   IF (num<=H_N_part) THEN
 					   	CALL aggiorna_matrice_inversa_C_1ppt(H_N_part,num,ISDe_up_old,detSDe_up_old,&

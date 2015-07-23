@@ -936,7 +936,8 @@ MODULE funzione_onda
 					END DO
 					CALL chiudi_dnfH()
 				END IF
-			ELSE IF ((SDe_kind=='atm').OR.(SDe_kind=='atp').OR.(SDe_kind=='bat').OR.(SDe_kind=='bap').OR.(SDe_kind=='hl_')) THEN
+			ELSE IF ((SDe_kind=='atm').OR.(SDe_kind=='atp').OR.(SDe_kind=='bat').OR.(SDe_kind=='bap')&
+                   .OR.(SDe_kind=='hl_').OR.(SDe_kind=='apo')) THEN
 				IF ( opt_SDe ) THEN
 					C_atm=nuovi_parametri(cont)
 					cont=cont+1
@@ -1035,7 +1036,7 @@ MODULE funzione_onda
 				PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 				IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
 				  'SDe: ', SDe_kind,'  -  C_atm=', C_atm
-	  		CASE ('bat','bap','hl_')
+	  		CASE ('bat','bap','hl_','apo')
 	  			PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
 	  			  'SDe: ', SDe_kind,'  -  C_atm=', C_atm
@@ -1929,11 +1930,75 @@ MODULE funzione_onda
          detSD=SD(1,1)
          ISD(1,1)=(1.d0,0.d0)/detSD
 
-			IF (verbose_mode) PRINT * , 'funzione_onda: detSD(gss)=', detSD
+			IF (verbose_mode) PRINT * , 'funzione_onda: detSD(hl_)=', detSD
 				
 		END SUBROUTINE valuta_SD_HL	
 	
 	!-----------------------------------------------------------------------
+
+      !Antisymmetrical on Protons exchange Orbital
+		SUBROUTINE valuta_SD_APO(rep,re,rp,SDup,detSDup,ISDup,SDdw,detSDdw,ISDdw)
+			USE generic_tools
+			IMPLICIT NONE
+			REAL (KIND=8), INTENT(IN) :: rep(1:2,1:2), re(1:3,1:2), rp(1:3,1:2)
+			COMPLEX (KIND=8) :: SDup(1:1,1:1), ISDup(1:1,1:1), detSDup
+			COMPLEX (KIND=8) :: SDdw(1:1,1:1), ISDdw(1:1,1:1), detSDdw
+         REAL(KIND=8) :: APOfact
+		
+			IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
+			  [ module_funzione_onda.f90 > valuta_SD_APO ]'
+		
+         APOfact=APO_factor(re,rp)
+         SDup(1,1)=(1.d0,0.d0)*( phiH2_S(rep(1,1:2)) + APOfact*phiH2_A(rep(1,1:2)) )
+         SDdw(1,1)=(1.d0,0.d0)*( phiH2_S(rep(2,1:2)) - APOfact*phiH2_A(rep(2,1:2)) )
+         !SDup(1,1)=(1.d0,0.d0)*( phiH2_A(rep(1,1:2)) + APOfact*phiH2_S(rep(1,1:2)) )
+         !SDdw(1,1)=(1.d0,0.d0)*( phiH2_A(rep(2,1:2)) - APOfact*phiH2_S(rep(2,1:2)) )
+         detSDup=SDup(1,1)
+         detSDdw=SDdw(1,1)
+         ISDup(1,1)=(1.d0,0.d0)/detSDup
+         ISDdw(1,1)=(1.d0,0.d0)/detSDdw
+
+			IF (verbose_mode) PRINT * , 'funzione_onda: detSDup(apo)=', detSDup
+			IF (verbose_mode) PRINT * , 'funzione_onda: detSDdw(apo)=', detSDdw
+				
+		END SUBROUTINE valuta_SD_APO
+
+	!-----------------------------------------------------------------------
+
+      FUNCTION APO_factor(re,rp)
+         IMPLICIT NONE
+         REAL(KIND=8) :: APO_factor
+         REAL(KIND=8), INTENT(IN) :: re(1:3,1:2), rp(1:3,1:2)
+         REAL(KIND=8) :: ab(1:3)
+
+         ab(1:3)=rp(1:3,2)-rp(1:3,1)
+         APO_factor=DOT_PRODUCT(re(1:3,2)-re(1:3,1),ab(1:3))/DOT_PRODUCT(ab(1:3),ab(1:3))
+      
+      END FUNCTION APO_factor
+
+	!-----------------------------------------------------------------------
+
+      FUNCTION phiH2_A(rij)
+         IMPLICIT NONE
+         REAL(KIND=8) :: phiH2_A
+         REAL(KIND=8), INTENT(IN) :: rij(1:2)   !distance of the particle from proton 1 and proton 2
+      
+         phiH2_A=DEXP(-C_atm*rij(1))-DEXP(-C_atm*rij(2))
+
+      END FUNCTION phiH2_A
+
+	!-----------------------------------------------------------------------
+
+      FUNCTION phiH2_S(rij)
+         IMPLICIT NONE
+         REAL(KIND=8) :: phiH2_S
+         REAL(KIND=8), INTENT(IN) :: rij(1:2)   !distance of the particle from proton 1 and proton 2
+      
+         phiH2_S=DEXP(-C_atm*rij(1))+DEXP(-C_atm*rij(2))
+
+      END FUNCTION phiH2_S
+
+   !-----------------------------------------------------------------------
 
 		SUBROUTINE valuta_SD_1s_backflow(num,updw,L,re,rp,rij,N,SD,detSD,ISD,pvt,ISD_old,detSD_old)
 			USE generic_tools

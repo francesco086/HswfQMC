@@ -197,6 +197,11 @@ MODULE estimatori
 		COMPLEX (KIND=8) :: work_C(1:3*H_N_part)
 		COMPLEX (KIND=8) :: der1_up(1:3), der2_up, der1_dw(1:3), der2_dw, frfc1, frfc2, frfc3(1:3), frfc4(1:3)
       COMPLEX (KIND=8) :: d1_up(1:3), d2_up(1:3), d1_dw(1:3), d2_dw(1:3), dd1_up, dd2_up, dd1_dw, dd2_dw
+      REAL(KIND=8) :: gphiA1(1:3), gphiA2(1:3), gphiS1(1:3), gphiS2(1:3), gOPAfact(1:3)
+      REAL(KIND=8) :: phiA1, phiA2, phiS1, phiS2, OPAfact
+      REAL(KIND=8) :: g1phiup(1:3), g2phiup(1:3), g1phidw(1:3), g2phidw(1:3)
+      REAL(KIND=8) :: lphiA1(1:3), lphiA2(1:3), lphiS1(1:3), lphiS2(1:3)
+      REAL(KIND=8) :: l1phiup(1:3), l2phiup(1:3), l1phidw(1:3), l2phidw(1:3)
 		REAL (KIND=8), INTENT(OUT) :: E_kin, E_JF
 		
 		E_kin=0.d0
@@ -523,6 +528,116 @@ MODULE estimatori
          !   (frf6*frf6*frf1(0))
 
          !STOP
+
+      CASE ('apo')
+
+         ! OPA factor
+         OPAfact=APO_factor(re_old(1:3,1:2),rp_old(1:3,1:2))
+
+         ! phiA
+         ! elec:1
+         phiA1=phiH2_A(rij_ep_old(0,1,1:2))
+         ! elec:2
+         phiA2=phiH2_A(rij_ep_old(0,2,1:2))
+
+         ! phiS
+         ! elec:1
+         phiS1=phiH2_S(rij_ep_old(0,1,1:2))
+         ! elec:2
+         phiS2=phiH2_S(rij_ep_old(0,2,1:2))
+
+         !derivatives of 1s orbitals
+         ! prot:a  elec:1
+         frf2s1(1:3)=-(rij_ep_old(1:3,1,1)/rij_ep_old(0,1,1))* &
+                      C_atm*DEXP(-C_atm*rij_ep_old(0,1,1))
+         ! prot:b elec:1
+         frf3s1(1:3)=-(rij_ep_old(1:3,1,2)/rij_ep_old(0,1,2))* &
+                      C_atm*DEXP(-C_atm*rij_ep_old(0,1,2))
+         ! prot:a  elec:2
+         frf2s2(1:3)=-(rij_ep_old(1:3,2,1)/rij_ep_old(0,2,1))* &
+                      C_atm*DEXP(-C_atm*rij_ep_old(0,2,1))
+         ! prot:b elec:2
+         frf3s2(1:3)=-(rij_ep_old(1:3,2,2)/rij_ep_old(0,2,2))* &
+                      C_atm*DEXP(-C_atm*rij_ep_old(0,2,2))
+
+         !derivatives of the OPA factor
+         gOPAfact(1:3)=-rij_pp_old(1:3,1,2)/(rij_pp_old(0,1,2)*rij_pp_old(0,1,2))
+
+         !derivatives of phiA
+         ! elec:1
+         gphiA1(1:3)=frf2s1(1:3)-frf3s1(1:3)
+         ! elec:2
+         gphiA2(1:3)=frf2s2(1:3)-frf3s2(1:3)
+
+         !derivatives of phiS
+         ! elec:1
+         gphiS1(1:3)=frf2s1(1:3)+frf3s1(1:3)
+         ! elec:2
+         gphiS2(1:3)=frf2s2(1:3)+frf3s2(1:3)
+
+         !derivatives of the orbitals
+         !g1phiup(1:3)=gphiA1(1:3)+gOPAfact(1:3)*phiS1+OPAfact*gphiS1(1:3)
+         !g1phidw(1:3)=-gOPAfact(1:3)*phiS2
+         !g2phiup(1:3)=-gOPAfact(1:3)*phiS1
+         !g2phidw(1:3)=gphiA2(1:3)+gOPAfact(1:3)*phiS2-OPAfact*gphiS2(1:3)
+         g1phiup(1:3)=gphiS1(1:3)+gOPAfact(1:3)*phiA1+OPAfact*gphiA1(1:3)
+         g1phidw(1:3)=-gOPAfact(1:3)*phiA2
+         g2phiup(1:3)=-gOPAfact(1:3)*phiA1
+         g2phidw(1:3)=gphiS2(1:3)+gOPAfact(1:3)*phiA2-OPAfact*gphiA2(1:3)
+
+         !second derivatives of 1s orbitals
+         ! prot:a elec:1
+         frf2s1(1:3)=-C_atm*DEXP(-C_atm*rij_ep_old(0,1,1))/rij_ep_old(0,1,1) +&
+                     (rij_ep_old(1:3,1,1)/rij_ep_old(0,1,1)) *&
+                      ( (rij_ep_old(1:3,1,1)/(rij_ep_old(0,1,1)**2))*C_atm*DEXP(-C_atm*rij_ep_old(0,1,1)) +&
+                        (rij_ep_old(1:3,1,1)/rij_ep_old(0,1,1))*C_atm*C_atm*DEXP(-C_atm*rij_ep_old(0,1,1)) )
+         ! prot:b elec:1
+         frf3s1(1:3)=-C_atm*DEXP(-C_atm*rij_ep_old(0,1,2))/rij_ep_old(0,1,2) +&
+                     (rij_ep_old(1:3,1,2)/rij_ep_old(0,1,2)) *&
+                      ( (rij_ep_old(1:3,1,2)/(rij_ep_old(0,1,2)**2))*C_atm*DEXP(-C_atm*rij_ep_old(0,1,2)) +&
+                        (rij_ep_old(1:3,1,2)/rij_ep_old(0,1,2))*C_atm*C_atm*DEXP(-C_atm*rij_ep_old(0,1,2)) )
+         ! prot:a elec:2
+         frf2s2(1:3)=-C_atm*DEXP(-C_atm*rij_ep_old(0,2,1))/rij_ep_old(0,2,1) +&
+                     (rij_ep_old(1:3,2,1)/rij_ep_old(0,2,1)) *&
+                      ( (rij_ep_old(1:3,2,1)/(rij_ep_old(0,2,1)**2))*C_atm*DEXP(-C_atm*rij_ep_old(0,2,1)) +&
+                        (rij_ep_old(1:3,2,1)/rij_ep_old(0,2,1))*C_atm*C_atm*DEXP(-C_atm*rij_ep_old(0,2,1)) )
+         ! prot:b elec:2
+         frf3s2(1:3)=-C_atm*DEXP(-C_atm*rij_ep_old(0,2,2))/rij_ep_old(0,2,2) +&
+                     (rij_ep_old(1:3,2,2)/rij_ep_old(0,2,2)) *&
+                      ( (rij_ep_old(1:3,2,2)/(rij_ep_old(0,2,2)**2))*C_atm*DEXP(-C_atm*rij_ep_old(0,2,2)) +&
+                        (rij_ep_old(1:3,2,2)/rij_ep_old(0,2,2))*C_atm*C_atm*DEXP(-C_atm*rij_ep_old(0,2,2)) )
+
+         !second derivatives of phiA
+         ! elec:1
+         lphiA1(1:3)=frf2s1(1:3)-frf3s1(1:3)
+         ! elec:2
+         lphiA2(1:3)=frf2s2(1:3)-frf3s2(1:3)
+
+         !second derivatives of phiS
+         ! elec:1
+         lphiS1(1:3)=frf2s1(1:3)+frf3s1(1:3)
+         ! elec:2
+         lphiS2(1:3)=frf2s2(1:3)+frf3s2(1:3)
+
+         !second derivatives of the orbitals
+         !l1phiup(1:3)=lphiA1(1:3)+OPAfact*lphiS1(1:3)+2.d0*gOPAfact(1:3)*gphiS1(1:3)
+         !l1phidw(1:3)=0.d0
+         !l2phiup(1:3)=0.d0
+         !l2phidw(1:3)=lphiA2(1:3)-OPAfact*lphiS2(1:3)+2.d0*gOPAfact(1:3)*gphiS2(1:3)
+         l1phiup(1:3)=lphiS1(1:3)+OPAfact*lphiA1(1:3)+2.d0*gOPAfact(1:3)*gphiA1(1:3)
+         l1phidw(1:3)=0.d0
+         l2phiup(1:3)=0.d0
+         l2phidw(1:3)=lphiS2(1:3)-OPAfact*lphiA2(1:3)+2.d0*gOPAfact(1:3)*gphiA2(1:3)
+
+         ! Gradient
+         gsdee_up(1:3,1)=g1phiup(1:3)*ISDe_up_old(1,1) + g1phidw(1:3)*ISDe_dw_old(1,1)
+         gsdee_dw(1:3,1)=g2phiup(1:3)*ISDe_up_old(1,1) + g2phidw(1:3)*ISDe_dw_old(1,1)
+
+         ! Laplacian
+         lsdee=2.d0*DOT_PRODUCT(g1phiup(1:3),g1phidw(1:3))*ISDe_up_old(1,1)*ISDe_dw_old(1,1)+ &
+               2.d0*DOT_PRODUCT(g2phiup(1:3),g2phidw(1:3))*ISDe_up_old(1,1)*ISDe_dw_old(1,1)+ &
+               SUM(l1phiup(1:3))*ISDe_up_old(1,1)+SUM(l1phidw(1:3))*ISDe_dw_old(1,1) + &
+               SUM(l2phiup(1:3))*ISDe_up_old(1,1)+SUM(l2phidw(1:3))*ISDe_dw_old(1,1)
 
 		CASE ('1sb')
 
