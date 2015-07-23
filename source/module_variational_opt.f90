@@ -3667,6 +3667,7 @@ MODULE variational_opt
                dp_eff(Ne+3+(i-1)*3)=0.d0
             END DO
          END IF
+         write(*,*) dp_eff(Ne+1:N)
       END IF
 
       !!riporto i dp_eff al dp globale
