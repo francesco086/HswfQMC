@@ -77,6 +77,23 @@ MODULE generic_tools
 		
 	END SUBROUTINE stampa_logo_HswfQMC
 !-----------------------------------------------------------------------
+	SUBROUTINE stampa_file_vettores3D(nome_file, vettores, nv)
+        IMPLICIT NONE
+        CHARACTER(LEN=*) :: nome_file
+        INTEGER :: nv, i, ios
+        REAL (KIND=8), INTENT(IN) :: vettores(3,nv)
+
+        OPEN(UNIT=1991, FILE=nome_file, STATUS='UNKNOWN', IOSTAT=ios)
+        IF ( ios /= 0 ) STOP 'Errore nell aprire il file per salvare vettores &
+          [ module_generic_tools.f90 > stampa_file_vettores3D ]'
+
+        DO i = 1, nv, 1
+            WRITE(UNIT=1991, FMT=*), vettores(1:3,i)
+        END DO
+        CLOSE (1991)
+
+    END SUBROUTINE stampa_file_vettores3D
+!-----------------------------------------------------------------------
 	!dato il numero di particelle N (che deve essere pari) salva tutte M=(N-1)!! le possibilitá di creare coppie nel vettore coppie(1:2,1:N/2,1:M)
 	SUBROUTINE crea_tutte_le_coppie(N,M,coppie)
 		IMPLICIT NONE

@@ -1487,6 +1487,12 @@ MODULE variational_opt
             CALL lin_molt_lagr(num_par_var_eff,num_par_var_eff-num_coord_Rp,num_coord_Rp,dp)
          CASE("LagrDynam")
             CALL lagrangian_dynamic_forces(num_par_var_eff,num_par_var_eff-num_coord_Rp,num_coord_Rp,dp)
+            IF (mpi_myrank==0 .and. opt_rp) THEN
+                WRITE (istring, '(I4.4)'), contatore - 1
+                CALL stampa_file_vettores3D('reticolo/LagrDyn_Frp-'//istring//'.d', &
+                RESHAPE(dp(num_par_var-num_coord_rp+1 : num_par_var),(/ 3, num_coord_rp/3 /)), num_coord_rp/3)
+                WRITE (istring, '(I4.4)'), contatore
+            END IF
          CASE("fast_SR__")
             !Determino il beta ottimale usando il principio variazionale stimando la E successiva tramite un'espansione
             !IF (mpi_myrank==0) OPEN(UNIT=666,FILE="ottimizzazione/SR_beta."//istring,STATUS='UNKNOWN',POSITION='ASIS')
@@ -3667,7 +3673,6 @@ MODULE variational_opt
                dp_eff(Ne+3+(i-1)*3)=0.d0
             END DO
          END IF
-         write(*,*) dp_eff(Ne+1:N)
       END IF
 
       !!riporto i dp_eff al dp globale
