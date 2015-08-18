@@ -1,6 +1,7 @@
 &dati_fisici
 r_s=2.61                             !Density in r_s=a/a_0 units
 crystal_cell='hcp__'                 !Crystal cell that specifies the initial protonic positions: 'bcc', 'fcc', 'hcp', 'hcp_w', 'mhcpo', 'sc_', 'mol', 'dat', 'datex', 'grp__', 'quadr', 'trian'
+flag_2D=.FALSE.
 file_reticolo='reticolo/init.pos'    !Path to the file containing the protonic initial position, for the cases 'dat__' and 'datex'
 flag_molecular=T                     !Molecule in the crystal cell (implemented only for 'hcp__' and 'mhcpo')
 strecthing_cov_bond=1.               !Distance between H atoms in the H2 molecule, in 0.74 Angstrom units (the equilibrium distance)

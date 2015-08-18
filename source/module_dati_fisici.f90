@@ -22,7 +22,7 @@ MODULE dati_fisici
 		REAL (KIND=8) :: vect(1:3), sigma_w, eta_w(1:1,1:1), L_w, dist(0:3)
 		REAL (KIND=8), ALLOCATABLE :: app(:,:)
 		
-		NAMELIST /dati_fisici/ r_s, crystal_cell, file_reticolo, flag_molecular, &
+		NAMELIST /dati_fisici/ r_s, crystal_cell, flag_2D, file_reticolo, flag_molecular, &
 		  strecthing_cov_bond, N_cell_side
 		OPEN (2, FILE='dati_fisici.d',STATUS='OLD')
 		READ (2,NML=dati_fisici)
@@ -35,31 +35,40 @@ MODULE dati_fisici
 		
 		IF ( crystal_cell=='bcc__' ) THEN
 			N_part=2*N_cell_side**3
+         flag_2D=.FALSE.
 		ELSE IF ( crystal_cell=='fcc__' ) THEN
 			N_part=4*N_cell_side**3
+         flag_2D=.FALSE.
 		ELSE IF ( (crystal_cell=='hcp__') .AND. (.NOT. flag_molecular) ) THEN
 			N_part=8*N_cell_side**3
+         flag_2D=.FALSE.
 		ELSE IF ( (crystal_cell=='hcp__') .AND. (flag_molecular) ) THEN
 			N_part=16*N_cell_side**3
+         flag_2D=.FALSE.
 		ELSE IF ( (crystal_cell=='hcp_w') .AND. (flag_molecular) ) THEN
 			N_part=16*N_cell_side**3
-		ELSE IF ( crystal_cell=='hring' ) THEN
-			N_part=6
+         flag_2D=.FALSE.
 		ELSE IF ( (crystal_cell=='mhcpo') .AND. (.NOT. flag_molecular) ) THEN
 			STOP 'mhcpo deve essere associato ad una fase molecolare'
 		ELSE IF ( (crystal_cell=='mhcpo') .AND. (flag_molecular) ) THEN
 			N_part=16*N_cell_side**3
+         flag_2D=.FALSE.
 		ELSE IF ( crystal_cell=='sc___' ) THEN
 			N_part=N_cell_side**3
+         flag_2D=.FALSE.
 		ELSE IF ( crystal_cell=='mol__' ) THEN
 			N_part=2
+         flag_2D=.FALSE.
 		ELSE IF ( crystal_cell=='dat__' ) THEN
 			N_part=N_cell_side
 		ELSE IF ( crystal_cell=='datex' ) THEN
 			N_part=N_cell_side
+		ELSE IF ( crystal_cell=='hring' ) THEN
+			N_part=6
+         flag_2D=.TRUE.
 		ELSE IF ( crystal_cell=='grp__' ) THEN
 			N_part=4*(N_cell_side**2)
-			flag_2D=.TRUE.
+         flag_2D=.TRUE.
       ELSE IF ( crystal_cell=='quadr' ) THEN
          N_part=N_cell_side**2
          flag_2D=.TRUE.
