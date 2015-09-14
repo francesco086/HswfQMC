@@ -19,7 +19,7 @@ minE=SRenergies[0][0]
 dEmin=SRenergies[0][1]
 
 for i in range (0,len(SRenergies)):
-   if (SRenergies[i][0]+1.5*SRenergies[i][1]<minE-1.5*dEmin):
+   if ((SRenergies[i][0]+1.5*SRenergies[i][1]<minE-1.5*dEmin)&(SRenergies[i][1]<dEmin*10.)):
       minE=SRenergies[i][0]
       dEmin=SRenergies[i][1]
 
