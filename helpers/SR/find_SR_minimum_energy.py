@@ -2,13 +2,13 @@
 
 # Script that, given a SR_energies.d file, find the minimum energy and correspondin standard deviation.
 # Just run
-#   ./find_minimum_from_SR_energies.py SR_energies.d
+#   ./find_minimum_from_SR_energies.py ottimizzazione/SR_energies.d
 
 # For getting the minimum energy from the bash, use
-#   ./find_minimum_from_SR_energies.py SR_energies.d | grep "minE=" | sed "s/minE= //"
+#   ./find_minimum_from_SR_energies.py ottimizzazione/SR_energies.d | grep "minE=" | sed "s/minE= //"
 #
 # For getting the corresponding standard deviation, use
-#   ./find_minimum_from_SR_energies.py SR_energies.d | grep "dEmin=" | sed "s/dEmin= //"
+#   ./find_minimum_from_SR_energies.py ottimizzazione/SR_energies.d | grep "dEmin=" | sed "s/dEmin= //"
 
 import sys
 import numpy as np
