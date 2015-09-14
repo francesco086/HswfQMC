@@ -45,6 +45,7 @@ do
 			echo "      --- Use HswfQMC ---"
 			echo "set_dir - Make the current folder a working folder (with all necessary input files and folders)"
          echo "generate_orbitals - Compute the DFT orbitals corresponding to the given input file dati_fisici.d and dati_DFT.d using Quantum Espresso (it requires pw.x and iotk from Quantum Espresso)"
+         echo "find_SR_minimum - Find the minimum of a SR minimization, by looking at the file ottimizzazione/SR_energies.d"
 			echo "clean - Clean all old data from previous simulations"
 			echo "wash - Clean all old data from previous simulations but the optimized wf and lattice positions"
 			
@@ -147,6 +148,10 @@ do
          echo "Set "${WF}" for using the generated orbitals"
 			exit
 			;;
+      find_SR_minimum)
+         find_SR_minimum_energy.py ottimizzazione/SR_energies.dat
+         exit
+         ;;
 		build)
 			cd ${pilot_PATH}
 			echo "Build the executable file HswfQMC_exe"
@@ -273,7 +278,7 @@ do
 						;;
 				esac
 			fi
-			PATH=${CURRENT_PATH}:${CURRENT_PATH}/helpers/qespresso:\$PATH
+			PATH=${CURRENT_PATH}:${CURRENT_PATH}/helpers/qespresso:${CURRENT_PATH}/helpers/SR:\$PATH
 			echo "
 #add path for HswfQMC
 export PATH=$PATH
@@ -281,7 +286,7 @@ export PATH=$PATH
 _pilot-HswfQMC.sh()
 {
     local cur=\${COMP_WORDS[COMP_CWORD]}
-    COMPREPLY=( \$(compgen -W \"git_pull set_path install_markuspline install_lapack set_makefile build rebuild set_dir generate_orbitals clean wash commit\" -- \$cur) )
+    COMPREPLY=( \$(compgen -W \"git_pull set_path install_markuspline install_lapack set_makefile build rebuild set_dir generate_orbitals find_SR_minimum clean wash commit\" -- \$cur) )
 }
 complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh" >> ~/.${FILE_TO_SET}
 			exit
