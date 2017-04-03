@@ -872,7 +872,7 @@ MODULE variational_opt
 		CALL setta_parametri(par,num)
       IF (mpi_myrank==0) THEN
          PRINT *, "Cambiato L = ", L, "   [bohr]"
-         IF (flag_output) WRITE(UNIT=7, FMT=*), "Cambiato L = ", L, "   [bohr]"
+         IF (flag_output) WRITE(UNIT=7, FMT=*) "Cambiato L = ", L, "   [bohr]"
       END IF
 		CALL prima_valutazione_funzione_onda()
 		CALL valuta_step_mc(accettabile)
@@ -1617,7 +1617,6 @@ MODULE variational_opt
          !      IF (mpi_myrank==0) dp=dp
          !      CALL MPI_BCAST(dp,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
          !   END IF
->>>>>>> origin/francesco086_dev
 
          CASE("plain_SR_")
 
