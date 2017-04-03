@@ -13,6 +13,7 @@ opt_SDse=F
 opt_rp=F
 costri_rp='none__'	!ring__ or h2ring
 costri_rp_param=0.d0	!radius of rings
+opt_L=F
 /
 
 !It specifies which part of the wave function is optimized with Stochastic Reconfiguration

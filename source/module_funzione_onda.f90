@@ -27,7 +27,7 @@ MODULE funzione_onda
 	REAL (KIND=8), SAVE :: c_sesp                               			    !per il Jastrow tra shadow elettroniche e protoniche
 	REAL (KIND=8), SAVE :: Asesp_yuk, Asesp_ud_yuk, Fsesp_yuk, Fsesp_ud_yuk     !per il Jastrow di Yukawa per le Shadow
 	REAL (KIND=8), SAVE :: Gsesp												!per il "Jastrow" gaussiano. In questo caso S_p==R_p
-	REAL (KIND=8), SAVE :: Gswf, C_atm
+	REAL (KIND=8), SAVE :: Ggaus, C_atm
 	LOGICAL, PARAMETER, PRIVATE :: verbose_mode=.FALSE.
 	LOGICAL :: split_Aee, split_Aep, split_Asese, split_Asesp, split_Fee, split_Fep, split_Fsese, split_Fsesp
 	LOGICAL :: flag_usa_coeff_dnfH
@@ -68,7 +68,7 @@ MODULE funzione_onda
         m_Jsplee, nknots_Jsplee, cutoff_Jsplee, m_Jsplep, nknots_Jsplep, cutoff_Jsplep, &
 		  Aee_yuk, Aee_ud_yuk, Fee_yuk, Fee_ud_yuk, Aep_yuk, Aep_ud_yuk, Fep_yuk, Fep_ud_yuk, &
 		  C_kern_e, Asese_yuk, Asese_ud_yuk, Fsese_yuk, Fsese_ud_yuk, Asesp_yuk, Asesp_ud_yuk, Fsesp_yuk, &
-		  Fsesp_ud_yuk, Gswf, C_atm, N_ritraccia_coppie, N_mc_relax_traccia_coppie, A_POT_se, D_POT_se, Gsesp, c_se, &
+		  Fsesp_ud_yuk, Ggaus, C_atm, N_ritraccia_coppie, N_mc_relax_traccia_coppie, A_POT_se, D_POT_se, Gsesp, c_se, &
 		  B_se, D_se, c_sesp, lda_path, kf_coeff_dnfH, flag_usa_coeff_dnfH
 		
 		IF (iniz_funzione_onda) STOP 'funzione_onda é giá inizializza [ module_funzione_onda.f90 > inizializza_dati_funzione_onda ]'
@@ -281,10 +281,9 @@ MODULE funzione_onda
       IF ((Jee_kind=='spl').OR.(Jee_kind=='spp')) THEN
          SELECT CASE(Jee_kind)
          CASE('spl')
-            SL=DSQRT(DOT_PRODUCT(H_L,H_L))
-            !IF (crystal_cell=='mol__') SL=MIN(SL,DSQRT(3.d0*20.d0))
+            SL=MINVAL(H_L)
          CASE('spp')
-            SL=DSQRT(DOT_PRODUCT(L,L))/PI
+            SL=MINVAL(L)/PI
          END SELECT
 
          CALL MSPL_new(M=m_Jsplee , NKNOTS=nknots_Jsplee , LA=0.d0 , LB=SL , SPL=Jsplee, &
@@ -513,7 +512,7 @@ MODULE funzione_onda
         cutoff_Jsplee, m_Jsplep, nknots_Jsplep, cutoff_Jsplep, &
         Aee_yuk, Aee_ud_yuk, Fee_yuk, Fee_ud_yuk, Aep_yuk, Aep_ud_yuk, Fep_yuk, Fep_ud_yuk, &
 		  C_kern_e, Asese_yuk, Asese_ud_yuk, Fsese_yuk, Fsese_ud_yuk, Asesp_yuk, Asesp_ud_yuk, Fsesp_yuk, &
-		  Fsesp_ud_yuk, Gswf, C_atm, N_ritraccia_coppie, N_mc_relax_traccia_coppie, A_POT_se, D_POT_se, Gsesp, c_se, &
+		  Fsesp_ud_yuk, Ggaus, C_atm, N_ritraccia_coppie, N_mc_relax_traccia_coppie, A_POT_se, D_POT_se, Gsesp, c_se, &
 		  B_se, D_se, c_sesp, lda_path, kf_coeff_dnfH, flag_usa_coeff_dnfH
 		
 		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzat [ module_funzione_onda.f90 > stampa_file_dati_funzione_onda ]'
@@ -566,6 +565,11 @@ MODULE funzione_onda
 		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato [ module_funzione_onda.f90 > setta_parametri ]'
 		
 		cont=1
+		
+      IF ( opt_L ) THEN
+         CALL cambia_L_simulation_box(nuovi_parametri(cont:cont+2))
+         cont=cont+3
+      END IF
 		
 		IF (Jee_kind/='no_') THEN
 			SELECT CASE (Jee_kind)
@@ -920,7 +924,8 @@ MODULE funzione_onda
 					END DO
 					CALL chiudi_dnfH()
 				END IF
-			ELSE IF ((SDe_kind=='atm').OR.(SDe_kind=='atp').OR.(SDe_kind=='bat').OR.(SDe_kind=='hl_')) THEN
+			ELSE IF ((SDe_kind=='atm').OR.(SDe_kind=='atp').OR.(SDe_kind=='bat').OR.(SDe_kind=='bap')&
+                   .OR.(SDe_kind=='hl_').OR.(SDe_kind=='apo')) THEN
 				IF ( opt_SDe ) THEN
 					C_atm=nuovi_parametri(cont)
 					cont=cont+1
@@ -972,8 +977,9 @@ MODULE funzione_onda
 		IF ( opt_Rp ) THEN
 			IF (.NOT. iniz_walkers) STOP 'Prima di settare Rp devi aver inizializzato i walkers [ module_funzione_onda.f90 > setta_parametri ]'
 			CALL setta_Rcrystal(nuovi_parametri(cont:cont+3*N_part-1))
+         cont=cont+3*N_part
 		END IF
-		
+
 	END SUBROUTINE setta_parametri
 !-----------------------------------------------------------------------
 
@@ -1015,7 +1021,7 @@ MODULE funzione_onda
 				PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 				IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)') &
 				  'SDe: ', SDe_kind,'  -  C_atm=', C_atm
-	  		CASE ('bat','hl_')
+	  		CASE ('bat','bap','hl_','apo')
 	  			PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)') &
 	  			  'SDe: ', SDe_kind,'  -  C_atm=', C_atm
@@ -1030,6 +1036,10 @@ MODULE funzione_onda
 	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A7,I1,5X,A7,I4,5X,A7,L1,2(5X,A9,F9.3))') &
 	  			  'SDe: ', SDe_kind,'  -  m=', m_Bsplep, 'nknots=', nknots_Bsplep, 'cutoff=', cutoff_Bsplep,&
               'A_POT_se=', A_POT_se, 'D_POT_se=', D_POT_se
+         CASE ('gss','gsp')
+			   PRINT '(6X,A5,A3,A10,F9.3)' , 'SDe: ', SDe_kind,'  -  Ggaus=', Ggaus
+			   IF (flag_output) WRITE (7, '(6X,A5,A3,A10,F9.3)'), &
+			     'SDe: ', SDe_kind,'  -  Ggaus=', Ggaus
 			END SELECT
 		END IF
 
@@ -1375,17 +1385,17 @@ MODULE funzione_onda
 		END IF
 		
 		IF (SDse_kind=='gem') THEN
-			PRINT '(6X,A6,A3,A10,F9.3)' , 'SDse: ', SDse_kind,'  -  Gswf=', Gswf
+			PRINT '(6X,A6,A3,A10,F9.3)' , 'SDse: ', SDse_kind,'  -  Ggaus=', Ggaus
 			IF (flag_output) WRITE (7, '(6X,A6,A3,A10,F9.3)') &
-			  'SDse: ', SDse_kind,'  -  Gswf=', Gswf
+			  'SDse: ', SDse_kind,'  -  Ggaus=', Ggaus
 		ELSE IF (SDse_kind=='gss') THEN
-			PRINT '(6X,A6,A3,A10,F9.3)' , 'SDse: ', SDse_kind,'  -  Gswf=', Gswf
+			PRINT '(6X,A6,A3,A10,F9.3)' , 'SDse: ', SDse_kind,'  -  Ggaus=', Ggaus
 			IF (flag_output) WRITE (7, '(6X,A6,A3,A10,F9.3)') &
-			  'SDse: ', SDse_kind,'  -  Gswf=', Gswf
+			  'SDse: ', SDse_kind,'  -  Ggaus=', Ggaus
 		ELSE IF (SDse_kind=='gsp') THEN
-			PRINT '(6X,A6,A3,A10,F9.3)' , 'SDse: ', SDse_kind,'  -  Gswf=', Gswf
+			PRINT '(6X,A6,A3,A10,F9.3)' , 'SDse: ', SDse_kind,'  -  Ggaus=', Ggaus
 			IF (flag_output) WRITE (7, '(6X,A6,A3,A10,F9.3)') &
-			  'SDse: ', SDse_kind,'  -  Gswf=', Gswf
+			  'SDse: ', SDse_kind,'  -  Ggaus=', Ggaus
 		ELSE IF ((SDse_kind=='atm').OR.(SDse_kind=='atp')) THEN
 			PRINT '(6X,A6,A3,A11,F9.3)' , 'SDse: ', SDse_kind,'  -  C_atm=', C_atm
 			IF (flag_output) WRITE (7, '(6X,A6,A3,A11,F9.3)') &
@@ -1712,7 +1722,7 @@ MODULE funzione_onda
 			!Calcolo i termini matriciali di SD_new
 			DO j = 1, N, 1
 				DO i = 1, N, 1
-					SD(i,j)=norm*DEXP(-Gswf*rij(i,j)*rij(i,j))
+					SD(i,j)=norm*DEXP(-Ggaus*rij(i,j)*rij(i,j))
 					ISD(i,j)=SD(i,j)
 				END DO
 			END DO
@@ -1730,7 +1740,7 @@ MODULE funzione_onda
 			END DO
 		ELSE IF ((num>0) .AND. (num<=N)) THEN
 			DO i = 1, N, 1
-				SD(num,i)=norm*norm*DEXP(-Gswf*rij(num,i)*rij(num,i))
+				SD(num,i)=norm*norm*DEXP(-Ggaus*rij(num,i)*rij(num,i))
 			END DO
 			CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD)
 		ELSE
@@ -1892,11 +1902,75 @@ MODULE funzione_onda
          detSD=SD(1,1)
          ISD(1,1)=(1.d0,0.d0)/detSD
 
-			IF (verbose_mode) PRINT * , 'funzione_onda: detSD(gss)=', detSD
+			IF (verbose_mode) PRINT * , 'funzione_onda: detSD(hl_)=', detSD
 				
 		END SUBROUTINE valuta_SD_HL	
 	
 	!-----------------------------------------------------------------------
+
+      !Antisymmetrical on Protons exchange Orbital
+		SUBROUTINE valuta_SD_APO(rep,re,rp,SDup,detSDup,ISDup,SDdw,detSDdw,ISDdw)
+			USE generic_tools
+			IMPLICIT NONE
+			REAL (KIND=8), INTENT(IN) :: rep(1:2,1:2), re(1:3,1:2), rp(1:3,1:2)
+			COMPLEX (KIND=8) :: SDup(1:1,1:1), ISDup(1:1,1:1), detSDup
+			COMPLEX (KIND=8) :: SDdw(1:1,1:1), ISDdw(1:1,1:1), detSDdw
+         REAL(KIND=8) :: APOfact
+		
+			IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
+			  [ module_funzione_onda.f90 > valuta_SD_APO ]'
+		
+         APOfact=APO_factor(re,rp)
+         SDup(1,1)=(1.d0,0.d0)*( phiH2_S(rep(1,1:2)) + APOfact*phiH2_A(rep(1,1:2)) )
+         SDdw(1,1)=(1.d0,0.d0)*( phiH2_S(rep(2,1:2)) - APOfact*phiH2_A(rep(2,1:2)) )
+         !SDup(1,1)=(1.d0,0.d0)*( phiH2_A(rep(1,1:2)) + APOfact*phiH2_S(rep(1,1:2)) )
+         !SDdw(1,1)=(1.d0,0.d0)*( phiH2_A(rep(2,1:2)) - APOfact*phiH2_S(rep(2,1:2)) )
+         detSDup=SDup(1,1)
+         detSDdw=SDdw(1,1)
+         ISDup(1,1)=(1.d0,0.d0)/detSDup
+         ISDdw(1,1)=(1.d0,0.d0)/detSDdw
+
+			IF (verbose_mode) PRINT * , 'funzione_onda: detSDup(apo)=', detSDup
+			IF (verbose_mode) PRINT * , 'funzione_onda: detSDdw(apo)=', detSDdw
+				
+		END SUBROUTINE valuta_SD_APO
+
+	!-----------------------------------------------------------------------
+
+      FUNCTION APO_factor(re,rp)
+         IMPLICIT NONE
+         REAL(KIND=8) :: APO_factor
+         REAL(KIND=8), INTENT(IN) :: re(1:3,1:2), rp(1:3,1:2)
+         REAL(KIND=8) :: ab(1:3)
+
+         ab(1:3)=rp(1:3,2)-rp(1:3,1)
+         APO_factor=DOT_PRODUCT(re(1:3,2)-re(1:3,1),ab(1:3))/DOT_PRODUCT(ab(1:3),ab(1:3))
+      
+      END FUNCTION APO_factor
+
+	!-----------------------------------------------------------------------
+
+      FUNCTION phiH2_A(rij)
+         IMPLICIT NONE
+         REAL(KIND=8) :: phiH2_A
+         REAL(KIND=8), INTENT(IN) :: rij(1:2)   !distance of the particle from proton 1 and proton 2
+      
+         phiH2_A=DEXP(-C_atm*rij(1))-DEXP(-C_atm*rij(2))
+
+      END FUNCTION phiH2_A
+
+	!-----------------------------------------------------------------------
+
+      FUNCTION phiH2_S(rij)
+         IMPLICIT NONE
+         REAL(KIND=8) :: phiH2_S
+         REAL(KIND=8), INTENT(IN) :: rij(1:2)   !distance of the particle from proton 1 and proton 2
+      
+         phiH2_S=DEXP(-C_atm*rij(1))+DEXP(-C_atm*rij(2))
+
+      END FUNCTION phiH2_S
+
+   !-----------------------------------------------------------------------
 
 		SUBROUTINE valuta_SD_1s_backflow(num,updw,L,re,rp,rij,N,SD,detSD,ISD,pvt,ISD_old,detSD_old)
 			USE generic_tools
@@ -2081,7 +2155,7 @@ MODULE funzione_onda
 			!Calcolo i termini matriciali di SD_new
 			DO j = 1, N, 1
 				DO i = 1, N, 1
-					SD(i,j)=norm*DEXP(-Gswf*rij(i,j+N)*rij(i,j+N))
+					SD(i,j)=norm*DEXP(-Ggaus*rij(i,j+N)*rij(i,j+N))
 					ISD(i,j)=SD(i,j)
 				END DO
 			END DO
@@ -2100,12 +2174,12 @@ MODULE funzione_onda
 		ELSE IF ((num>0) .AND. (num<=2*N)) THEN
 			IF ( num<=N ) THEN
 				DO j = 1, N, 1
-					SD(num,j)=norm*DEXP(-Gswf*rij(num,j+N)*rij(num,j+N))
+					SD(num,j)=norm*DEXP(-Ggaus*rij(num,j+N)*rij(num,j+N))
 				END DO
 				CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD)
 			ELSE
 				DO i = 1, N, 1
-					SD(i,num-N)=norm*DEXP(-Gswf*rij(i,num)*rij(i,num))
+					SD(i,num-N)=norm*DEXP(-Ggaus*rij(i,num)*rij(i,num))
 				END DO
 				CALL aggiorna_determinante_C_col_1ppt(N,num-N,ISD_old,detSD_old,SD,detSD)
 			END IF

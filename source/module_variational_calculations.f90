@@ -64,7 +64,9 @@ MODULE variational_calculations
    REAL(KIND=8), ALLOCATABLE :: OiHOj_av(:,:)
    LOGICAL, ALLOCATABLE :: flag_O(:) !machera per O: T da usare, F da non considerare
    REAL(KIND=8), ALLOCATABLE :: Hgradp(:,:), Hgradpnow(:), Hgradp_av(:)   !derivative of H in respect to the protonic positions
+   REAL(KIND=8), ALLOCATABLE :: HgradL(:,:), HgradLnow(:), HgradL_av(:)   !derivative of H in respect to the protonic positions
    REAL(KIND=8), ALLOCATABLE :: OiHgradp_av(:,:)   !derivative of H in respect to the protonic positions
+   REAL(KIND=8), ALLOCATABLE :: OiHgradL_av(:,:)   !derivative of H in respect to L
 	
 	CONTAINS
 	
@@ -211,6 +213,9 @@ MODULE variational_calculations
          IF (opt_Rp) THEN
             ALLOCATE(Hgradpnow(1:3*N_part))
          END IF
+         IF (opt_L) THEN
+            ALLOCATE(HgradLnow(1:3))
+         END IF
          IF (OAV_ON_THE_FLY) THEN
             ALLOCATE(Oi_av(1:num_par),OiH_av(1:num_par),OiOj_av(1:num_par,1:num_par))
             ALLOCATE(OiHOj_av(1:num_par,1:num_par))
@@ -224,10 +229,19 @@ MODULE variational_calculations
                Hgradp_av=0.d0
                OiHgradp_av=0.d0
             END IF
+            IF (opt_L) THEN
+               ALLOCATE(HgradL_av(1:3))
+               ALLOCATE(OiHgradL_av(1:3,1:3))
+               HgradL_av=0.d0
+               OiHgradL_av=0.d0
+            END IF
          ELSE
             ALLOCATE(O(1:num_par,1:N_mc))
             IF (opt_Rp) THEN
                ALLOCATE(Hgradp(1:3*N_part,1:N_mc))
+            END IF
+            IF (opt_L) THEN
+               ALLOCATE(HgradL(1:3,1:N_mc))
             END IF
          END IF
          ALLOCATE(flag_O(1:num_par))
@@ -672,6 +686,11 @@ MODULE variational_calculations
 		
 		cont=1
 		
+      IF (opt_L) THEN
+         CALL derivataL_wf_e_energia_potenziale(Onow(cont:cont+2),HgradLnow(1:3))
+         cont=cont+3
+      END IF
+
 		SELECT CASE (Jee_kind)
 		CASE ('yuk')
 			IF (opt_A_Jee) THEN
@@ -1010,6 +1029,9 @@ MODULE variational_calculations
 			CASE ('bat')
 				CALL derivata_SDe_bat(Onow(cont))
 				cont=cont+1
+			CASE ('bap')
+				CALL derivata_SDe_bap(Onow(cont))
+				cont=cont+1
          CASE ('hl_')
             CALL derivata_SDe_HL(Onow(cont))
             cont=cont+1
@@ -1088,9 +1110,18 @@ MODULE variational_calculations
                END DO
              END DO
           END IF
+          IF (opt_L) THEN
+             HgradL_av(1:3)=HgradL_av(1:3)+HgradLnow(1:3)
+             DO i = 1, 3, 1
+             DO j = 1, 3, 1
+                OiHgradL_av(j,i)=OiHgradL_av(j,i)+Onow(j)*Hgradpnow(i)
+             END DO
+             END DO
+          END IF
        ELSE
          O(1:num_par,i_mc)=Onow(1:num_par)
          IF (opt_Rp) Hgradp(1:3*N_part,i_mc)=Hgradpnow(1:3*N_part)
+         IF (opt_L) HgradL(1:3,i_mc)=HgradLnow(1:3)
        END IF
 		
 	END SUBROUTINE calcola_termini_derivate_variazionali
@@ -1214,6 +1245,9 @@ MODULE variational_calculations
             DEALLOCATE(Hgradpnow)
             !DEALLOCATE(OiHgradpnow)
          END IF
+         IF (opt_L) THEN
+            DEALLOCATE(HgradLnow)
+         END IF
          IF (OAV_ON_THE_FLY) THEN
             DEALLOCATE(Oi_av,OiH_av,OiOj_av)
             DEALLOCATE(OiHOj_av)
@@ -1221,11 +1255,18 @@ MODULE variational_calculations
                DEALLOCATE(Hgradp_av)
                DEALLOCATE(OiHgradp_av)
             END IF
+            IF (opt_L) THEN
+               DEALLOCATE(HgradL_av)
+               DEALLOCATE(OiHgradL_av)
+            END IF
          ELSE
             DEALLOCATE(O)
             IF (opt_Rp) THEN
                DEALLOCATE(Hgradp)
                !DEALLOCATE(OiHgradp)
+            END IF
+            IF (opt_L) THEN
+               DEALLOCATE(HgradL)
             END IF
          END IF
 			DEALLOCATE(flag_O)

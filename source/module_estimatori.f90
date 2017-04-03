@@ -181,7 +181,7 @@ MODULE estimatori
       REAL(KIND=8) :: Bspl1(H_N_part,H_N_part), Bspl2(H_N_part,H_N_part)
 		REAL (KIND=8) :: frf1(0:3), frf2(1:3), frf3, frf5, frf6, mix_prod, norm
 		REAL (KIND=8) :: frfs1(0:3), frfs2(0:3), frf2s1(1:3), frf2s2(1:3), frf3s1(1:3), frf3s2(1:3)
-		REAL (KIND=8) :: uee1, uee2, uep1, uep2
+		REAL (KIND=8) :: uee1, uee2, uep1, uep2, u1_up, u1_dw, u2_up, u2_dw
 		REAL (KIND=8) :: gee(1:3,1:N_part), lee
 		REAL (KIND=8) :: gep(1:3,1:N_part), lep
 		REAL (KIND=8) :: gkernse1(1:3,1:N_part), gkernse2(1:3,1:N_part), lkernse
@@ -190,6 +190,12 @@ MODULE estimatori
 		COMPLEX (KIND=8) :: lsdee, gsdee_up(1:3,1:H_N_part), gsdee_dw(1:3,1:H_N_part)
 		COMPLEX (KIND=8) :: work_C(1:3*H_N_part)
 		COMPLEX (KIND=8) :: der1_up(1:3), der2_up, der1_dw(1:3), der2_dw, frfc1, frfc2, frfc3(1:3), frfc4(1:3)
+      COMPLEX (KIND=8) :: d1_up(1:3), d2_up(1:3), d1_dw(1:3), d2_dw(1:3), dd1_up, dd2_up, dd1_dw, dd2_dw
+      REAL(KIND=8) :: gphiA1(1:3), gphiA2(1:3), gphiS1(1:3), gphiS2(1:3), gOPAfact(1:3)
+      REAL(KIND=8) :: phiA1, phiA2, phiS1, phiS2, OPAfact
+      REAL(KIND=8) :: g1phiup(1:3), g2phiup(1:3), g1phidw(1:3), g2phidw(1:3)
+      REAL(KIND=8) :: lphiA1(1:3), lphiA2(1:3), lphiS1(1:3), lphiS2(1:3)
+      REAL(KIND=8) :: l1phiup(1:3), l2phiup(1:3), l1phidw(1:3), l2phidw(1:3)
 		REAL (KIND=8), INTENT(OUT) :: E_kin, E_JF
 		
 		E_kin=0.d0
@@ -346,20 +352,6 @@ MODULE estimatori
 					lsdee=lsdee+(der2_up*ISDe_up_old(i,j)+der2_dw*ISDe_dw_old(i,j))
 				END DO
 			END DO
-		CASE ('atm')
-			DO i = 1, H_N_part, 1
-				i_SD=i+H_N_part
-				DO j = 1, H_N_part, 1
-					j_SD=j+H_N_part
-					der1_up(1:3)=-rij_ep_old(1:3,j,i)*C_atm/rij_ep_old(0,j,i)
-					der1_dw(1:3)=-rij_ep_old(1:3,j_SD,i_SD)*C_atm/rij_ep_old(0,j_SD,i_SD)
-					der2_up=-2.d0*C_atm/rij_ep_old(0,j,i)+C_atm*C_atm
-					der2_dw=-2.d0*C_atm/rij_ep_old(0,j_SD,i_SD)+C_atm*C_atm
-					gsdee_up(1:3,j)=gsdee_up(1:3,j)+SDe_up_old(j,i)*der1_up*ISDe_up_old(i,j)
-					gsdee_dw(1:3,j)=gsdee_dw(1:3,j)+SDe_dw_old(j,i)*der1_dw*ISDe_dw_old(i,j)
-					lsdee=lsdee+(SDe_up_old(j,i)*der2_up*ISDe_up_old(i,j)+SDe_dw_old(j,i)*der2_dw*ISDe_dw_old(i,j))
-				END DO
-			END DO
 		CASE ('bat')
 			DO i = 1, H_N_part, 1
 				i_SD=i+H_N_part
@@ -379,6 +371,89 @@ MODULE estimatori
 				END DO
 			END DO
 
+      CASE ('bap')
+			frfs1(1:3)=PI/L(1:3)
+
+			DO i = 1, H_N_part, 1
+				i_SD=i+H_N_part
+				DO j = 1, H_N_part, 1
+					j_SD=j+H_N_part
+
+               !!! PART TO FILL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+               ! d(u)/d(r_PC)
+               u1_up=-C_atm
+               u1_dw=-C_atm
+               ! d^2(u)/d(r_PC)^2
+               u2_up=0.d0
+               u2_dw=0.d0
+               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+               ! (x_PC)/(r_PC)
+               frf1(1:3)=rijpc_ep_old(1:3,j,i)/rijpc_ep_old(0,j,i)
+               frf2s1(1:3)=rijpc_ep_old(1:3,j,i_SD)/rijpc_ep_old(0,j,i_SD)
+               frf2(1:3)=rijpc_ep_old(1:3,j_SD,i_SD)/rijpc_ep_old(0,j_SD,i_SD)
+               frf2s2(1:3)=rijpc_ep_old(1:3,j_SD,i)/rijpc_ep_old(0,j_SD,i)
+					
+               ! d(phi)/d(x_i)
+					d1_up(1:3) = DCOS(frfs1(1:3)*rij_ep_old(1:3,j,i))*frf1(1:3)*u1_up 
+               d2_up(1:3) = DCOS(frfs1(1:3)*rij_ep_old(1:3,j,i_SD))*frf2s1(1:3)*u1_up 
+					d1_dw(1:3) = DCOS(frfs1(1:3)*rij_ep_old(1:3,j_SD,i_SD))*frf2(1:3)*u1_dw 
+               d2_dw(1:3) = DCOS(frfs1(1:3)*rij_ep_old(1:3,j_SD,i))*frf2s2(1:3)*u1_dw 
+
+               ! d^2(phi)/d(x_i)^2
+               dd1_up=0.d0
+               dd2_up=0.d0
+               dd1_dw=0.d0
+               dd2_dw=0.d0
+					DO i3= 1, 3, 1
+                  dd1_up=dd1_up - d1_up(i3) * frfs1(i3) * DTAN(frfs1(i3)*rij_ep_old(i3,j,i)) &
+                                + (DCOS(frfs1(i3)*rij_ep_old(i3,j,i))**2) * &
+                                  (1.d0-((rijpc_ep_old(i3,j,i)/rijpc_ep_old(0,j,i))**2)) * &
+                                  (u1_up/rijpc_ep_old(0,j,i)) &
+                                + (DCOS(frfs1(i3)*rij_ep_old(i3,j,i))**2) * &
+                                  ((rijpc_ep_old(i3,j,i)/rijpc_ep_old(0,j,i))**2) * u2_up &
+                                + d1_up(i3)**2
+                  dd2_up=dd2_up - d2_up(i3) * frfs1(i3) * DTAN(frfs1(i3)*rij_ep_old(i3,j,i_SD)) &
+                                + (DCOS(frfs1(i3)*rij_ep_old(i3,j,i_SD))**2) * &
+                                  (1.d0-((rijpc_ep_old(i3,j,i_SD)/rijpc_ep_old(0,j,i_SD))**2)) * &
+                                  (u1_up/rijpc_ep_old(0,j,i_SD)) &
+                                + (DCOS(frfs1(i3)*rij_ep_old(i3,j,i_SD))**2) * &
+                                  ((rijpc_ep_old(i3,j,i_SD)/rijpc_ep_old(0,j,i_SD))**2) * u2_up &
+                                + d2_up(i3)**2
+                  dd1_dw=dd1_dw - d1_dw(i3) * frfs1(i3) * DTAN(frfs1(i3)*rij_ep_old(i3,j_SD,i_SD))  &
+                                + (DCOS(frfs1(i3)*rij_ep_old(i3,j_SD,i_SD))**2) * &
+                                  (1.d0-((rijpc_ep_old(i3,j_SD,i_SD)/rijpc_ep_old(0,j_SD,i_SD))**2)) * &
+                                  (u1_up/rijpc_ep_old(0,j_SD,i_SD)) &
+                                + (DCOS(frfs1(i3)*rij_ep_old(i3,j_SD,i_SD))**2) * &
+                                  ((rijpc_ep_old(i3,j_SD,i_SD)/rijpc_ep_old(0,j_SD,i_SD))**2) * u2_dw &
+                                + d1_dw(i3)**2
+                  dd2_dw=dd2_dw - d2_dw(i3) * frfs1(i3) * DTAN(frfs1(i3)*rij_ep_old(i3,j_SD,i))  &
+                                + (DCOS(frfs1(i3)*rij_ep_old(i3,j_SD,i))**2) * &
+                                  (1.d0-((rijpc_ep_old(i3,j_SD,i)/rijpc_ep_old(0,j_SD,i))**2)) * &
+                                  (u1_up/rijpc_ep_old(0,j_SD,i)) &
+                                + (DCOS(frfs1(i3)*rij_ep_old(i3,j_SD,i))**2) * &
+                                  ((rijpc_ep_old(i3,j_SD,i)/rijpc_ep_old(0,j_SD,i))**2) * u2_dw &
+                                + d2_dw(i3)**2
+					END DO
+
+               ! Multiply by the orbital term
+               frf6=DEXP(-C_atm*rijpc_ep_old(0,j,i))
+               d1_up=d1_up*frf6; dd1_up=dd1_up*frf6
+               frf6=DEXP(-C_atm*rijpc_ep_old(0,j,i_SD))
+               d2_up=d2_up*frf6; dd2_up=dd2_up*frf6
+               frf6=DEXP(-C_atm*rijpc_ep_old(0,j_SD,i_SD))
+               d1_dw=d1_dw*frf6; dd1_dw=dd1_dw*frf6; 
+               frf6=DEXP(-C_atm*rijpc_ep_old(0,j_SD,i))
+               d2_dw=d2_dw*frf6; dd2_dw=dd2_dw*frf6; 
+               
+
+					! Gradient and Laplacian
+					gsdee_up(1:3,j)=gsdee_up(1:3,j)+(d1_up+d2_up)*ISDe_up_old(i,j) 
+					gsdee_dw(1:3,j)=gsdee_dw(1:3,j)+(d1_dw+d2_dw)*ISDe_dw_old(i,j)
+					lsdee=lsdee+( (dd1_up+dd2_up)*ISDe_up_old(i,j) + (dd1_dw+dd2_dw)*ISDe_dw_old(i,j) )
+
+            END DO
+         END DO
       CASE ('hl_')
          gsdee_up(1:3,1)=-C_atm* ( (rij_ep_old(1:3,1,1)/rij_ep_old(0,1,1))*&
             DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) +&
@@ -447,6 +522,116 @@ MODULE estimatori
          !   (frf6*frf6*frf1(0))
 
          !STOP
+
+      CASE ('apo')
+
+         ! OPA factor
+         OPAfact=APO_factor(re_old(1:3,1:2),rp_old(1:3,1:2))
+
+         ! phiA
+         ! elec:1
+         phiA1=phiH2_A(rij_ep_old(0,1,1:2))
+         ! elec:2
+         phiA2=phiH2_A(rij_ep_old(0,2,1:2))
+
+         ! phiS
+         ! elec:1
+         phiS1=phiH2_S(rij_ep_old(0,1,1:2))
+         ! elec:2
+         phiS2=phiH2_S(rij_ep_old(0,2,1:2))
+
+         !derivatives of 1s orbitals
+         ! prot:a  elec:1
+         frf2s1(1:3)=-(rij_ep_old(1:3,1,1)/rij_ep_old(0,1,1))* &
+                      C_atm*DEXP(-C_atm*rij_ep_old(0,1,1))
+         ! prot:b elec:1
+         frf3s1(1:3)=-(rij_ep_old(1:3,1,2)/rij_ep_old(0,1,2))* &
+                      C_atm*DEXP(-C_atm*rij_ep_old(0,1,2))
+         ! prot:a  elec:2
+         frf2s2(1:3)=-(rij_ep_old(1:3,2,1)/rij_ep_old(0,2,1))* &
+                      C_atm*DEXP(-C_atm*rij_ep_old(0,2,1))
+         ! prot:b elec:2
+         frf3s2(1:3)=-(rij_ep_old(1:3,2,2)/rij_ep_old(0,2,2))* &
+                      C_atm*DEXP(-C_atm*rij_ep_old(0,2,2))
+
+         !derivatives of the OPA factor
+         gOPAfact(1:3)=-rij_pp_old(1:3,1,2)/(rij_pp_old(0,1,2)*rij_pp_old(0,1,2))
+
+         !derivatives of phiA
+         ! elec:1
+         gphiA1(1:3)=frf2s1(1:3)-frf3s1(1:3)
+         ! elec:2
+         gphiA2(1:3)=frf2s2(1:3)-frf3s2(1:3)
+
+         !derivatives of phiS
+         ! elec:1
+         gphiS1(1:3)=frf2s1(1:3)+frf3s1(1:3)
+         ! elec:2
+         gphiS2(1:3)=frf2s2(1:3)+frf3s2(1:3)
+
+         !derivatives of the orbitals
+         !g1phiup(1:3)=gphiA1(1:3)+gOPAfact(1:3)*phiS1+OPAfact*gphiS1(1:3)
+         !g1phidw(1:3)=-gOPAfact(1:3)*phiS2
+         !g2phiup(1:3)=-gOPAfact(1:3)*phiS1
+         !g2phidw(1:3)=gphiA2(1:3)+gOPAfact(1:3)*phiS2-OPAfact*gphiS2(1:3)
+         g1phiup(1:3)=gphiS1(1:3)+gOPAfact(1:3)*phiA1+OPAfact*gphiA1(1:3)
+         g1phidw(1:3)=-gOPAfact(1:3)*phiA2
+         g2phiup(1:3)=-gOPAfact(1:3)*phiA1
+         g2phidw(1:3)=gphiS2(1:3)+gOPAfact(1:3)*phiA2-OPAfact*gphiA2(1:3)
+
+         !second derivatives of 1s orbitals
+         ! prot:a elec:1
+         frf2s1(1:3)=-C_atm*DEXP(-C_atm*rij_ep_old(0,1,1))/rij_ep_old(0,1,1) +&
+                     (rij_ep_old(1:3,1,1)/rij_ep_old(0,1,1)) *&
+                      ( (rij_ep_old(1:3,1,1)/(rij_ep_old(0,1,1)**2))*C_atm*DEXP(-C_atm*rij_ep_old(0,1,1)) +&
+                        (rij_ep_old(1:3,1,1)/rij_ep_old(0,1,1))*C_atm*C_atm*DEXP(-C_atm*rij_ep_old(0,1,1)) )
+         ! prot:b elec:1
+         frf3s1(1:3)=-C_atm*DEXP(-C_atm*rij_ep_old(0,1,2))/rij_ep_old(0,1,2) +&
+                     (rij_ep_old(1:3,1,2)/rij_ep_old(0,1,2)) *&
+                      ( (rij_ep_old(1:3,1,2)/(rij_ep_old(0,1,2)**2))*C_atm*DEXP(-C_atm*rij_ep_old(0,1,2)) +&
+                        (rij_ep_old(1:3,1,2)/rij_ep_old(0,1,2))*C_atm*C_atm*DEXP(-C_atm*rij_ep_old(0,1,2)) )
+         ! prot:a elec:2
+         frf2s2(1:3)=-C_atm*DEXP(-C_atm*rij_ep_old(0,2,1))/rij_ep_old(0,2,1) +&
+                     (rij_ep_old(1:3,2,1)/rij_ep_old(0,2,1)) *&
+                      ( (rij_ep_old(1:3,2,1)/(rij_ep_old(0,2,1)**2))*C_atm*DEXP(-C_atm*rij_ep_old(0,2,1)) +&
+                        (rij_ep_old(1:3,2,1)/rij_ep_old(0,2,1))*C_atm*C_atm*DEXP(-C_atm*rij_ep_old(0,2,1)) )
+         ! prot:b elec:2
+         frf3s2(1:3)=-C_atm*DEXP(-C_atm*rij_ep_old(0,2,2))/rij_ep_old(0,2,2) +&
+                     (rij_ep_old(1:3,2,2)/rij_ep_old(0,2,2)) *&
+                      ( (rij_ep_old(1:3,2,2)/(rij_ep_old(0,2,2)**2))*C_atm*DEXP(-C_atm*rij_ep_old(0,2,2)) +&
+                        (rij_ep_old(1:3,2,2)/rij_ep_old(0,2,2))*C_atm*C_atm*DEXP(-C_atm*rij_ep_old(0,2,2)) )
+
+         !second derivatives of phiA
+         ! elec:1
+         lphiA1(1:3)=frf2s1(1:3)-frf3s1(1:3)
+         ! elec:2
+         lphiA2(1:3)=frf2s2(1:3)-frf3s2(1:3)
+
+         !second derivatives of phiS
+         ! elec:1
+         lphiS1(1:3)=frf2s1(1:3)+frf3s1(1:3)
+         ! elec:2
+         lphiS2(1:3)=frf2s2(1:3)+frf3s2(1:3)
+
+         !second derivatives of the orbitals
+         !l1phiup(1:3)=lphiA1(1:3)+OPAfact*lphiS1(1:3)+2.d0*gOPAfact(1:3)*gphiS1(1:3)
+         !l1phidw(1:3)=0.d0
+         !l2phiup(1:3)=0.d0
+         !l2phidw(1:3)=lphiA2(1:3)-OPAfact*lphiS2(1:3)+2.d0*gOPAfact(1:3)*gphiS2(1:3)
+         l1phiup(1:3)=lphiS1(1:3)+OPAfact*lphiA1(1:3)+2.d0*gOPAfact(1:3)*gphiA1(1:3)
+         l1phidw(1:3)=0.d0
+         l2phiup(1:3)=0.d0
+         l2phidw(1:3)=lphiS2(1:3)-OPAfact*lphiA2(1:3)+2.d0*gOPAfact(1:3)*gphiA2(1:3)
+
+         ! Gradient
+         gsdee_up(1:3,1)=g1phiup(1:3)*ISDe_up_old(1,1) + g1phidw(1:3)*ISDe_dw_old(1,1)
+         gsdee_dw(1:3,1)=g2phiup(1:3)*ISDe_up_old(1,1) + g2phidw(1:3)*ISDe_dw_old(1,1)
+
+         ! Laplacian
+         lsdee=2.d0*DOT_PRODUCT(g1phiup(1:3),g1phidw(1:3))*ISDe_up_old(1,1)*ISDe_dw_old(1,1)+ &
+               2.d0*DOT_PRODUCT(g2phiup(1:3),g2phidw(1:3))*ISDe_up_old(1,1)*ISDe_dw_old(1,1)+ &
+               SUM(l1phiup(1:3))*ISDe_up_old(1,1)+SUM(l1phidw(1:3))*ISDe_dw_old(1,1) + &
+               SUM(l2phiup(1:3))*ISDe_up_old(1,1)+SUM(l2phidw(1:3))*ISDe_dw_old(1,1)
 
 		CASE ('1sb')
 
@@ -968,8 +1153,89 @@ MODULE estimatori
          !!!!FINE CHECK LAPLACIANO
          !!!STOP
 
+		CASE ('atm')
+			DO i = 1, H_N_part, 1
+				i_SD=i+H_N_part
+				DO j = 1, H_N_part, 1
+					j_SD=j+H_N_part
+					der1_up(1:3)=-rij_ep_old(1:3,j,i)*C_atm/rij_ep_old(0,j,i)
+					der1_dw(1:3)=-rij_ep_old(1:3,j_SD,i_SD)*C_atm/rij_ep_old(0,j_SD,i_SD)
+					der2_up=-2.d0*C_atm/rij_ep_old(0,j,i)+C_atm*C_atm
+					der2_dw=-2.d0*C_atm/rij_ep_old(0,j_SD,i_SD)+C_atm*C_atm
+					gsdee_up(1:3,j)=gsdee_up(1:3,j)+SDe_up_old(j,i)*der1_up*ISDe_up_old(i,j)
+					gsdee_dw(1:3,j)=gsdee_dw(1:3,j)+SDe_dw_old(j,i)*der1_dw*ISDe_dw_old(i,j)
+					lsdee=lsdee+(SDe_up_old(j,i)*der2_up*ISDe_up_old(i,j)+SDe_dw_old(j,i)*der2_dw*ISDe_dw_old(i,j))
+				END DO
+			END DO
 
 		CASE ('atp')
+			frfs1(1:3)=PI/L(1:3)
+
+			DO i = 1, H_N_part, 1
+				i_SD=i+H_N_part
+				DO j = 1, H_N_part, 1
+					j_SD=j+H_N_part
+
+               !!! PART TO FILL !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+               ! d(u)/d(r_PC)
+               u1_up=-C_atm
+               u1_dw=-C_atm
+               ! d^2(u)/d(r_PC)^2
+               u2_up=0.d0
+               u2_dw=0.d0
+               !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+               ! (x_PC)/(r_PC)
+               frf1(1:3)=rijpc_ep_old(1:3,j,i)/rijpc_ep_old(0,j,i)
+               frf2(1:3)=rijpc_ep_old(1:3,j_SD,i_SD)/rijpc_ep_old(0,j_SD,i_SD)
+					
+               ! d(phi)/d(x_i)
+					der1_up(1:3)=DCOS(frfs1(1:3)*rij_ep_old(1:3,j,i))*frf1(1:3)*u1_up
+					der1_dw(1:3)=DCOS(frfs1(1:3)*rij_ep_old(1:3,j_SD,i_SD))*frf2(1:3)*u1_dw
+
+               ! d^2(phi)/d(x_i)^2
+               der2_up=0.d0
+               der2_dw=0.d0
+					DO i3= 1, 3, 1
+                  der2_up=der2_up - der1_up(i3) * frfs1(i3) * DTAN(frfs1(i3)*rij_ep_old(i3,j,i)) &
+                                  + (DCOS(frfs1(i3)*rij_ep_old(i3,j,i))**2) * &
+                                    (1.d0-((rijpc_ep_old(i3,j,i)/rijpc_ep_old(0,j,i))**2)) * &
+                                    (u1_up/rijpc_ep_old(0,j,i)) &
+                                  + (DCOS(frfs1(i3)*rij_ep_old(i3,j,i))**2) * &
+                                    ((rijpc_ep_old(i3,j,i)/rijpc_ep_old(0,j,i))**2) * u2_up &
+                                  + der1_up(i3)**2
+                  der2_dw=der2_dw - der1_dw(i3) * frfs1(i3) * DTAN(frfs1(i3)*rij_ep_old(i3,j_SD,i_SD))  &
+                                  + (DCOS(frfs1(i3)*rij_ep_old(i3,j_SD,i_SD))**2) * &
+                                    (1.d0-((rijpc_ep_old(i3,j_SD,i_SD)/rijpc_ep_old(0,j_SD,i_SD))**2)) * &
+                                    (u1_up/rijpc_ep_old(0,j_SD,i_SD)) &
+                                  + (DCOS(frfs1(i3)*rij_ep_old(i3,j_SD,i_SD))**2) * &
+                                    ((rijpc_ep_old(i3,j_SD,i_SD)/rijpc_ep_old(0,j_SD,i_SD))**2) * u2_dw &
+                                  + der1_dw(i3)**2
+					END DO
+
+					! Gradient and Laplacian
+					gsdee_up(1:3,j)=gsdee_up(1:3,j)+SDe_up_old(j,i)*der1_up*ISDe_up_old(i,j)
+					gsdee_dw(1:3,j)=gsdee_dw(1:3,j)+SDe_dw_old(j,i)*der1_dw*ISDe_dw_old(i,j)
+					lsdee=lsdee+(SDe_up_old(j,i)*der2_up*ISDe_up_old(i,j)+SDe_dw_old(j,i)*der2_dw*ISDe_dw_old(i,j))
+
+            END DO
+         END DO
+
+		CASE ('gss')
+			DO i = 1, H_N_part, 1
+				i_SD=i+H_N_part
+				DO j = 1, H_N_part, 1
+					j_SD=j+H_N_part
+					der1_up(1:3)=-2.d0*Ggaus*rij_ep_old(1:3,j,i)
+					der1_dw(1:3)=-2.d0*Ggaus*rij_ep_old(1:3,j_SD,i_SD)
+               der2_up=DOT_PRODUCT(der1_up(1:3),der1_up(1:3))-6.d0*Ggaus
+               der2_dw=DOT_PRODUCT(der1_dw(1:3),der1_dw(1:3))-6.d0*Ggaus
+					gsdee_up(1:3,j)=gsdee_up(1:3,j)+SDe_up_old(j,i)*der1_up*ISDe_up_old(i,j)
+					gsdee_dw(1:3,j)=gsdee_dw(1:3,j)+SDe_dw_old(j,i)*der1_dw*ISDe_dw_old(i,j)
+					lsdee=lsdee+(SDe_up_old(j,i)*der2_up*ISDe_up_old(i,j)+SDe_dw_old(j,i)*der2_dw*ISDe_dw_old(i,j))
+				END DO
+			END DO
+		CASE ('gsp')
 			frfs1(1:3)=PI/L(1:3)
 			DO i = 1, H_N_part, 1
 				i_SD=i+H_N_part
@@ -977,31 +1243,33 @@ MODULE estimatori
 					j_SD=j+H_N_part
 					
 					der1_up(1:3)=-DCOS(frfs1(1:3)*rij_ep_old(1:3,j,i))* &
-					  rijpc_ep_old(1:3,j,i)*C_atm/rijpc_ep_old(0,j,i)
+					  2.d0*Ggaus*rijpc_ep_old(1:3,j,i)
 					der1_dw(1:3)=-DCOS(frfs1(1:3)*rij_ep_old(1:3,j_SD,i_SD))* &
-					  rijpc_ep_old(1:3,j_SD,i_SD)*C_atm/rijpc_ep_old(0,j_SD,i_SD)
-					der2_up=DOT_PRODUCT(der1_up(1:3),der1_up(1:3))
-					der2_dw=DOT_PRODUCT(der1_dw(1:3),der1_dw(1:3))
-					
+					  2.d0*Ggaus*rijpc_ep_old(1:3,j_SD,i_SD)
+               ! ---------------------------------------------------------------
+               ! Automatic consequences from der1
+					der2_up=DOT_PRODUCT(der1_up(1:3),der1_up(1:3)) &
+                       -SUM( frfs1(1:3)*DSIN(frfs1(1:3)*rij_ep_old(1:3,j,i)) &
+                             *der1_up(1:3)/DCOS(frfs1(1:3)*rij_ep_old(1:3,j,i)) )
+					der2_dw=DOT_PRODUCT(der1_dw(1:3),der1_dw(1:3)) &
+                       -SUM( frfs1(1:3)*DSIN(frfs1(1:3)*rij_ep_old(1:3,j_SD,i_SD)) &
+                             *der1_dw(1:3)/DCOS(frfs1(1:3)*rij_ep_old(1:3,j_SD,i_SD)) )
+               ! ---------------------------------------------------------------
+               ! New terms of der2
 					DO i3= 1, 3, 1
-						frf1(i3)=((DCOS(frfs1(i3)*rij_ep_old(i3,j,i)))**2) * &
-						  (1.d0-(rijpc_ep_old(i3,j,i)/rijpc_ep_old(0,j,i))**2)/rijpc_ep_old(0,j,i)
-						frf1(i3)=frf1(i3)-frfs1(i3)*DSIN(frfs1(i3)*rij_ep_old(i3,j,i))* &
-						  rijpc_ep_old(i3,j,i)/rijpc_ep_old(0,j,i)
-						frf2(i3)=((DCOS(frfs1(i3)*rij_ep_old(i3,j_SD,i_SD)))**2) * &
-						  (1.d0-(rijpc_ep_old(i3,j_SD,i_SD)/rijpc_ep_old(0,j_SD,i_SD))**2)/rijpc_ep_old(0,j_SD,i_SD)
-						frf2(i3)=frf1(i3)-frfs1(i3)*DSIN(frfs1(i3)*rij_ep_old(i3,j_SD,i_SD))* &
-						  rijpc_ep_old(i3,j_SD,i_SD)/rijpc_ep_old(0,j_SD,i_SD)
-						der2_up=der2_up-C_atm*frf1(i3)
-						der2_dw=der2_dw-C_atm*frf2(i3)
+                   der2_up=der2_up-( (DCOS(frfs1(i3)*rij_ep_old(i3,j,i)))**2 ) &
+                                   *2.d0*Ggaus
+                   der2_dw=der2_dw-( (DCOS(frfs1(i3)*rij_ep_old(i3,j_SD,i_SD)))**2 ) &
+                                   *2.d0*Ggaus
 					END DO
-					
+					! Gradient and Laplacian
 					gsdee_up(1:3,j)=gsdee_up(1:3,j)+SDe_up_old(j,i)*der1_up*ISDe_up_old(i,j)
 					gsdee_dw(1:3,j)=gsdee_dw(1:3,j)+SDe_dw_old(j,i)*der1_dw*ISDe_dw_old(i,j)
 					lsdee=lsdee+(SDe_up_old(j,i)*der2_up*ISDe_up_old(i,j)+SDe_dw_old(j,i)*der2_dw*ISDe_dw_old(i,j))
 					
 				END DO
 			END DO
+
 		END SELECT
 		
 		!calcolo la parte del Jastrow ee
@@ -1791,46 +2059,86 @@ MODULE estimatori
 		IMPLICIT NONE
 		REAL (KIND=8), PARAMETER :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
 		INTEGER :: i, j, k
-		REAL (KIND=8) :: frf1, frf3, delta_R(1:3,1:num_k_ewald)
+		REAL (KIND=8) :: frf1, frf2, frf3, delta_R(1:3,1:num_k_ewald)
 		REAL (KIND=8) :: rho_k(1:num_k_ewald)
 		REAL (KIND=8), INTENT(OUT) :: E_pot
 		REAL (KIND=8) :: r_prova(0:3)
 		
 		E_pot=0.d0
+      frf2=0.25d0/alpha_ewald
 		
 		IF (flag_somme_ewald) THEN
 			!Calcolo il potenziale di Coulomb fra protoni ed elettroni con le somme di Ewald
-			rho_k=0.d0
-			DO k = 2, num_k_ewald, 1
-				frf1=0.d0
-				frf3=0.d0
-				DO i = 1, N_part, 1
-					frf1=frf1-DSIN(DOT_PRODUCT(k_fermi(1:3,k),re_old(1:3,i)))+ &
-					  DSIN(DOT_PRODUCT(k_fermi(1:3,k),rp_old(1:3,i)))
-					frf3=frf3-DCOS(DOT_PRODUCT(k_fermi(1:3,k),re_old(1:3,i)))+ &
-					  DCOS(DOT_PRODUCT(k_fermi(1:3,k),rp_old(1:3,i)))
-				END DO
-				rho_k(k)=frf1*frf1+frf3*frf3
-			END DO
-			DO k = 2, num_k_ewald, 1
-				E_pot=E_pot+rho_k(k)*DEXP(-k_fermi(0,k)*0.25d0/(alpha_ewald*alpha_ewald))/k_fermi(0,k)
-			END DO
+         
+         ! parte long range
+         IF (flag_2D) THEN
+            DO k = 2, num_k_ewald, 1
+               frf1=DSQRT(k_fermi(0,k))
+               frf3=0.d0
+               !ee
+               DO i = 1, N_part-1, 1
+               DO j = i+1, N_part, 1
+                  frf3=frf3+DCOS(k_fermi(1,k)*rij_ee_old(1,j,i)+k_fermi(2,k)*rij_ee_old(2,j,i))*&
+                     f_ewald_2D(k_fermi(0,k),frf2,rij_ee_old(3,j,i))
+               END DO
+               END DO
+               !pp
+               DO i = 1, N_part-1, 1
+               DO j = i+1, N_part, 1
+                  frf3=frf3+DCOS(k_fermi(1,k)*rij_pp_old(1,j,i)+k_fermi(2,k)*rij_pp_old(2,j,i))*&
+                     f_ewald_2D(k_fermi(0,k),frf2,rij_pp_old(3,j,i))
+               END DO
+               END DO
+               !ep
+               DO i = 1, N_part, 1
+               DO j = 1, N_part, 1
+                  frf3=frf3+DCOS(k_fermi(1,k)*rij_ep_old(1,j,i)+k_fermi(2,k)*rij_ep_old(2,j,i))*&
+                     f_ewald_2D(k_fermi(0,k),frf2,rij_ep_old(3,j,i))
+               END DO
+               END DO
+               E_pot=E_pot+frf3*DEXP(-k_fermi(0,k)*frf2)
+            END DO
+            E_pot=-E_pot*2.d0
+         ELSE
+			   rho_k=0.d0
+			   DO k = 2, num_k_ewald, 1
+			   	frf1=0.d0
+			   	frf3=0.d0
+			   	DO i = 1, N_part, 1
+			   		frf1=frf1-DSIN(DOT_PRODUCT(k_fermi(1:3,k),re_old(1:3,i)))+ &
+			   		  DSIN(DOT_PRODUCT(k_fermi(1:3,k),rp_old(1:3,i)))
+			   		frf3=frf3-DCOS(DOT_PRODUCT(k_fermi(1:3,k),re_old(1:3,i)))+ &
+			   		  DCOS(DOT_PRODUCT(k_fermi(1:3,k),rp_old(1:3,i)))
+			   	END DO
+			   	rho_k(k)=frf1*frf1+frf3*frf3
+			   END DO
+			   DO k = 2, num_k_ewald, 1
+			   	E_pot=E_pot+rho_k(k)*DEXP(-k_fermi(0,k)*0.25d0/(alpha_ewald*alpha_ewald))/k_fermi(0,k)
+			   END DO
+         END IF
 			E_pot=E_pot*2.d0*PI/(L(1)*L(2)*L(3))
+
+         ! parte short-range
+         !ee
 			DO j = 1, N_part-1, 1
 				DO i = j+1, N_part, 1
 					E_pot=E_pot+DERFC(alpha_ewald*rij_ee_old(0,i,j))/rij_ee_old(0,i,j)
 				END DO
 			END DO
+         !pp
 			DO j = 1, N_part-1, 1
 				DO i = j+1, N_part, 1
 					E_pot=E_pot+DERFC(alpha_ewald*rij_pp_old(0,i,j))/rij_pp_old(0,i,j)
 				END DO
 			END DO
+         !ep
 			DO j = 1, N_part, 1
 				DO i = 1, N_part, 1
 					E_pot=E_pot-DERFC(alpha_ewald*rij_ep_old(0,i,j))/rij_ep_old(0,i,j)
 				END DO
 			END DO
+         
+         ! termine k=0
 			E_pot=E_pot-2.d0*N_part*alpha_ewald/DSQRT(PI)
 			
 		ELSE
@@ -1869,6 +2177,20 @@ MODULE estimatori
 		E_pot=E_pot*K_coulomb/N_part
 		
 	END SUBROUTINE energia_potenziale
+!-----------------------------------------------------------------------
+
+   !Function used for the 2D Ewald summation
+   FUNCTION f_ewald_2D(k,a,z)
+      IMPLICIT NONE
+      REAL(KIND=8) :: f_ewald_2D
+      REAL(KIND=8), INTENT(IN) :: k, a, z
+
+      f_ewald_2D=(( PI*DEXP(a*k-DSQRT(k)*DABS(z)) )/( 2.d0*DSQRT(k) )) * &
+         ( 2.d0 + DEXP(2.d0*DSQRT(k)*DABS(z))*DERFC((2.d0*a*DSQRT(k)+DABS(z))/(2.d0*DSQRT(a))) &
+                - DERFC((-2.d0*a*DSQRT(k)+DABS(z))/(2.d0*DSQRT(a))) )
+      
+   END FUNCTION f_ewald_2D
+
 !-----------------------------------------------------------------------
 
 	SUBROUTINE peso_funzione_onda(w)
@@ -1941,6 +2263,32 @@ MODULE estimatori
 		END DO
 	
 	END SUBROUTINE derivata_SDe_bat
+!-----------------------------------------------------------------------
+
+	SUBROUTINE derivata_SDe_bap(O)
+		USE walkers
+		IMPLICIT NONE
+		INTEGER :: i, j, j_sd
+		REAL (KIND=8) :: O      !O(1) - Gsesp
+		O=0.d0
+	
+		DO j = 1, H_N_part, 1
+         j_sd=j+H_N_part
+			DO i = 1, H_N_part, 1
+				O=O-(rijpc_ep_old(0,i,j)*DEXP(-C_atm*rijpc_ep_old(0,i,j)) +  &
+				  rijpc_ep_old(0,i,j_sd)*DEXP(-C_atm*rijpc_ep_old(0,i,j_sd)))*ISDe_up_old(j,i)
+			END DO
+		END DO
+	
+		DO j = H_N_part+1, N_part, 1
+         j_sd=j-H_N_part
+			DO i = H_N_part+1, N_part, 1
+				O=O-(rijpc_ep_old(0,i,j)*DEXP(-C_atm*rijpc_ep_old(0,i,j)) + &
+				  rijpc_ep_old(0,i,j_sd)*DEXP(-C_atm*rijpc_ep_old(0,i,j_sd)) )*ISDe_dw_old(j_sd,i-H_N_part)
+			END DO
+		END DO
+	
+	END SUBROUTINE derivata_SDe_bap
 !-----------------------------------------------------------------------
 
 	SUBROUTINE derivata_SDe_HL(O)
@@ -2141,57 +2489,78 @@ MODULE estimatori
 	SUBROUTINE derivata_SDe_atp(O)
 		USE walkers
 		IMPLICIT NONE
-		INTEGER :: i, j, i_sd, j_sd
+		INTEGER :: i, j
 		REAL (KIND=8) :: O      !O(1) - Gsesp
-		INTEGER :: pvt(1:H_N_part), info, perm
-		REAL (KIND=8) :: SD(1:H_N_part,1:H_N_part), ISD(1:H_N_part,1:H_N_part), detSD
 		O=0.d0
 		
-		!up
 		DO j = 1, H_N_part, 1
 			DO i = 1, H_N_part, 1
-				SD(i,j)=-rijpc_ep_old(0,i,j)*DEXP(-C_atm*rijpc_ep_old(0,i,j))
-				ISD(i,j)=SD(i,j)
+				O=O-rijpc_ep_old(0,i,j)*SDe_up_old(i,j)*ISDe_up_old(j,i)
 			END DO
 		END DO
-		!Calcolo il determinante di SD_new
-		CALL DGETRF( H_N_part, H_N_part, ISD, H_N_part, pvt, info )
-		IF (info/=0) STOP 'ERRORE NELLA DECOMPOSIZIONE LU SDe_atp_up'
-		perm=0
-		detSD=1.d0
-		DO  i = 1, H_N_part, 1
-			IF (pvt(i) /= i) perm=perm+1
-		END DO
-		IF (MOD(perm,2) == 1 ) detSD=-detSD
-		DO  i = 1, H_N_part, 1
-			detSD=detSD*ISD(i,i)
-		END DO
-		O=O+detSD/REAL(detSDe_up_old,8)
 		
-		!dw
-		DO j = H_N_part+1, N_part, 1
-			j_sd=j-H_N_part
-			DO i = H_N_part+1, N_part, 1
-				i_sd=i-H_N_part
-				SD(i_sd,j_sd)=-rijpc_ep_old(0,i,j)*DEXP(-C_atm*rijpc_ep_old(0,i,j))
-				ISD(i_sd,j_sd)=SD(i_sd,j_sd)
+		DO j = 1, H_N_part, 1
+			DO i = 1, H_N_part, 1
+				O=O-rijpc_ep_old(0,i+H_N_part,j+H_N_part)*SDe_dw_old(i,j)*ISDe_dw_old(j,i)
 			END DO
 		END DO
-		!Calcolo il determinante di SD_new
-		CALL DGETRF( H_N_part, H_N_part, ISD, H_N_part, pvt, info )
-		IF (info/=0) STOP 'ERRORE NELLA DECOMPOSIZIONE LU SDe_atp_dw'
-		perm=0
-		detSD=1.d0
-		DO  i = 1, H_N_part, 1
-			IF (pvt(i) /= i) perm=perm+1
-		END DO
-		IF (MOD(perm,2) == 1 ) detSD=-detSD
-		DO  i = 1, H_N_part, 1
-			detSD=detSD*ISD(i,i)
-		END DO
-		O=O+detSD/REAL(detSDe_dw_old,8)
 		
 	END SUBROUTINE derivata_SDe_atp
+
+	!SUBROUTINE derivata_SDe_atp(O)
+	!	USE walkers
+	!	IMPLICIT NONE
+	!	INTEGER :: i, j, i_sd, j_sd
+	!	REAL (KIND=8) :: O      !O(1) - Gsesp
+	!	INTEGER :: pvt(1:H_N_part), info, perm
+	!	REAL (KIND=8) :: SD(1:H_N_part,1:H_N_part), ISD(1:H_N_part,1:H_N_part), detSD
+	!	O=0.d0
+	!	
+	!	!up
+	!	DO j = 1, H_N_part, 1
+	!		DO i = 1, H_N_part, 1
+	!			SD(i,j)=-rijpc_ep_old(0,i,j)*DEXP(-C_atm*rijpc_ep_old(0,i,j))
+	!			ISD(i,j)=SD(i,j)
+	!		END DO
+	!	END DO
+	!	!Calcolo il determinante di SD_new
+	!	CALL DGETRF( H_N_part, H_N_part, ISD, H_N_part, pvt, info )
+	!	IF (info/=0) STOP 'ERRORE NELLA DECOMPOSIZIONE LU SDe_atp_up'
+	!	perm=0
+	!	detSD=1.d0
+	!	DO  i = 1, H_N_part, 1
+	!		IF (pvt(i) /= i) perm=perm+1
+	!	END DO
+	!	IF (MOD(perm,2) == 1 ) detSD=-detSD
+	!	DO  i = 1, H_N_part, 1
+	!		detSD=detSD*ISD(i,i)
+	!	END DO
+	!	O=O+detSD/REAL(detSDe_up_old,8)
+	!	
+	!	!dw
+	!	DO j = H_N_part+1, N_part, 1
+	!		j_sd=j-H_N_part
+	!		DO i = H_N_part+1, N_part, 1
+	!			i_sd=i-H_N_part
+	!			SD(i_sd,j_sd)=-rijpc_ep_old(0,i,j)*DEXP(-C_atm*rijpc_ep_old(0,i,j))
+	!			ISD(i_sd,j_sd)=SD(i_sd,j_sd)
+	!		END DO
+	!	END DO
+	!	!Calcolo il determinante di SD_new
+	!	CALL DGETRF( H_N_part, H_N_part, ISD, H_N_part, pvt, info )
+	!	IF (info/=0) STOP 'ERRORE NELLA DECOMPOSIZIONE LU SDe_atp_dw'
+	!	perm=0
+	!	detSD=1.d0
+	!	DO  i = 1, H_N_part, 1
+	!		IF (pvt(i) /= i) perm=perm+1
+	!	END DO
+	!	IF (MOD(perm,2) == 1 ) detSD=-detSD
+	!	DO  i = 1, H_N_part, 1
+	!		detSD=detSD*ISD(i,i)
+	!	END DO
+	!	O=O+detSD/REAL(detSDe_dw_old,8)
+	!	
+	!END SUBROUTINE derivata_SDe_atp
 !-----------------------------------------------------------------------
 
 	SUBROUTINE derivata_SDe_HAR(O)
@@ -4392,6 +4761,108 @@ END SUBROUTINE derivata_Jep_ATM
 		gradpV=gradpV*K_coulomb/REAL(N_part,8)
 		
 	END SUBROUTINE derivataRp_energia_potenziale
+!-----------------------------------------------------------------------
+   SUBROUTINE derivataL_wf_e_energia_potenziale(gradLwf,gradLH)
+      IMPLICIT NONE
+      REAL(KIND=8), INTENT(OUT) :: gradLwf(1:3), gradLH(1:3)
+      REAL (KIND=8), PARAMETER :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
+      INTEGER :: i, numdim
+      REAL(KIND=8) :: u1
+      REAL(KIND=8) :: dL, L0(1:3), L1(1:3)
+      REAL(KIND=8) :: Uee(0:3), Uep(0:3), detGDse(0:3), Epot(0:3)
+      REAL(KIND=8) :: Uese1(0:3), Uese2(0:3), Usese1(0:3), Usese2(0:3), Usesp1(0:3), Usesp2(0:3)
+      COMPLEX(KIND=8) :: SDe(0:3), SDse(0:3)
+      
+      numdim=3
+      IF (flag_2D) numdim=2 
+
+      dL=0.001d0
+      L0=L
+      L1=L0
+      DO i = 1, numdim, 1
+         L1(i)=L0(i)+dL
+         CALL cambia_L_simulation_box(L1)
+         CALL prima_valutazione_funzione_onda()
+         
+         CALL energia_potenziale(Epot(i))
+         IF (SDe_kind/='no_') SDe(i)=detSDe_up_old*detSDe_dw_old
+         IF (Jee_kind/='no_') Uee(i)=Uee_old
+         IF (Jep_kind/='no_') Uep(i)=Uep_old
+         IF (SDse_kind/='no_') SDse(i)=detSDse1_up_old*detSDse1_dw_old*detSDse2_up_old*detSDse2_dw_old
+         IF ((Kse_kind=='gss').OR.(Kse_kind=='gsc').OR.(Kse_kind=='gsp')&
+             .OR.(Kse_kind=='atm').OR.(Kse_kind=='atc')) THEN
+            Uese1(i)=Uese1_old
+            Uese2(i)=Uese2_old
+         ELSE IF ((Kse_kind=='gsd').OR.(Kse_kind=='gdc').OR.(Kse_kind=='gdp')) THEN
+            detGDse(i)=detGDse1_up_old*detGDse1_dw_old*detGDse2_up_old*detGDse2_dw_old
+         END IF
+         IF (Jse_kind/='no_') THEN
+            Usese1(i)=Use1_old
+            Usese2(i)=Use2_old
+         END IF
+         IF (Jsesp_kind/='no_') THEN
+            Usesp1(i)=Usesp1_old
+            Usesp2(i)=Usesp2_old
+         END IF
+         L1(i)=L0(i)
+      END DO
+
+      CALL cambia_L_simulation_box(L0)
+      CALL prima_valutazione_funzione_onda()
+      gradLwf=0.d0
+      gradLH=0.d0
+
+      !Compute gradient of the Hamiltonian
+      CALL energia_potenziale(Epot(0))
+      gradLH(1:3)=gradLH(1:3)+(Epot(1:3)-Epot(0))/dL
+
+      !Compute gradient of the wave function
+      IF (SDe_kind/='no_') THEN
+         SDe(0)=detSDe_up_old*detSDe_dw_old
+         gradLwf(1:3)=gradLwf(1:3)+(SDe(1:3)-SDe(0))/(dL*SDe(0))
+      END IF
+      IF (Jee_kind/='no_') THEN
+         Uee(0)=Uee_old
+         gradLwf(1:3)=gradLwf(1:3)-0.5d0*(Uee(1:3)-Uee(0))/dL
+      END IF
+      IF (Jep_kind/='no_') THEN
+         Uep(0)=Uep_old
+         gradLwf(1:3)=gradLwf(1:3)-0.5d0*(Uep(1:3)-Uep(0))/dL
+      END IF
+      IF (SDse_kind/='no_') THEN
+         SDse(0)=detSDse1_up_old*detSDse1_dw_old*detSDse2_up_old*detSDse2_dw_old
+         gradLwf(1:3)=gradLwf(1:3)+(SDse(1:3)-SDse(0))/(dL*SDse(0))
+      END IF
+      IF ((Kse_kind=='gss').OR.(Kse_kind=='gsc').OR.(Kse_kind=='gsp')&
+          .OR.(Kse_kind=='atm').OR.(Kse_kind=='atc')) THEN
+         Uese1(0)=Uese1_old
+         Uese2(0)=Uese2_old
+         gradLwf(1:3)=gradLwf(1:3)-(Uese1(1:3)-Uese1(0))/dL
+         gradLwf(1:3)=gradLwf(1:3)-(Uese2(1:3)-Uese2(0))/dL
+      ELSE IF ((Kse_kind=='gsd').OR.(Kse_kind=='gdc').OR.(Kse_kind=='gdp')) THEN
+         detGDse(0)=detGDse1_up_old*detGDse1_dw_old*detGDse2_up_old*detGDse2_dw_old
+         gradLwf(1:3)=gradLwf(1:3)-(detGDse(1:3)-detGDse(0))/(dL*detGDse(0))
+      END IF
+      IF (Jse_kind/='no_') THEN
+         Usese1(0)=Use1_old
+         Usese2(0)=Use2_old
+         gradLwf(1:3)=gradLwf(1:3)-0.5d0*(Usese1(1:3)-Usese1(0))/dL
+         gradLwf(1:3)=gradLwf(1:3)-0.5d0*(Usese2(1:3)-Usese2(0))/dL
+      END IF
+      IF (Jsesp_kind/='no_') THEN
+         Usesp1(0)=Usesp1_old
+         Usesp2(0)=Usesp2_old
+         gradLwf(1:3)=gradLwf(1:3)-0.5d0*(Usesp1(1:3)-Usesp1(0))/dL
+         gradLwf(1:3)=gradLwf(1:3)-0.5d0*(Usesp2(1:3)-Usesp2(0))/dL
+      END IF
+
+      IF (flag_2D) THEN
+         gradLH(3)=0.d0
+         gradLwf(3)=0.d0
+      END IF
+      
+   END SUBROUTINE derivataL_wf_e_energia_potenziale
+
 !-----------------------------------------------------------------------
 
 	SUBROUTINE chiudi_estimatori()

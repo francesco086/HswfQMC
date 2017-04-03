@@ -2043,7 +2043,14 @@ MODULE generic_tools
 			OPEN (UNIT=37, FILE=nome_file, STATUS='OLD')
 			READ (37, *) numero_righe, numero_colonne
 			num_tot=numero_righe*numero_colonne
-			IF (num_tot<n_seed*mpi_nprocs) STOP 'Non ci sono abbastanza numeri random nel file fornito'
+			IF (num_tot<n_seed*mpi_nprocs) THEN
+            PRINT *, "Non ci sono abbastanza numeri random nel file fornito"
+            PRINT *, "numero_righe = ", numero_righe
+            PRINT *, "numero_colonne = ", numero_colonne
+            PRINT *, "n_seed = ", n_seed
+            PRINT *, "mpi_nprocs = ", mpi_nprocs
+            STOP
+         END IF 
 			ALLOCATE(random_numbers(1:num_tot))
 			DO i = 1, numero_righe, 1
 				index=(i-1)*numero_colonne+1

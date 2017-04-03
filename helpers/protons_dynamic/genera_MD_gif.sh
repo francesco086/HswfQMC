@@ -13,12 +13,18 @@ frame=0
 for FILE in SR_Rp-*.d
 do
         echo $FILE
-        for i in {1..100}
-        do
-                #echo "set view 75, 45+0.1*"$frame"-(floor((45+0.1*"$frame")/360)*360)" >> script.gnup
-                echo "splot '"$FILE"'" >> script.gnup
-                frame=$frame+1
-        done
+        
+        #3D
+        #for i in {1..100}
+        #do
+        #        echo "set view 75, 45+0.1*"$frame"-(floor((45+0.1*"$frame")/360)*360)" >> script.gnup
+        #        echo "plot '"$FILE"'" >> script.gnup
+        #        frame=$frame+1
+        #done
+
+        # 2D
+        echo "plot '"$FILE"'" >> script.gnup
+        frame=$frame+1
 done
 
 gnuplot < script.gnup

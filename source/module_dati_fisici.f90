@@ -22,7 +22,7 @@ MODULE dati_fisici
 		REAL (KIND=8) :: vect(1:3), sigma_w, eta_w(1:1,1:1), L_w, dist(0:3)
 		REAL (KIND=8), ALLOCATABLE :: app(:,:)
 		
-		NAMELIST /dati_fisici/ r_s, crystal_cell, file_reticolo, flag_molecular, &
+		NAMELIST /dati_fisici/ r_s, crystal_cell, flag_2D, file_reticolo, flag_molecular, &
 		  strecthing_cov_bond, N_cell_side
 		OPEN (2, FILE='dati_fisici.d',STATUS='OLD')
 		READ (2,NML=dati_fisici)
@@ -35,33 +35,45 @@ MODULE dati_fisici
 		
 		IF ( crystal_cell=='bcc__' ) THEN
 			N_part=2*N_cell_side**3
+         flag_2D=.FALSE.
 		ELSE IF ( crystal_cell=='fcc__' ) THEN
 			N_part=4*N_cell_side**3
+         flag_2D=.FALSE.
 		ELSE IF ( (crystal_cell=='hcp__') .AND. (.NOT. flag_molecular) ) THEN
 			N_part=8*N_cell_side**3
+         flag_2D=.FALSE.
 		ELSE IF ( (crystal_cell=='hcp__') .AND. (flag_molecular) ) THEN
 			N_part=16*N_cell_side**3
+         flag_2D=.FALSE.
 		ELSE IF ( (crystal_cell=='hcp_w') .AND. (flag_molecular) ) THEN
 			N_part=16*N_cell_side**3
-		ELSE IF ( crystal_cell=='hring' ) THEN
-			N_part=6
+         flag_2D=.FALSE.
 		ELSE IF ( (crystal_cell=='mhcpo') .AND. (.NOT. flag_molecular) ) THEN
 			STOP 'mhcpo deve essere associato ad una fase molecolare'
 		ELSE IF ( (crystal_cell=='mhcpo') .AND. (flag_molecular) ) THEN
 			N_part=16*N_cell_side**3
+         flag_2D=.FALSE.
 		ELSE IF ( crystal_cell=='sc___' ) THEN
 			N_part=N_cell_side**3
+         flag_2D=.FALSE.
 		ELSE IF ( crystal_cell=='mol__' ) THEN
 			N_part=2
+         flag_2D=.FALSE.
 		ELSE IF ( crystal_cell=='dat__' ) THEN
 			N_part=N_cell_side
 		ELSE IF ( crystal_cell=='datex' ) THEN
 			N_part=N_cell_side
+		ELSE IF ( crystal_cell=='hring' ) THEN
+			N_part=6
+         flag_2D=.TRUE.
 		ELSE IF ( crystal_cell=='grp__' ) THEN
 			N_part=4*(N_cell_side**2)
-			flag_2D=.TRUE.
+         flag_2D=.TRUE.
       ELSE IF ( crystal_cell=='quadr' ) THEN
          N_part=N_cell_side**2
+         flag_2D=.TRUE.
+      ELSE IF ( crystal_cell=='trian' ) THEN
+         N_part=2*(N_cell_side**2)
          flag_2D=.TRUE.
 		ELSE
 			STOP "DATI_FISICI: scegli un reticolo accettabile"
@@ -73,20 +85,28 @@ MODULE dati_fisici
 			file_reticolo=file_reticolo_opt
 		END IF
 		
+      !3D structures
 		L(1:3)=r_s*(4.d0*PI*N_part/3.d0)**(1.d0/3.d0)            !in bohr units
 		IF ((crystal_cell=='hcp__').OR.(crystal_cell=='mhcpo').OR.(crystal_cell=='hcp_w')) THEN
 			L(1)=L(1)*(2.d0**(1.d0/6.d0))
 			L(2)=L(2)*(((3.d0**3.d0)/(2.d0**5.d0))**(1.d0/6.d0))
 			L(3)=L(3)*((2.d0**(2.d0/3.d0))/(3**(1.d0/2.d0)))   *(1.58d0/DSQRT(8.d0/3.d0))
 		END IF
+
+      ! 2D structures
 		IF ( crystal_cell=='grp__' ) THEN
 			L(1:2)=r_s*DSQRT(PI*N_part)
 			L(1)=L(1)*3.d0/DSQRT(DSQRT(27.d0))
 			L(2)=L(2)*DSQRT(3.d0)/DSQRT(DSQRT(27.d0))
-			L(3)=L(1)
+         L(3)=100.d0 	!L(3)=L(1)
 		END IF
       IF ( crystal_cell=='quadr' ) THEN
          L(1:2)=DSQRT(PI*REAL(N_part,8))*r_s
+         L(3)=100.d0 !very large number, so that the layer can be considered isolated
+      END IF
+      IF ( crystal_cell=='trian' ) THEN
+         L(1)=DSQRT(PI*REAL(N_part,8)/DSQRT(2.d0))*r_s
+         L(2)=DSQRT(2.d0)*L(1)
          L(3)=100.d0 !very large number, so that the layer can be considered isolated
       END IF
 		H_L=0.5d0*L
@@ -292,6 +312,22 @@ MODULE dati_fisici
             STOP "crystal_cell='quad' con flag_molecular non ancora implementato"
          END IF
          CALL applica_pbc(r_crystal,N_part,L)
+      ELSE IF ( crystal_cell=='trian' ) THEN
+         IF (.NOT. flag_molecular) THEN
+            i1=1
+            DO j = 1, N_cell_side, 1
+            DO i = 1, N_cell_side, 1
+                  r_crystal(1:3,i1)=(/ REAL(i,8), REAL(j,8), 0.d0 /)*L(1:3)/REAL(N_cell_side,8)
+                  r_crystal(1:3,i1+H_N_part)=(  (/ REAL(i,8), REAL(j,8), 0.d0 /)*L(1:3) &
+                                                + (/ 0.5d0*L(1), 0.5d0*DSQRT(2.d0)*L(1), 0.d0 /)  ) &
+                                             /REAL(N_cell_side,8)
+                  i1=i1+1
+            END DO
+            END DO
+         ELSE
+            STOP "crystal_cell='trian' con flag_molecular non ancora implementato"
+         END IF
+         CALL applica_pbc(r_crystal,N_part,L)
 		ELSE
 			STOP "scegli un reticolo accettabile"
 		END IF
@@ -304,6 +340,15 @@ MODULE dati_fisici
 		
 		iniz_dati_fisici=.TRUE.
 	END SUBROUTINE inizializza_dati_fisici
+!-----------------------------------------------------------------------
+   SUBROUTINE setta_L(Lnew)
+      IMPLICIT NONE
+      REAL(KIND=8), INTENT(IN) :: Lnew(1:3)
+      
+      L=Lnew
+      H_L=L*0.5d0
+
+   END SUBROUTINE setta_L
 !-----------------------------------------------------------------------
 	SUBROUTINE chiudi_dati_fisici()
 		IMPLICIT NONE

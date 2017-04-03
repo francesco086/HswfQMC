@@ -2,7 +2,7 @@ MODULE dnfH
 	USE dati_fisici
    USE fermi_k
 	IMPLICIT NONE
-	REAL (KIND=8), PARAMETER, PRIVATE :: cutoff_quick_pw=0.0001d0
+	REAL (KIND=8), PARAMETER, PRIVATE :: cutoff_quick_pw=0.000001d0
 	LOGICAL, PRIVATE, SAVE :: flag_inizializza=.FALSE.
 	INTEGER, PRIVATE, SAVE :: magic_number(1:86)=(/ 1,7,19,27,33,57,81,93,123,147,171,179,203,251,257,305,341,365,389,437, &
 	  461,485,515,587,619,691,739,751,799,847,895,925,949,1021,1045,1141,1189,1213,1237,1309,1357,1365,1419, &
@@ -44,7 +44,11 @@ MODULE dnfH
       !!!Made obsolete from the KWaVe class
       !!!CALL fermi_quantization(N_M_Hartree,k_Hartree)
       CALL kwv_Hartree%initializeKWaVe(N_M_Hartree,3)
-      CALL kwv_Hartree%buildBoxK(L)
+      IF (flag_2D) THEN
+         CALL kwv_Hartree%buildBoxK((/ L(1), L(2), MIN(L(1),L(2)) /))
+      ELSE 
+         CALL kwv_Hartree%buildBoxK(L)
+      END IF
       k_Hartree=kwv_Hartree%k
 		
 		k_cutoff=k_Hartree(0,H_N_part)*k2_f_factor

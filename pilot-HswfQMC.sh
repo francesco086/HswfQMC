@@ -45,6 +45,7 @@ do
 			echo "      --- Use HswfQMC ---"
 			echo "set_dir - Make the current folder a working folder (with all necessary input files and folders)"
          echo "generate_orbitals - Compute the DFT orbitals corresponding to the given input file dati_fisici.d and dati_DFT.d using Quantum Espresso (it requires pw.x and iotk from Quantum Espresso)"
+         echo "find_SR_minimum - Find the minimum of a SR minimization, by looking at the file ottimizzazione/SR_energies.d"
 			echo "clean - Clean all old data from previous simulations"
 			echo "wash - Clean all old data from previous simulations but the optimized wf and lattice positions"
 			
@@ -74,19 +75,23 @@ do
             exit
          fi
          cp dati_mc.d dati_mc.original
+         cp dati_funzione_onda.d dati_funzione_onda.original
          cp ${pilot_PATH}/helpers/qespresso/dati_mc.generate_crystal dati_mc.d
+         cp ${pilot_PATH}/helpers/qespresso/dati_funzione_onda.generate_crystal dati_funzione_onda.d
          FLAG=$(ls | grep -w posizioni)
          if [ "${FLAG}" == "" ]
          then
             echo "ERROR: Impossible to find the folder posizioni/ . ABORT!"
             exit
          fi
-	 PATHRANDOM="${pilot_PATH}/random_seed"
-	 sed -i.sedbak "s|RANDOM_SEED_FOLDER|${PATHRANDOM}|" dati_mc.d
-	 rm *.sedbak
+	      PATHRANDOM="${pilot_PATH}/random_seed"
+	      sed -i.sedbak "s|RANDOM_SEED_FOLDER|${PATHRANDOM}|" dati_mc.d
+	      \rm -f *.sedbak
+         \rm -f output.d
          HswfQMC_exe > /dev/null 2>&1
          #Extract from the output file the size of the simulation box and save it in the file L.d
          cat output.d | grep "L=" | sed "s/L=   //" | sed "s/   \[bohr\]//" > L.d
+         cat output.d | grep "L=" | sed "s/L=   //" | sed "s/   \[bohr\]//"
          #Get the file which contains the crystal structure and put it in the file crystal.d
          mv posizioni/inizio-QEgen_p_0000.pos crystal.d
          #Delete the useless temporary files
@@ -95,6 +100,7 @@ do
          echo "Generated the crystal structure with HswfQMC"
          #go back to the original dati_mc.d
          mv dati_mc.original dati_mc.d
+         mv dati_funzione_onda.original dati_funzione_onda.d
          #fetch the ORBITALS_FOLDER variable from dati_DFT.d
          ORBITALS_FOLDER=$( cat dati_DFT.d | grep -w "ORBITALS_FOLDER" | sed "s/ORBITALS_FOLDER\=//" | sed "s/\"//g" | sed "s/'//g" )
          if [ "${ORBITALS_FOLDER}" == ""  ]
@@ -139,10 +145,14 @@ do
          cd ..
          #fetch the WF variable from dati_DFT.d
          WF=$( cat dati_DFT.d | grep -w "WF" | sed "s/WF\=//" | sed "s/\"//g" | sed "s/'//g" )
-         sed -i.bak "s/lda_path=.*/lda_path='orbitals\/${ORBITALS_FOLDER}'/" dati_funzione_onda.d
+         sed -i.sedbak "s/lda_path=.*/lda_path='orbitals\/${ORBITALS_FOLDER}'/" dati_funzione_onda.d
          echo "Set "${WF}" for using the generated orbitals"
 			exit
 			;;
+      find_SR_minimum)
+         find_SR_minimum_energy.py ottimizzazione/SR_energies.dat
+         exit
+         ;;
 		build)
 			cd ${pilot_PATH}
 			echo "Build the executable file HswfQMC_exe"
@@ -206,15 +216,15 @@ do
 			read ANSW
 			if [ "$ANSW" = "y" ]
 			then
-				rm -v -f -r estimatori posizioni ottimizzazione
-				rm -v -f output.d
-				rm -v -f nohup.out
-				rm -v -f reticolo/*.d
-				mkdir -v estimatori
-				mkdir -v posizioni
-				mkdir -v estimatori/gradiente
-				mkdir -v ottimizzazione
-            mkdir -v ottimizzazione/splines
+				rm -f -r estimatori posizioni ottimizzazione
+				rm -f output.d
+				rm -f nohup.out
+				rm -f reticolo/*.d
+				mkdir estimatori
+				mkdir posizioni
+				mkdir estimatori/gradiente
+				mkdir ottimizzazione
+            			mkdir ottimizzazione/splines
 			else
 				echo "Aborted"
 			fi
@@ -226,14 +236,14 @@ do
 			read ANSW
 			if [ "$ANSW" = "y" ]
 			then
-				rm -v -f -r estimatori posizioni
-				rm -v -f ottimizzazione/*.dat
-				rm -v -f output.d
-				rm -v -f nohup.out
-				rm -v -f reticolo/SR_Rp-*.d
-				mkdir -v estimatori
-				mkdir -v posizioni
-				mkdir -v estimatori/gradiente
+				rm -f -r estimatori posizioni
+				rm -f ottimizzazione/*.dat
+				rm -f output.d
+				rm -f nohup.out
+				rm -f reticolo/SR_Rp-*.d
+				mkdir estimatori
+				mkdir posizioni
+				mkdir estimatori/gradiente
 			else
 				echo "Aborted"
 			fi
@@ -269,7 +279,7 @@ do
 						;;
 				esac
 			fi
-			PATH=${CURRENT_PATH}:${CURRENT_PATH}/helpers/qespresso:\$PATH
+			PATH=${CURRENT_PATH}:${CURRENT_PATH}/helpers/qespresso:${CURRENT_PATH}/helpers/SR:\$PATH
 			echo "
 #add path for HswfQMC
 export PATH=$PATH
@@ -277,7 +287,7 @@ export PATH=$PATH
 _pilot-HswfQMC.sh()
 {
     local cur=\${COMP_WORDS[COMP_CWORD]}
-    COMPREPLY=( \$(compgen -W \"git_pull set_path install_markuspline install_lapack set_makefile build rebuild set_dir generate_orbitals clean wash commit\" -- \$cur) )
+    COMPREPLY=( \$(compgen -W \"git_pull set_path install_markuspline install_lapack set_makefile build rebuild set_dir generate_orbitals find_SR_minimum clean wash commit\" -- \$cur) )
 }
 complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh" >> ~/.${FILE_TO_SET}
 			exit

@@ -500,10 +500,10 @@ MODULE VMC
 		IF ( trimer_steps ) THEN
 			IF (verbose_mode .AND. eseguito_correttamente_e .AND. flag_elettroni) THEN
 				PRINT * , 'VMC: Ho calibrato lo step_tre con successo: ', step_partenza_e, ' ---> ', step_e
-				IF (flag_output) WRITE (7, *) 'VMC: Ho calibrato lo step_e con successo: ', step_partenza_e, ' ---> ', step_e
+				IF (flag_output) WRITE (7, *) 'VMC: Ho calibrato lo step_tre con successo: ', step_partenza_e, ' ---> ', step_e
 			ELSE IF (verbose_mode .AND. (.NOT. eseguito_correttamente_e)) THEN
 				PRINT * , 'VMC: Ho calibrato lo step_tre (circa): ', step_partenza_e, ' ---> ', step_e
-				IF (flag_output) WRITE (7, *) 'VMC: Ho calibrato lo step_e (circa): ', step_partenza_e, ' ---> ', step_e
+				IF (flag_output) WRITE (7, *) 'VMC: Ho calibrato lo step_tre (circa): ', step_partenza_e, ' ---> ', step_e
 			END IF
 		ELSE
 			IF (verbose_mode .AND. eseguito_correttamente_e .AND. flag_elettroni) THEN

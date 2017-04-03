@@ -2,7 +2,8 @@ MODULE walkers
 	IMPLICIT NONE
 	LOGICAL, PROTECTED, SAVE :: iniz_walkers=.FALSE., iniz_pc=.FALSE.
 	LOGICAL :: flag_traccia_coppie_mol_ss
-	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: re_new(:,:), re_old(:,:), rp_new(:,:), rp_old(:,:)
+	!REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: re_new(:,:), re_old(:,:), rp_new(:,:), rp_old(:,:)
+	REAL (KIND=8), ALLOCATABLE, SAVE :: re_new(:,:), re_old(:,:), rp_new(:,:), rp_old(:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: se1_new(:,:), se1_old(:,:), se2_new(:,:), se2_old(:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: sp1_new(:,:), sp1_old(:,:), sp2_new(:,:), sp2_old(:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_ee_new(:,:,:), rij_ee_old(:,:,:)
@@ -11,7 +12,8 @@ MODULE walkers
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rijpc_se1_new(:,:,:), rijpc_se1_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_se2_new(:,:,:), rij_se2_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rijpc_se2_new(:,:,:), rijpc_se2_old(:,:,:)
-	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_ep_new(:,:,:), rij_ep_old(:,:,:)
+	!REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_ep_new(:,:,:), rij_ep_old(:,:,:)
+	REAL (KIND=8), ALLOCATABLE, SAVE :: rij_ep_new(:,:,:), rij_ep_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rijpc_ep_new(:,:,:), rijpc_ep_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_ese1_new(:,:,:), rij_ese1_old(:,:,:)
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: rij_ese2_new(:,:,:), rij_ese2_old(:,:,:)
@@ -937,7 +939,64 @@ MODULE walkers
 				
 	END SUBROUTINE riporta_indietro_walker
 !-----------------------------------------------------------------------
+   SUBROUTINE cambia_L_simulation_box(Lnew)
+      USE dati_fisici
+      USE dati_mc
+      IMPLICIT NONE
+      REAL(KIND=8), INTENT(IN) :: Lnew(1:3)
+      INTEGER :: i1
+      REAL(KIND=8) :: ratio(1:3)
 
+      !ratio between the new L and the old one. All positions will be rescaled using this value
+      ratio=Lnew/L
+
+      !change L in dati_fisici
+      CALL setta_L(Lnew)
+
+      !rescale the positions of the walkers
+      DO i1 = 1, N_part, 1
+         re_new=re_old
+         re_new(1:3,i1)=re_new(1:3,i1)*ratio(1:3)
+         rp_new=rp_old
+         rp_new(1:3,i1)=rp_new(1:3,i1)*ratio(1:3)
+      END DO
+      IF (flag_shadow) THEN
+         DO i1 = 1, N_part, 1
+            se1_new=se1_old
+            se1_new(1:3,i1)=se1_new(1:3,i1)*ratio(1:3)
+            se2_new=se1_old
+            se2_new(1:3,i1)=se2_new(1:3,i1)*ratio(1:3)
+            sp1_new=sp1_old
+            sp1_new(1:3,i1)=sp1_new(1:3,i1)*ratio(1:3)
+            sp2_new=sp2_old
+            sp2_new(1:3,i1)=sp2_new(1:3,i1)*ratio(1:3)
+         END DO
+      END IF
+
+      !recompute the new distances
+      CALL calcola_nuove_distanze('___',-1,'e_e_')
+      CALL calcola_nuove_distanze('___',-1,'e_p_')
+      IF (flag_shadow) THEN
+         CALL calcola_nuove_distanze('___',-1,'e_se')
+         CALL calcola_nuove_distanze('___',-1,'sese')
+         CALL calcola_nuove_distanze('___',-1,'sesp')
+      END IF
+
+      !recompute the PC distances
+      IF (iniz_pc) THEN
+	      CALL calcola_nuove_distanze_pc('___',-1,'e_e_')
+         CALL calcola_nuove_distanze_pc('___',-1,'e_p_')
+         IF (flag_shadow) THEN
+            CALL calcola_nuove_distanze_pc('___',-1,'e_se')
+            CALL calcola_nuove_distanze_pc('___',-1,'sese')
+            CALL calcola_nuove_distanze_pc('___',-1,'sesp')
+         END IF
+      END IF
+
+	   CALL metti_rnew_in_rold('all',-1)
+      
+   END SUBROUTINE cambia_L_simulation_box
+!-----------------------------------------------------------------------
 	SUBROUTINE salva_posizione_walkers(nome_file)
 		USE dati_fisici
 		USE dati_mc
