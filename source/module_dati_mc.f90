@@ -63,14 +63,13 @@ MODULE dati_mc
 		READ (2, NML=dati_SR)
 		CLOSE (2)
 		
-		IF (flag_continua .AND. (.NOT. flag_disk)) STOP 'Non puoi continuare se non hai scritto su disco i dati &
-		  [ module_dati.f90 > inizializza_dati_mc ]'
+		IF (flag_continua .AND. (.NOT. flag_disk)) STOP 'Non puoi continuare se non hai scritto su disco i dati [ module_dati.f90 > inizializza_dati_mc ]'
 		IF (alpha_ewald==-1.d0) alpha_ewald=5.d0/MIN(L(1),L(2),L(3))
 		IF ((iniz_MPI).AND.(N_mc>0)) THEN
 			N_mc=N_mc/mpi_nprocs
 		END IF
 		IF (N_mc<0) N_mc=-N_mc 
-		IF (N_AV<0) N_AV=MAX(-N_mc/N_AV,1)
+		IF (N_AV<0) N_AV=MAX(-N_mc/N_AV,1_8)
 		IF (N_1ppt<0) THEN
 			N_1ppt=CEILING(-(REAL(N_1ppt)/100.)*REAL(N_part))
 			IF (flag_shadow) N_1ppt=N_1ppt*3
@@ -94,25 +93,20 @@ MODULE dati_mc
 		CALL inizializza_dati_mc()
 		
 		IF (flag_mpi) THEN
-			IF (.NOT. iniz_dati_mc) STOP 'Non puoi inizializzare MPI senza prima leggere i dati iniziali &
-			  [ module_dati.f90 > inizializza_MPI ]'
+			IF (.NOT. iniz_dati_mc) STOP 'Non puoi inizializzare MPI senza prima leggere i dati iniziali [ module_dati.f90 > inizializza_MPI ]'
 			CALL MPI_INIT(mpi_ierr)
-			IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore nell inizializzazione di MPI &
-			  [ module_dati.f90 > inizializza_MPI ]'
+			IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore nell inizializzazione di MPI [ module_dati.f90 > inizializza_MPI ]'
 			CALL MPI_COMM_SIZE(MPI_COMM_WORLD, mpi_nprocs, mpi_ierr)
-			IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_COMM_SIZE &
-			  [ module_dati.f90 > inizializza_MPI ]'
+			IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_COMM_SIZE [ module_dati.f90 > inizializza_MPI ]'
 			CALL MPI_COMM_RANK(MPI_COMM_WORLD, mpi_myrank, mpi_ierr)
-			IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_COMM_RANK &
-			  [ module_dati.f90 > inizializza_MPI ]'
+			IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_COMM_RANK [ module_dati.f90 > inizializza_MPI ]'
 			iniz_MPI=.TRUE.
 		ELSE
 			mpi_nprocs=1
 			mpi_myrank=0
 		END IF
 		IF ((mpi_nprocs>1400).AND.(flag_random_file)) THEN
-			STOP 'Il file random_seed.d contiene dati per al massimo 1400 processori &
-					  [ module_dati.f90 > inizializza_MPI ]'
+			STOP 'Il file random_seed.d contiene dati per al massimo 1400 processori [ module_dati.f90 > inizializza_MPI ]'
 		END IF
 	END SUBROUTINE inizializza_MPI
 !-----------------------------------------------------------------------
@@ -172,11 +166,9 @@ MODULE dati_mc
 	SUBROUTINE termina_MPI()
 		IMPLICIT NONE
 		IF (flag_mpi) THEN
-			IF (.NOT. iniz_MPI) STOP 'Non puoi inizializzare MPI senza prima averlo inizializzato &
-			  [ module_dati.f90 > termina_MPI ]'
+			IF (.NOT. iniz_MPI) STOP 'Non puoi inizializzare MPI senza prima averlo inizializzato [ module_dati.f90 > termina_MPI ]'
 			CALL MPI_FINALIZE(mpi_ierr)
-			IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore nel finalizzare MPI &
-			  [ module_dati.f90 > termina_MPI ]'
+			IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore nel finalizzare MPI [ module_dati.f90 > termina_MPI ]'
 		END IF
 	END SUBROUTINE termina_MPI
 !-----------------------------------------------------------------------

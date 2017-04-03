@@ -26,8 +26,7 @@ MODULE dnfH
 		REAL (KIND=8), INTENT(IN) :: k2_f_factor
 		INTEGER :: i1, i2, i
 		
-		IF (.NOT. iniz_dati_fisici) STOP 'Devi prima inizializzare i dati fisici &
-		  [ module_dnfH.f90 > inizializza_dnfH ]' 
+		IF (.NOT. iniz_dati_fisici) STOP 'Devi prima inizializzare i dati fisici [ module_dnfH.f90 > inizializza_dnfH ]' 
 				
 		i1=2   !indice per il numero di particelle esistenti
 		DO WHILE (magic_number(i1)<H_N_part)
@@ -101,8 +100,7 @@ MODULE dnfH
 		REAL (KIND=8) :: k_app(1:3), eta(1:N_M_Hartree,1:N_M_Hartree)
 		COMPLEX (KIND=8) :: proton_fact, zzz
 		
-		IF (.NOT. flag_inizializza) STOP 'Devi prima inizializzare &
-		  [ module_dnfH.f90 > trova_soluzioni_dnfH ]'
+		IF (.NOT. flag_inizializza) STOP 'Devi prima inizializzare [ module_dnfH.f90 > trova_soluzioni_dnfH ]'
 				
 		SELECT CASE(hamiltoniana)
 		CASE('fre')
@@ -159,14 +157,12 @@ MODULE dnfH
 		REAL (KIND=8) :: rwork(1:3*N_M_Hartree-1)
 		COMPLEX (KIND=8) :: work(1:3*N_M_Hartree-1)
 		
-		IF (.NOT. flag_inizializza) STOP 'Devi prima inizializzare &
-		  [ module_dnfH.f90 > trova_soluzioni_dnfH ]'
+		IF (.NOT. flag_inizializza) STOP 'Devi prima inizializzare [ module_dnfH.f90 > trova_soluzioni_dnfH ]'
 				
 		CALL ZHEEV('V','U',N_M_Hartree,M_Hartree,N_M_Hartree,autovalori_Hartree,work,3*N_M_Hartree-1,rwork,info)
 		IF (info/=0) THEN
 			PRINT * , 'ERRORE ', info
-			STOP 'Errore nel calcolo degli autovalori. &
-			  [module_dnfH.f90 > trova_soluzioni_dnfH ]'
+			STOP 'Errore nel calcolo degli autovalori. [module_dnfH.f90 > trova_soluzioni_dnfH ]'
 		END IF
 						
 		DO i = 1, N_M_Hartree, 1

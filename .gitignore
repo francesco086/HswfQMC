@@ -63,6 +63,8 @@ source/*.o
 source/*.mod
 HswfQMC*
 source/HswfQMC*
+*.x
+*/*.x
 lapack_lib
 <<<<<<< HEAD
 source/makefile.users_settings*

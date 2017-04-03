@@ -34,10 +34,9 @@ MODULE stati_eccitati
 		READ (2, NML=dati_conduttivita)
 		CLOSE (2)
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'non puoi trovare gli stati eccitati se non hai inizializzato la funzione d onda &
-		  [ module_stati_eccitati.f90 > inizializza_stati_eccitati ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'non puoi trovare gli stati eccitati se non hai inizializzato la funzione d onda [ module_stati_eccitati.f90 > inizializza_stati_eccitati ]'
 		
-		WRITE (istring, '(I4.4)'), mpi_myrank
+		WRITE (istring, '(I4.4)') mpi_myrank
 		file_exc_stat(28:31)=istring
 		
 		E0=SUM(autoenergie_dnfH(1:H_N_part))
@@ -73,14 +72,14 @@ MODULE stati_eccitati
 		IF (mpi_myrank==0) THEN
 			PRINT * , 'EXC_STAT: Numero stati eccitati: ', N_exc_stat
 			IF (flag_output) THEN
-				WRITE (7, *), 'EXC_STAT: Numero stati eccitati: ', N_exc_stat
+				WRITE (7, *) 'EXC_STAT: Numero stati eccitati: ', N_exc_stat
 			END IF
 		END IF
 		
 		ALLOCATE(big_energie_exc_stat(0:N_exc_stat),big_i_exc_stat(1:H_N_part,0:N_exc_stat))
 		OPEN (UNIT=99, FILE=file_exc_stat, STATUS='OLD')
 		DO i1 = 0, N_exc_stat, 1
-			READ (99,*), big_energie_exc_stat(i1), big_i_exc_stat(1:H_N_part,i1)
+			READ (99,*) big_energie_exc_stat(i1), big_i_exc_stat(1:H_N_part,i1)
 		END DO
 		CLOSE(99)
 		CALL SYSTEM('rm -f '//file_exc_stat)
@@ -131,7 +130,7 @@ MODULE stati_eccitati
 				IF (E_stato<=E_ctf) THEN
 					num=num+1
 					!PRINT * , E_stato, stati_occ
-					WRITE (99, *), E_stato, stati_occ
+					WRITE (99, *) E_stato, stati_occ
 				END IF
 				IF (Np_Nh>0) THEN
 					flag_ext=.FALSE.
@@ -206,19 +205,17 @@ MODULE stati_eccitati
 		INTEGER, INTENT(IN) :: n_stat
 		INTEGER :: i, j, j1
 		
-		IF (.NOT. iniz_stati_eccitati) STOP 'non puoi caricare uno stato eccitato se prima non hai inizializzato il modulo &
-		  [ module_stati_eccitati.f90 > load_stato_eccitato ]'
-		IF (n_stat>N_exc) STOP 'stai cercando di caricare uno stato di energia troppo alta &
-		  [ module_stati_eccitati.f90 > load_stato_eccitato ]'
+		IF (.NOT. iniz_stati_eccitati) STOP 'non puoi caricare uno stato eccitato se prima non hai inizializzato il modulo [ module_stati_eccitati.f90 > load_stato_eccitato ]'
+		IF (n_stat>N_exc) STOP 'stai cercando di caricare uno stato di energia troppo alta [ module_stati_eccitati.f90 > load_stato_eccitato ]'
 		
 		IF (mpi_myrank==0) THEN
 			PRINT * , 'EXC_STAT: Calcolo dello stato eccitato ', n_stat ,' con energia ',  &
 			  energie_exc_stat(n_stat), ', usando gli orbitali: ' 
 			PRINT * , i_exc_stat(1:H_N_part,n_stat)
 			IF (flag_output) THEN
-				WRITE (7, *), 'EXC_STAT: Calcolo dello stato eccitato con energia ',  &
+				WRITE (7, *) 'EXC_STAT: Calcolo dello stato eccitato con energia ',  &
 				  energie_exc_stat(n_stat), ', usando gli orbitali: '
-				WRITE (7, *), i_exc_stat(1:H_N_part,n_stat)
+				WRITE (7, *) i_exc_stat(1:H_N_part,n_stat)
 			END IF
 		END IF
 		
@@ -246,8 +243,7 @@ MODULE stati_eccitati
 		INTEGER, INTENT(IN) :: iexc
 		INTEGER :: i1, i2, i3, max_num_pw
 		
-		IF (.NOT. iniz_stati_eccitati) STOP 'devi prima inizializzare &
-		  [ module_stati_eccitati.f90 > inizializza_funzioni_onda_eccitate ]'
+		IF (.NOT. iniz_stati_eccitati) STOP 'devi prima inizializzare [ module_stati_eccitati.f90 > inizializza_funzioni_onda_eccitate ]'
 				
 		ALLOCATE(excwf(iexc)%SDe_up_new(1:H_N_part,1:H_N_part),excwf(iexc)%SDe_up_old(1:H_N_part,1:H_N_part))
 		excwf(iexc)%SDe_up_new=0.d0
@@ -344,8 +340,7 @@ MODULE stati_eccitati
 				STOP
 			END IF
 		CASE DEFAULT
-			STOP 'Non hai selezionato un valore di SDe_kind accettabile &
-			  [ module_stati_eccitati.f90 > prima_valutazione_funzioni_onda_eccitate ]'
+			STOP 'Non hai selezionato un valore di SDe_kind accettabile [ module_stati_eccitati.f90 > prima_valutazione_funzioni_onda_eccitate ]'
 		END SELECT
 		IF (SDe_kind/='no_') THEN
 			excwf(iexc)%SDe_up_new=excwf(iexc)%SDe_up_old
@@ -396,8 +391,7 @@ MODULE stati_eccitati
 					excwf(iexc)%detSDe_up_new=1.d0
 					excwf(iexc)%detSDe_dw_new=1.d0
 				CASE DEFAULT
-					STOP 'Non hai selezionato un valore di SDe_kind accettabile &
-					  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+					STOP 'Non hai selezionato un valore di SDe_kind accettabile [ module_calcola_accettazione.f90 > valuta_accettazione ]'
 				END SELECT
 			END IF
 		CASE ('1ppt')
@@ -461,8 +455,7 @@ MODULE stati_eccitati
 					excwf(iexc)%detSDe_up_new=1.d0
 					excwf(iexc)%detSDe_dw_new=1.d0
 				CASE DEFAULT
-					STOP 'Non hai selezionato un valore di SDe_kind accettabile &
-					  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+					STOP 'Non hai selezionato un valore di SDe_kind accettabile [ module_calcola_accettazione.f90 > valuta_accettazione ]'
 				END SELECT
 			END IF
 		END SELECT
@@ -553,8 +546,7 @@ MODULE stati_eccitati
 		INTEGER, INTENT(OUT) :: pvt(1:N)
 		COMPLEX (KIND=8) :: SD(1:N,1:N), ISD(1:N,1:N), detSD
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_SD_har ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_SD_har ]'
 		
 		IF (num==-1) THEN
 			!Calcolo i termini matriciali di SD_new
@@ -590,8 +582,7 @@ MODULE stati_eccitati
 			END DO
 			CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD)
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_SD_pw ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_SD_pw ]'
 		END IF
 		
 	END SUBROUTINE valuta_excSD_har
@@ -599,8 +590,7 @@ MODULE stati_eccitati
 	SUBROUTINE chiudi_stati_eccitati()
 		IMPLICIT NONE
 		
-		IF (.NOT. iniz_stati_eccitati) STOP 'prima di chiudere devi aver aperto &
-		  [ module_stati_eccitati.f90 > chiudi_stati_eccitati ]'
+		IF (.NOT. iniz_stati_eccitati) STOP 'prima di chiudere devi aver aperto [ module_stati_eccitati.f90 > chiudi_stati_eccitati ]'
 		
 		DEALLOCATE(i_exc_stat,energie_exc_stat)
 		

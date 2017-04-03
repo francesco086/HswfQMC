@@ -46,3 +46,24 @@ ifeq ($(IDENTIFIER),jakessle@login01.mogon)
         FC=mpif90
 endif
 
+ifeq ($(IDENTIFIER),hpb015@juqueen1.zam.kfa-juelich.de)
+        EXEC=$(EXEC1)
+        LIBS=-lmarkusplineHswfQMC -llapack -lesslbg
+        LDFLAGS=-L$(LAPACK_LIB) -L/bgsys/local/lib -I/homea/hpb01/hpb015/HswfQMC/markuspline -L/homea/hpb01/hpb015/HswfQMC/markuspline
+        FC=mpixlf2003_r
+endif
+
+ifeq ($(IDENTIFIER),hpb015@juqueen2.zam.kfa-juelich.de)
+        EXEC=$(EXEC1)
+        LIBS=-lmarkusplineHswfQMC -llapack -lesslbg
+        LDFLAGS=-L$(LAPACK_LIB) -L/bgsys/local/lib -I/homea/hpb01/hpb015/HswfQMC/markuspline -L/homea/hpb01/hpb015/HswfQMC/markuspline
+        FC=mpixlf2003_r
+endif
+
+ifeq ($(IDENTIFIER),hpb015@juqueen3.zam.kfa-juelich.de)
+        EXEC=$(EXEC1)
+        LIBS=-lmarkusplineHswfQMC -llapack -lesslbg
+        LDFLAGS=-L$(LAPACK_LIB) -L/bgsys/local/lib -I/homea/hpb01/hpb015/HswfQMC/markuspline -L/homea/hpb01/hpb015/HswfQMC/markuspline
+        FC=mpixlf2003_r
+endif
+

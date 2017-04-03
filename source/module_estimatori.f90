@@ -40,8 +40,7 @@ MODULE estimatori
 		IMPLICIT NONE
 		INTEGER (KIND=8), INTENT(IN) :: i
 		REAL (KIND=8) :: app1, app2
-		IF (.NOT. iniz_estimatori) STOP 'Prima di valutare gli estimatori devi inizializzarli &
-		  [ module_estimatori.f90 > valuta_estimatori ]'
+		IF (.NOT. iniz_estimatori) STOP 'Prima di valutare gli estimatori devi inizializzarli [ module_estimatori.f90 > valuta_estimatori ]'
 		
 		IF (flag_E_kin) CALL energia_cinetica(E_kin(i),E_JF(i))
 		IF (flag_E_pot) CALL energia_potenziale(E_pot(i))
@@ -66,8 +65,7 @@ MODULE estimatori
 	SUBROUTINE mantieni_stessi_estimatori(i)
 		IMPLICIT NONE
 		INTEGER (KIND=8), INTENT(IN) :: i
-		IF (.NOT. iniz_estimatori) STOP 'Prima di confermare gli estimatori devi inizializzarli &
-		  [ module_estimatori.f90 > valuta_estimatori ]'
+		IF (.NOT. iniz_estimatori) STOP 'Prima di confermare gli estimatori devi inizializzarli [ module_estimatori.f90 > valuta_estimatori ]'
 		
 		IF (flag_E_kin) THEN
 			E_kin(i)=E_kin(i-1)
@@ -89,13 +87,11 @@ MODULE estimatori
 		INTEGER (KIND=8) :: i
 		REAL (KIND=8) :: vec_save(1:N_mc)
 		
-		WRITE (istring, '(I4.4)'), mpi_myrank
+		WRITE (istring, '(I4.4)') mpi_myrank
 		
-		IF ((.NOT. flag_disk) .AND. (mpi_myrank==0)) STOP 'Stai trascrivendo gli estimatori quando non dovrebbe succedere &
-		  [ module_VMC.f90 > conferma_estimatori ]'
+		IF ((.NOT. flag_disk) .AND. (mpi_myrank==0)) STOP 'Stai trascrivendo gli estimatori quando non dovrebbe succedere [ module_VMC.f90 > conferma_estimatori ]'
 		
-		IF (.NOT. iniz_estimatori) STOP 'Prima di salvare gli estimatori devi inizializzarli &
-		  [ module_VMC.f90 > conferma_estimatori ]'
+		IF (.NOT. iniz_estimatori) STOP 'Prima di salvare gli estimatori devi inizializzarli [ module_VMC.f90 > conferma_estimatori ]'
 		
 		IF (mpi_myrank==0) THEN
 			flag_scrivi=.TRUE.
@@ -157,14 +153,12 @@ MODULE estimatori
 				!END IF
 				IF (mpi_myrank<mpi_nprocs-1) THEN
 					CALL MPI_SEND(flag_scrivi,1,MPI_LOGICAL,mpi_myrank+1,10+j,MPI_COMM_WORLD,mpi_ierr)
-					IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_SEND &
-					  [ module_VMC.f90 > trascrivi_dati ]'
+					IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_SEND [ module_VMC.f90 > trascrivi_dati ]'
 				END IF
 			END IF
 			IF (mpi_myrank==j+1 .AND. j<mpi_nprocs) THEN
 				CALL MPI_RECV(flag_scrivi,1,MPI_LOGICAL,mpi_myrank-1,10+j,MPI_COMM_WORLD,status,mpi_ierr)
-				IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_RECV &
-				  [ module_VMC.f90 > trascrivi_dati ]'
+				IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_RECV [ module_VMC.f90 > trascrivi_dati ]'
 			END IF
 		END DO
 		

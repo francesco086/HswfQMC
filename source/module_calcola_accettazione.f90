@@ -64,10 +64,8 @@ mODULE calcola_accettazione
 		INTEGER :: info, i
 		COMPLEX (KIND=8) :: work(1:3*H_N_part)
 				
-		IF (.NOT. iniz_dati_fisici) STOP 'Prima devi leggere i dati fisici &
-		  [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
-		IF (.NOT. iniz_walkers) STOP 'Prima devi inizializzare i walkers &
-		  [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
+		IF (.NOT. iniz_dati_fisici) STOP 'Prima devi leggere i dati fisici [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
+		IF (.NOT. iniz_walkers) STOP 'Prima devi inizializzare i walkers [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
 		
 		CALL inizializza_momenta(mpi_myrank)
 		CALL inizializza_dati_funzione_onda()
@@ -207,8 +205,7 @@ mODULE calcola_accettazione
 				u_se2_old=0.d0
 			END IF
 			IF ((Jse_kind=='bou') .OR. (Jse_kind=='ppb')) THEN
-				STOP 'Jse_kin=bou e ppt ancora da implementare &
-				  [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
+				STOP 'Jse_kin=bou e ppt ancora da implementare [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
 				!ALLOCATE(partner_se1(1:N_part),partner_se2(1:N_part))
 				!ALLOCATE(b_se1_new(1:N_part,1:N_part), b_se1_old(1:N_part,1:N_part))
 				!b_se1_new=0.d0
@@ -320,14 +317,10 @@ mODULE calcola_accettazione
 		INTEGER :: info, i, j
 		COMPLEX (KIND=8) :: work(1:3*H_N_part)
 				
-		IF (.NOT. iniz_calcola_accettazione) STOP 'Prima devi inizializzare la funzione d onda &
-		  [ module_calcola_accettazione.f90 > reinizializza_funzion_onda ]'
-		IF (.NOT. iniz_dati_fisici) STOP 'Prima devi leggere i dati fisici &
-		  [ module_calcola_accettazione.f90 > reinizializza_funzion_onda ]'
-		IF (.NOT. iniz_momenta) STOP 'Prima devi trovare i momenti di fermi &
-		  [ module_calcola_accettazione.f90 > reinizializza_funzion_onda ]'
-		IF (.NOT. iniz_walkers) STOP 'Prima devi inizializzare i walkers &
-		  [ module_calcola_accettazione.f90 > reinizializza_funzion_onda ]'
+		IF (.NOT. iniz_calcola_accettazione) STOP 'Prima devi inizializzare la funzione d onda [ module_calcola_accettazione.f90 > reinizializza_funzion_onda ]'
+		IF (.NOT. iniz_dati_fisici) STOP 'Prima devi leggere i dati fisici [ module_calcola_accettazione.f90 > reinizializza_funzion_onda ]'
+		IF (.NOT. iniz_momenta) STOP 'Prima devi trovare i momenti di fermi [ module_calcola_accettazione.f90 > reinizializza_funzion_onda ]'
+		IF (.NOT. iniz_walkers) STOP 'Prima devi inizializzare i walkers [ module_calcola_accettazione.f90 > reinizializza_funzion_onda ]'
 		
 		SELECT CASE (SDe_kind)
 		CASE ('pw_') 
@@ -467,9 +460,7 @@ mODULE calcola_accettazione
 				STOP
 			END IF
       CASE('hl_')
-         IF (N_part/=2) STOP "Non si puo' usare lo Slater di Heitler-London &
-            con un numero di particelle diverso da 2&
-            [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]"
+         IF (N_part/=2) STOP "Non si puo' usare lo Slater di Heitler-London con un numero di particelle diverso da 2 [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]"
          CALL valuta_SD_HL(rij_ep_old(0,1:2,1:2),SDe_up_old,detSDe_up_old,ISDe_up_old)
          SDe_dw_old=1.d0
          detSDe_dw_old=1.d0
@@ -478,8 +469,7 @@ mODULE calcola_accettazione
 			detSDe_up_old=1.d0
 			detSDe_dw_old=1.d0
 		CASE DEFAULT
-			STOP 'Non hai selezionato un valore di SDe_kind accettabile &
-			  [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]'
+			STOP 'Non hai selezionato un valore di SDe_kind accettabile [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]'
 		END SELECT
 		detSDe_up_new=detSDe_up_old
 		detSDe_dw_new=detSDe_dw_old
@@ -504,8 +494,7 @@ mODULE calcola_accettazione
 		CASE ('no_') 
 			Uee_old=0.d0
 		CASE DEFAULT
-			STOP 'Non hai selezionato un valore di Jee_kind accettabile &
-			  [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]'
+			STOP 'Non hai selezionato un valore di Jee_kind accettabile [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]'
 		END SELECT
 		IF (Jee_kind/='no_') u_ee_new=u_ee_old
 		Uee_new=Uee_old
@@ -529,8 +518,7 @@ mODULE calcola_accettazione
 		CASE ('no_') 
 			Uep_old=0.d0
 		CASE DEFAULT
-			STOP 'Non hai selezionato un valore di Jep_kind accettabile &
-			  [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]'
+			STOP 'Non hai selezionato un valore di Jep_kind accettabile [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]'
 		END SELECT
 		IF (Jep_kind/='no_') u_ep_new=u_ep_old
 		Uep_new=Uep_old
@@ -764,8 +752,7 @@ mODULE calcola_accettazione
 			detSDse2_up_old=1.d0
 			detSDse2_dw_old=1.d0
 		CASE DEFAULT
-			STOP 'Non hai selezionato un valore di SDse_kind accettabile &
-			  [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]'
+			STOP 'Non hai selezionato un valore di SDse_kind accettabile [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]'
 		END SELECT
 		IF (SDse_kind/='no_') THEN
 			SDse1_up_new=SDse1_up_old
@@ -824,8 +811,7 @@ mODULE calcola_accettazione
 			u_se2_new=u_se2_old
 		CASE DEFAULT
 			PRINT * , ' ### ', Jse_kind
-			STOP 'Non hai selezionato un valore di Jse_kind accettabile &
-			  [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]'
+			STOP 'Non hai selezionato un valore di Jse_kind accettabile [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]'
 		END SELECT
 		Use1_new=Use1_old
 		Use2_new=Use2_old
@@ -1035,8 +1021,7 @@ mODULE calcola_accettazione
 			detGDse2_up_old=1.d0
 			detGDse2_dw_old=1.d0
 		CASE DEFAULT
-			STOP 'Non hai selezionato un valore di Kse_kind accettabile &
-			  [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]'
+			STOP 'Non hai selezionato un valore di Kse_kind accettabile [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]'
 		END SELECT
 		Uese1_new=Uese1_old
 		Uese2_new=Uese2_old
@@ -1152,8 +1137,7 @@ mODULE calcola_accettazione
 			detGDsp2_up_new=1.d0
 			detGDsp2_dw_new=1.d0
 		CASE DEFAULT
-			STOP 'Non hai selezionato un valore di Jsesp_kind accettabile &
-			  [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]'
+			STOP 'Non hai selezionato un valore di Jsesp_kind accettabile [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]'
 		END SELECT
 		IF ((Jsesp_kind/='no_').AND.(Jsesp_kind/='gsd')) THEN
 			u_sesp1_new=u_sesp1_old
@@ -1215,14 +1199,10 @@ mODULE calcola_accettazione
 		END IF
 		num_mc_old=num_mc
 		
-		IF (.NOT. iniz_calcola_accettazione) STOP 'Prima devi inizializzare la funzione d onda &
-		  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
-		IF (.NOT. iniz_dati_fisici) STOP 'Prima devi leggere i dati fisici &
-		  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
-		IF (.NOT. iniz_momenta) STOP 'Prima hai bisogno di trovare i momenti di fermi &
-		  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
-		IF (.NOT. iniz_walkers) STOP 'Prima devi inizializzare i walkers &
-		  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+		IF (.NOT. iniz_calcola_accettazione) STOP 'Prima devi inizializzare la funzione d onda [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+		IF (.NOT. iniz_dati_fisici) STOP 'Prima devi leggere i dati fisici [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+		IF (.NOT. iniz_momenta) STOP 'Prima hai bisogno di trovare i momenti di fermi [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+		IF (.NOT. iniz_walkers) STOP 'Prima devi inizializzare i walkers [ module_calcola_accettazione.f90 > valuta_accettazione ]'
 				
 		SELECT CASE (howtomove)
 		CASE ('allp')
@@ -1281,8 +1261,7 @@ mODULE calcola_accettazione
 					detSDe_up_new=1.d0
 					detSDe_dw_new=1.d0
 				CASE DEFAULT
-					STOP 'Non hai selezionato un valore di SDe_kind accettabile &
-					  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+					STOP 'Non hai selezionato un valore di SDe_kind accettabile [ module_calcola_accettazione.f90 > valuta_accettazione ]'
 				END SELECT
 			END IF
 			!Jee
@@ -1301,8 +1280,7 @@ mODULE calcola_accettazione
 				CASE ('no_')
 					Uee_old=0.d0
 				CASE DEFAULT
-					STOP 'Non hai selezionato un valore di Jee_kind accettabile &
-					  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+					STOP 'Non hai selezionato un valore di Jee_kind accettabile [ module_calcola_accettazione.f90 > valuta_accettazione ]'
 				END SELECT
 			END IF
 			!Jep
@@ -1342,8 +1320,7 @@ mODULE calcola_accettazione
 				CASE ('no_') 
 					Uep_new=0.d0
 				CASE DEFAULT
-					STOP 'Non hai selezionato un valore di Jep_kind accettabile &
-					  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+					STOP 'Non hai selezionato un valore di Jep_kind accettabile [ module_calcola_accettazione.f90 > valuta_accettazione ]'
 				END SELECT
 			END IF
 			!SDse
@@ -1425,8 +1402,7 @@ mODULE calcola_accettazione
 					detSDse2_up_new=1.d0
 					detSDse2_dw_new=1.d0
 				CASE DEFAULT
-					STOP 'Non hai selezionato un valore di SDse_kind accettabile &
-					  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+					STOP 'Non hai selezionato un valore di SDse_kind accettabile [ module_calcola_accettazione.f90 > valuta_accettazione ]'
 				END SELECT
 			END IF
 			!Jse
@@ -1457,8 +1433,7 @@ mODULE calcola_accettazione
 					CALL valuta_Usese_YUK(num,rijpc_se2_new,N_part,u_se2_new,Use2_new)
 				CASE DEFAULT
 					PRINT * , ' ### ', Jse_kind
-					STOP 'Non hai selezionato un valore di Jse_kind accettabile &
-					  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+					STOP 'Non hai selezionato un valore di Jse_kind accettabile [ module_calcola_accettazione.f90 > valuta_accettazione ]'
 				END SELECT
 			END IF
 			!Kse
@@ -1515,8 +1490,7 @@ mODULE calcola_accettazione
 					detGDse2_up_new=1.d0
 					detGDse2_dw_new=1.d0
 				CASE DEFAULT
-					STOP 'Non hai selezionato un valore di Kse_kind accettabile &
-					  [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
+					STOP 'Non hai selezionato un valore di Kse_kind accettabile [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
 				END SELECT
 			END IF
 			!Jsesp
@@ -1548,8 +1522,7 @@ mODULE calcola_accettazione
 					Usesp1_old=0.d0
 					Usesp2_old=0.d0
 				CASE DEFAULT
-					STOP 'Non hai selezionato un valore di Jsesp_kind accettabile &
-					  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+					STOP 'Non hai selezionato un valore di Jsesp_kind accettabile [ module_calcola_accettazione.f90 > valuta_accettazione ]'
 				END SELECT
 			END IF
 		CASE ('1ppt')
@@ -1680,8 +1653,7 @@ mODULE calcola_accettazione
 					detSDe_up_new=1.d0
 					detSDe_dw_new=1.d0
 				CASE DEFAULT
-					STOP 'Non hai selezionato un valore di SDe_kind accettabile &
-					  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+					STOP 'Non hai selezionato un valore di SDe_kind accettabile [ module_calcola_accettazione.f90 > valuta_accettazione ]'
 				END SELECT
 			END IF
 			!Jee
@@ -1700,8 +1672,7 @@ mODULE calcola_accettazione
 				CASE ('no_')
 					Uee_old=0.d0
 				CASE DEFAULT
-					STOP 'Non hai selezionato un valore di Jee_kind accettabile &
-					  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+					STOP 'Non hai selezionato un valore di Jee_kind accettabile [ module_calcola_accettazione.f90 > valuta_accettazione ]'
 				END SELECT
 			END IF
 			!Jep
@@ -1741,8 +1712,7 @@ mODULE calcola_accettazione
 				CASE ('no_') 
 					Uep_new=0.d0
 				CASE DEFAULT
-					STOP 'Non hai selezionato un valore di Jep_kind accettabile &
-					  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+					STOP 'Non hai selezionato un valore di Jep_kind accettabile [ module_calcola_accettazione.f90 > valuta_accettazione ]'
 				END SELECT
 			END IF
 			IF (flag_shadow) THEN
@@ -1854,8 +1824,7 @@ mODULE calcola_accettazione
 						detSDse1_up_new=1.d0
 						detSDse1_dw_new=1.d0
 					CASE DEFAULT
-						STOP 'Non hai selezionato un valore di SDse1_kind accettabile &
-						  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+						STOP 'Non hai selezionato un valore di SDse1_kind accettabile [ module_calcola_accettazione.f90 > valuta_accettazione ]'
 					END SELECT
 				END IF
 				IF ((tipo=='se2') .OR. (tipo=='tre')) THEN
@@ -1965,8 +1934,7 @@ mODULE calcola_accettazione
 						detSDse2_up_new=1.d0
 						detSDse2_dw_new=1.d0
 					CASE DEFAULT
-						STOP 'Non hai selezionato un valore di SDse2_kind accettabile &
-						  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+						STOP 'Non hai selezionato un valore di SDse2_kind accettabile [ module_calcola_accettazione.f90 > valuta_accettazione ]'
 					END SELECT
 				END IF
 				!Jse
@@ -2021,8 +1989,7 @@ mODULE calcola_accettazione
 						END IF
 					CASE DEFAULT
 						PRINT * , ' ### ', Jse_kind
-						STOP 'Non hai selezionato un valore di Jse_kind accettabile &
-						  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+						STOP 'Non hai selezionato un valore di Jse_kind accettabile [ module_calcola_accettazione.f90 > valuta_accettazione ]'
 					END SELECT
 				END IF
 				!Kse
@@ -2245,8 +2212,7 @@ mODULE calcola_accettazione
 						detGDse2_up_new=1.d0
 						detGDse2_dw_new=1.d0
 					CASE DEFAULT
-						STOP 'Non hai selezionato un valore di Kse_kind accettabile &
-						  [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
+						STOP 'Non hai selezionato un valore di Kse_kind accettabile [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
 					END SELECT
 				END IF
 				!Jsesp
@@ -2332,8 +2298,7 @@ mODULE calcola_accettazione
 						Usesp1_old=0.d0
 						Usesp2_old=0.d0
 					CASE DEFAULT
-						STOP 'Non hai selezionato un valore di Jsesp_kind accettabile &
-						  [ module_calcola_accettazione.f90 > valuta_accettazione ]'
+						STOP 'Non hai selezionato un valore di Jsesp_kind accettabile [ module_calcola_accettazione.f90 > valuta_accettazione ]'
 					END SELECT
 				END IF
 			END IF
@@ -2923,8 +2888,7 @@ mODULE calcola_accettazione
 		INTEGER :: i, info, M_pvt(1:H_N_part), perm
 		REAL (KIND=8) :: M(1:H_N_part,1:H_N_part), work(1:3*H_N_part), detM
 		
-		IF (.NOT. iniz_calcola_accettazione) STOP 'Prima di aggiornare la funzione d onda devi inizializzarla &
-		  [ module_calcola_accettazione.f90 > aggiorna_funzione_onda ]'
+		IF (.NOT. iniz_calcola_accettazione) STOP 'Prima di aggiornare la funzione d onda devi inizializzarla [ module_calcola_accettazione.f90 > aggiorna_funzione_onda ]'
 				
 		IF ((tipo=='all') .OR. (tipo=='e__') .OR. (tipo=='tre')) THEN
 			IF (SDe_kind/='no_') THEN
@@ -3010,8 +2974,7 @@ mODULE calcola_accettazione
 					ELSE IF (tipo=='p__') THEN
 						u_ep_old(1:N_part,num)=u_ep_new(1:N_part,num)
 					ELSE
-						STOP 'Tipo non accettabile --code1-- &
-						  [ module_calcola_accettazione.f90 > aggiorna_funzione_onda ]'
+						STOP 'Tipo non accettabile --code1-- [ module_calcola_accettazione.f90 > aggiorna_funzione_onda ]'
 					END IF
 				END IF
 			END IF
@@ -3489,8 +3452,7 @@ mODULE calcola_accettazione
 		USE momenta
 		IMPLICIT NONE
 		
-		IF (.NOT. iniz_calcola_accettazione) STOP 'Prima di chiudere la funzione d onda devi inizializzarla &
-		  [ module_calcola_accettazione.f90 > chiudi_funzione_onda ]'
+		IF (.NOT. iniz_calcola_accettazione) STOP 'Prima di chiudere la funzione d onda devi inizializzarla [ module_calcola_accettazione.f90 > chiudi_funzione_onda ]'
 		IF (SDe_kind/='no_') THEN
 			DEALLOCATE(SDe_up_new, SDe_up_old)
 			DEALLOCATE(ISDe_up_new, ISDe_up_old)

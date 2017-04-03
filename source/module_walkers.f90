@@ -42,9 +42,8 @@ MODULE walkers
 		REAL (KIND=8) :: net_dist
 		REAL (KIND=8), ALLOCATABLE :: rij_crystal(:,:,:)
 		
-		WRITE (istring, '(I4.4)'), mpi_myrank
-		IF (.NOT. iniz_dati_fisici) STOP 'Non hai inizializzato dati_fisici &
-		  [ module_walkers.f90 > inizializza_walkers ]'
+		WRITE (istring, '(I4.4)') mpi_myrank
+		IF (.NOT. iniz_dati_fisici) STOP 'Non hai inizializzato dati_fisici [ module_walkers.f90 > inizializza_walkers ]'
 		
 		ALLOCATE(re_new(1:3,1:N_part),re_old(1:3,1:N_part))
 		ALLOCATE(se1_new(1:3,1:N_part),se1_old(1:3,1:N_part),se2_new(1:3,1:N_part),se2_old(1:3,1:N_part))
@@ -78,8 +77,7 @@ MODULE walkers
 					END IF
 				END IF
 			ELSE
-				STOP 'Non puoi continuare dalle posizioni precedenti, manca il file fine_e.pos &
-				  [ module_walkers.f90 > inizializza_walkers ]'
+				STOP 'Non puoi continuare dalle posizioni precedenti, manca il file fine_e.pos [ module_walkers.f90 > inizializza_walkers ]'
 			END IF
 		ELSE
 			!!! OPT1
@@ -141,8 +139,7 @@ MODULE walkers
 					CALL applica_pbc(rp_old,N_part,L)
 				END IF
 			ELSE
-				STOP 'Non puoi continuare dalle posizioni precedenti, manca il file fine_p.pos &
-				  [ module_walkers.f90 > inizializza_walkers ]'
+				STOP 'Non puoi continuare dalle posizioni precedenti, manca il file fine_p.pos [ module_walkers.f90 > inizializza_walkers ]'
 			END IF
 		ELSE
 			rp_old=r_crystal
@@ -199,8 +196,7 @@ MODULE walkers
 		USE dati_mc
 		USE generic_tools
 		IMPLICIT NONE
-		IF (.NOT. iniz_dati_fisici) STOP 'Non hai inizializzato dati_fisici &
-		  [ module_walkers.f90 > attiva_pc ]'
+		IF (.NOT. iniz_dati_fisici) STOP 'Non hai inizializzato dati_fisici [ module_walkers.f90 > attiva_pc ]'
 		IF (.NOT. iniz_pc) THEN
 			IF (flag_elettroni) THEN
 				ALLOCATE(rijpc_ee_new(0:3,1:N_part,1:N_part),rijpc_ee_old(0:3,1:N_part,1:N_part))
@@ -247,12 +243,9 @@ MODULE walkers
 		IMPLICIT NONE
 		CHARACTER(LEN=3), INTENT(IN) :: tipo   !'e__', 'p__', 'se_', 'se1', 'se2'
 		INTEGER, INTENT(IN) :: num
-		IF (.NOT. iniz_dati_fisici) STOP 'Non hai inizializzato dati_fisici &
-		  [ module_walkers.f90 > proponi_mossa ]'
-		IF (.NOT. iniz_dati_mc) STOP 'Non hai inizializzato dati_mc &
-		  [ module_walkers.f90 > proponi_mossa ]'
-		IF (.NOT. iniz_walkers) STOP 'Prima di muovere i walkers devi inizializzarli &
-		  [ module_walkers.f90 > proponi_mossa ]'
+		IF (.NOT. iniz_dati_fisici) STOP 'Non hai inizializzato dati_fisici [ module_walkers.f90 > proponi_mossa ]'
+		IF (.NOT. iniz_dati_mc) STOP 'Non hai inizializzato dati_mc [ module_walkers.f90 > proponi_mossa ]'
+		IF (.NOT. iniz_walkers) STOP 'Prima di muovere i walkers devi inizializzarli [ module_walkers.f90 > proponi_mossa ]'
 						
 		SELECT CASE (tipo)
 		CASE ('e__')
@@ -385,10 +378,8 @@ MODULE walkers
 		INTEGER, INTENT(IN) :: num
 		INTEGER :: i, j
 		
-		IF (.NOT. iniz_dati_fisici) STOP 'Non hai inizializzato dati_fisici &
-		  [ module_walkers.f90 > calcola_nuove_distanze ]'
-		IF (.NOT. iniz_walkers) STOP 'Prima di calcolare le distanze devi aver inizializzato i walkers &
-		  [ module_walkers.f90 > calcola_nuove_distanze ]'
+		IF (.NOT. iniz_dati_fisici) STOP 'Non hai inizializzato dati_fisici [ module_walkers.f90 > calcola_nuove_distanze ]'
+		IF (.NOT. iniz_walkers) STOP 'Prima di calcolare le distanze devi aver inizializzato i walkers [ module_walkers.f90 > calcola_nuove_distanze ]'
 				
 		SELECT CASE (tra_chi)
 		CASE ('e_e_')
@@ -517,12 +508,9 @@ MODULE walkers
 		CHARACTER(LEN=3), INTENT(IN) :: tipo
 		CHARACTER(LEN=4), INTENT(IN) :: tra_chi
 		INTEGER, INTENT(IN) :: num
-		IF (.NOT. iniz_dati_fisici) STOP 'Non hai inizializzato dati_fisici &
-		  [ module_walkers.f90 > calcola_nuove_distanze_pc ]'
-		IF (.NOT. iniz_walkers) STOP 'Prima di calcolare le distanze devi aver inizializzato i walkers &
-		  [ module_walkers.f90 > calcola_nuove_distanze_pc ]'
-		IF (.NOT. iniz_pc) STOP 'Prima di calcolare le distanze PC devi inizializzarle &
-		  [ module_walkers.f90 > calcola_nuove_distanze_pc ]'
+		IF (.NOT. iniz_dati_fisici) STOP 'Non hai inizializzato dati_fisici [ module_walkers.f90 > calcola_nuove_distanze_pc ]'
+		IF (.NOT. iniz_walkers) STOP 'Prima di calcolare le distanze devi aver inizializzato i walkers [ module_walkers.f90 > calcola_nuove_distanze_pc ]'
+		IF (.NOT. iniz_pc) STOP 'Prima di calcolare le distanze PC devi inizializzarle [ module_walkers.f90 > calcola_nuove_distanze_pc ]'
 		
 		SELECT CASE (tra_chi)
 		CASE ('e_e_')
@@ -605,8 +593,7 @@ MODULE walkers
 				END SELECT
 			END IF
 		CASE DEFAULT
-			STOP 'Hai richiesto un calcolo pc che non é stato considerato &
-			  [ module_walkers.f90 > calcola_nuove_distanze_pc ]'
+			STOP 'Hai richiesto un calcolo pc che non é stato considerao [ module_walkers.f90 > calcola_nuove_distanze_pc ]'
 		END SELECT
 	END SUBROUTINE calcola_nuove_distanze_pc
 !-----------------------------------------------------------------------
@@ -617,8 +604,7 @@ MODULE walkers
 		IMPLICIT NONE
 		CHARACTER(LEN=3), INTENT(IN) :: tipo
 		INTEGER, INTENT(IN) :: num
-		IF (.NOT. iniz_walkers) STOP 'Prima di farlo devi aver inizializzato i walkers &
-		  [ module_walkers.f90 > metti_new_in_old ]'
+		IF (.NOT. iniz_walkers) STOP 'Prima di farlo devi aver inizializzato i walkers [ module_walkers.f90 > metti_new_in_old ]'
 		
 		SELECT CASE (tipo)
 		CASE ('e__')
@@ -963,7 +949,7 @@ MODULE walkers
 		REAL (KIND=8), ALLOCATABLE :: x(:,:)
 				
 		IF (flag_normalizza_pos) ALLOCATE(x(1:3,1:N_part))
-		WRITE (istring, '(I4.4)'), mpi_myrank
+		WRITE (istring, '(I4.4)') mpi_myrank
 		
 		IF (flag_normalizza_pos) THEN
 			x(1,1:N_part)=re_old(1,1:N_part)/L(1)
@@ -1172,15 +1158,13 @@ MODULE walkers
 		CHARACTER(LEN=*) :: nome_file
 		INTEGER :: i, ios
 		
-		IF (.NOT. iniz_walkers) STOP 'Prima avresti dovuto inizializzare &
-		  [ module_walkers.f90 > stampa_file_Rp ]'
+		IF (.NOT. iniz_walkers) STOP 'Prima avresti dovuto inizializzare [ module_walkers.f90 > stampa_file_Rp ]'
 		
 		OPEN(UNIT=37, FILE=nome_file, STATUS='UNKNOWN', IOSTAT=ios)
-		IF ( ios /= 0 ) STOP 'Errore nell aprire il file per salvare Rp &
-		  [ module_walkers.f90 > stampa_file_Rp ]'
-		WRITE(UNIT=37, FMT=*), L(1:3)
+		IF ( ios /= 0 ) STOP 'Errore nell aprire il file per salvare Rp [ module_walkers.f90 > stampa_file_Rp ]'
+		WRITE(UNIT=37, FMT=*) L(1:3)
 		DO i = 1, N_part, 1
-			WRITE(UNIT=37, FMT=*), rp_old(1:3,i)
+			WRITE(UNIT=37, FMT=*) rp_old(1:3,i)
 		END DO
 		CLOSE (37)
 		
@@ -1191,8 +1175,7 @@ MODULE walkers
 		USE dati_mc
 		USE dati_fisici
 		IMPLICIT NONE
-		IF (.NOT. iniz_walkers) STOP 'Prima di chiudere avresti dovuto inizializzare &
-		  [ module_walkers.f90 > chiudi_walkers ]'
+		IF (.NOT. iniz_walkers) STOP 'Prima di chiudere avresti dovuto inizializzare [ module_walkers.f90 > chiudi_walkers ]'
 		
 		DEALLOCATE(re_new,re_old,se1_new,se1_old,se2_new,se2_old)
 		DEALLOCATE(rij_ee_new,rij_ee_old,rij_se1_new,rij_se1_old,rij_se2_new,rij_se2_old)

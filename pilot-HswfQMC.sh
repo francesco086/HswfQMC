@@ -323,8 +323,10 @@ complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh" >> ~/.${FILE_TO_SET}
          \rm -r -f markuspline/
          git clone https://github.com/francesco086/markuspline
 			cd markuspline/
-         ${FF} -c -O3 module_markuspline.f90 -L${pilot_PATH}/${LAPACK_FOLDER} -llapack${HswfQMC_NAME} -lblas${HswfQMC_NAME}
-         ar rcv libmarkuspline.a *.o
+         #${FF} -c -O3 module_markuspline.f90 -L${pilot_PATH}/${LAPACK_FOLDER} -llapack${HswfQMC_NAME} -lblas${HswfQMC_NAME}
+	 cp ../source/module_markuspline_XL.f90 module_markuspline.f90
+         ${FF} -c -O3 -qstrict -qarch=qp -qtune=qp -qsimd=auto -qessl -qmaxmem=-1 -qfree=f90 -qport=mod module_markuspline.f90 -L${LAPACK_LIB} -L/bgsys/local/lib -llapack -lesslbg
+	 ar rcv libmarkuspline.a *.o
          ranlib libmarkuspline.a
          mv libmarkuspline.a libmarkuspline${HswfQMC_NAME}.a
 			cd $CURRENT_PATH

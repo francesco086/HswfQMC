@@ -10,7 +10,7 @@ USERNAME:=$(shell whoami)
 IDENTIFIER:=$(USERNAME)@$(COMPUTER)
 
 #set the flags for the compiler 
-FFLAGS=-O3
+FFLAGS=-O5 -qstrict -qarch=qp -qtune=qp -qsimd=noauto -qessl -qmaxmem=-1 -qfree=f90 -qport=mod
 #standard: append _exe to the executable name
 EXEC1=$(EXEC2)_exe
 
@@ -65,9 +65,9 @@ endif
 # dei vari moduli)
 OBJECTS=main.o module_dft.o module_dati_fisici.o module_dati_mc.o module_dnfH.o module_stati_eccitati.o module_generic_tools.o module_lattice.o module_VMC.o module_estimatori.o module_momenta.o module_calcola_accettazione.o module_funzione_onda.o module_walkers.o module_variational_opt.o module_variational_calculations.o module_grad_lapl_psi.o module_fermi_k.o
 
-
 # crea tutti gli oggetti e li linka correttamente con le librerie; scrivere "make"
 all: $(OBJECTS)
+#	$(FC) $(FFLAGS) -o $(EXEC) $(OBJECTS) -I/homea/hpb01/hpb015/HswfQMC/markuspline -L/homea/hpb01/hpb015/HswfQMC/markuspline -lmarkusplineHswfQMC -L$(LAPACK_LIB) -L/bgsys/local/lib -lblas -llapack -lesslbg
 	$(FC) $(FFLAGS) $(LDFLAGS) -o $(EXEC) $(OBJECTS) $(LIBS)
 
 # rimuove tutti gli oggetti e moduli creati lasciando solo i sorgenti; "make clean"
@@ -115,7 +115,7 @@ module_dnfH.o: module_dati_fisici.o module_fermi_k.o module_walkers.o module_dnf
 	$(FC) $(FFLAGS) -c module_dnfH.f90 
 
 module_funzione_onda.o: module_dft.o module_momenta.o module_generic_tools.o module_dati_mc.o module_dati_fisici.o module_dnfH.o module_walkers.o module_funzione_onda.f90
-	$(FC) $(FFLAGS) $(LDFLAGS) -c module_funzione_onda.f90 $(LIBS)
+	$(FC) $(FFLAGS) $(LDFLAGS) -c module_funzione_onda.f90
 
 module_momenta.o: module_dati_fisici.o module_dati_mc.o module_fermi_k.o module_momenta.f90
 	$(FC) $(FFLAGS) -c module_momenta.f90 
