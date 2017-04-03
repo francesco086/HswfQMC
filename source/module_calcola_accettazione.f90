@@ -209,8 +209,7 @@ mODULE calcola_accettazione
 				!b_se2_old=0.d0
 			END IF
 			IF ( Jse_kind=='pot' ) THEN
-				STOP 'Jse_kind=pot deprecated &
-				  [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
+				STOP 'Jse_kind=pot deprecated [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
 				ALLOCATE(u_POT_se1_new(1:H_N_part), u_POT_se1_old(1:H_N_part))
 				u_POT_se1_new=0.d0
 				u_POT_se1_old=0.d0
@@ -231,8 +230,7 @@ mODULE calcola_accettazione
 			u_sesp2_new=0.d0
 			u_sesp2_old=0.d0
 		ELSE IF (Jsesp_kind=='gsd') THEN
-				STOP 'Jsesp_kind=gsd deprecated &
-				  [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
+				STOP 'Jsesp_kind=gsd deprecated [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
 			ALLOCATE(GDsp1_up_new(1:H_N_part,1:H_N_part), GDsp1_up_old(1:H_N_part,1:H_N_part))
 			GDsp1_up_new=0.d0
 			GDsp1_up_old=0.d0
@@ -480,11 +478,9 @@ mODULE calcola_accettazione
          detSDe_dw_old=1.d0
          ISDe_dw_old=1.d0
       CASE('apo')
-         IF (N_part/=2) STOP "Non si puo' usare lo Slater di Antisymmetrical on Protons Orbitals &
-            con un numero di particelle diverso da 2&
-            [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]"
-         CALL valuta_SD_APO(rij_ep_old(0,1:2,1:2),re_old(1:3,1:2),rp_old(1:3,1:2),&
-            SDe_up_old,detSDe_up_old,ISDe_up_old,SDe_dw_old,detSDe_dw_old,ISDe_dw_old)
+         IF (N_part/=2) STOP "Non si puo' usare lo Slater di Antisymmetrical on Protons Orbitals con un numero di particelle diverso da 2 [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]"
+         CALL valuta_SD_APO(rij_ep_old(0,1:2,1:2),re_old(1:3,1:2),rp_old(1:3,1:2), &
+             SDe_up_old,detSDe_up_old,ISDe_up_old,SDe_dw_old,detSDe_dw_old,ISDe_dw_old)
 		CASE ('gss')
 			CALL valuta_SD_gauss(-1,rij_ep_old(0,1:H_N_part,1:H_N_part),H_N_part, &
 			  SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,SDe_up_new,detSDe_up_new)
@@ -2446,10 +2442,10 @@ mODULE calcola_accettazione
 		END IF
 
       IF (shadow_constr_domain) THEN
-         IF ( (REALPART(detSDse1_up_new)*REALPART(detSDse1_up_old)<0.d0) .OR. &
-              (REALPART(detSDse1_dw_new)*REALPART(detSDse1_dw_old)<0.d0) .OR. &
-              (REALPART(detSDse2_up_new)*REALPART(detSDse2_up_old)<0.d0) .OR. &
-              (REALPART(detSDse2_dw_new)*REALPART(detSDse2_dw_old)<0.d0) ) THEN
+         IF ( (REAL(detSDse1_up_new)*REAL(detSDse1_up_old)<0.d0) .OR. &
+              (REAL(detSDse1_dw_new)*REAL(detSDse1_dw_old)<0.d0) .OR. &
+              (REAL(detSDse2_up_new)*REAL(detSDse2_up_old)<0.d0) .OR. &
+              (REAL(detSDse2_dw_new)*REAL(detSDse2_dw_old)<0.d0) ) THEN
             prob_acc=-1.d0
          END IF
       END IF
