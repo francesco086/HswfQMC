@@ -1038,7 +1038,7 @@ MODULE funzione_onda
               'A_POT_se=', A_POT_se, 'D_POT_se=', D_POT_se
          CASE ('gss','gsp')
 			   PRINT '(6X,A5,A3,A10,F9.3)' , 'SDe: ', SDe_kind,'  -  Ggaus=', Ggaus
-			   IF (flag_output) WRITE (7, '(6X,A5,A3,A10,F9.3)'), &
+			   IF (flag_output) WRITE (7, '(6X,A5,A3,A10,F9.3)') &
 			     'SDe: ', SDe_kind,'  -  Ggaus=', Ggaus
 			END SELECT
 		END IF
@@ -1917,8 +1917,7 @@ MODULE funzione_onda
 			COMPLEX (KIND=8) :: SDdw(1:1,1:1), ISDdw(1:1,1:1), detSDdw
          REAL(KIND=8) :: APOfact
 		
-			IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-			  [ module_funzione_onda.f90 > valuta_SD_APO ]'
+			IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato [ module_funzione_onda.f90 > valuta_SD_APO ]'
 		
          APOfact=APO_factor(re,rp)
          SDup(1,1)=(1.d0,0.d0)*( phiH2_S(rep(1,1:2)) + APOfact*phiH2_A(rep(1,1:2)) )
