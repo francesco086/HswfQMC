@@ -66,6 +66,7 @@ HswfQMC*
 source/HswfQMC*
 *.x
 */*.x
+ipi_client/*.o
 ipi_client/molxyz_shifted
 lapack_lib
 markuspline
