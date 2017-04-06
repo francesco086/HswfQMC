@@ -61,14 +61,11 @@ DerivedData
 # -- project specific ignores --
 source/*.o
 source/*.mod
-source/makefile.users_settings
+source/makefile.users_settings*
 HswfQMC*
 source/HswfQMC*
 *.x
 */*.x
+ipi_client/molxyz_shifted
 lapack_lib
-<<<<<<< HEAD
-source/makefile.users_settings*
-=======
 markuspline
->>>>>>> master

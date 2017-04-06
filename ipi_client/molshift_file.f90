@@ -17,7 +17,7 @@ ALLOCATE(POSARR(3,N), NEWARR(3,N), DISTARR(N), INVINDARR(N))
 
 NEWARR(:,:) = 0.d0
 
-OPEN(20,FILE='molstart_rs133')
+OPEN(20,FILE='molxyz_toshift')
 READ(20,*) L(:)
 DO i=1,N
     READ(20,*) POSARR(:,i) 
@@ -30,7 +30,7 @@ NEWARR(:,:) = POSARR(:,:)
 
 CALL molshift(N, L, NEWARR, INVINDARR)
 
-OPEN(21,FILE='molstart_rs133_shift')
+OPEN(21,FILE='molxyz_shifted')
 WRITE(21,*) L(:)
 DO i=1,N
     WRITE(21,*) NEWARR(:,i)

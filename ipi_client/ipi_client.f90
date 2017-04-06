@@ -97,7 +97,7 @@ PROGRAM IPI_DRIVER
         ELSE
             IF (ccmd == 0) THEN
                 WRITE(*,*) " Unrecognized command line argument", ccmd
-                WRITE(*,*) " SYNTAX: ipi_driver.x [-u] -h hostname -p port -m [alt|sim|fix|nop] " &
+                WRITE(*,*) " SYNTAX: ipi_driver.x [-u] -h hostname -p port -m [alt|sim|fix|ffs|nop] " &
                      //"[-o comma,separated,parameters] [-v] "
                 WRITE(*,*) ""
                 WRITE(*,*) " The -u flag enables the use of unix sockets instead of internet sockets. "
@@ -106,6 +106,7 @@ PROGRAM IPI_DRIVER
                 WRITE(*,*) " Alternating wavefunction optimization mode (-m alt):  -o NCPU,ISHIFT,NWOMIN "
                 WRITE(*,*) " Simultaneous wavefunction optimization mode (-m sim): -o NCPU,ISHIFT "
                 WRITE(*,*) " Fixed wavefunction mode (-m fix):                     -o NCPU,ISHIFT "
+                WRITE(*,*) " Fixed wavefunction force sampling mode (-m ffs):      -o NCPU        "
                 WRITE(*,*) " In case of the no operation mode there are no options to be set."
                 CALL EXIT(-1)
             ENDIF
@@ -115,16 +116,18 @@ PROGRAM IPI_DRIVER
                 READ(cmdbuffer,*) port
             ELSEIF (ccmd == 3) THEN
                 IF (trim(cmdbuffer) == "alt") THEN
-                    vstyle = 2
+                    vstyle = 3
                 ELSEIF (trim(cmdbuffer) == "sim") THEN
-                    vstyle = 1
+                    vstyle = 2
                 ELSEIF (trim(cmdbuffer) == "fix") THEN
+                    vstyle = 1
+                ELSEIF (trim(cmdbuffer) == "ffs") THEN
                     vstyle = 0
                 ELSEIF (trim(cmdbuffer) == "nop") THEN
                     vstyle = -1
                 ELSE
                     WRITE(*,*) " Unrecognized optimization mode ", trim(cmdbuffer)
-                    WRITE(*,*) " Use -m [alt|sim|fix|nop] "
+                    WRITE(*,*) " Use -m [alt|sim|fix|ffs|nop] "
                     CALL EXIT(-1)
                 ENDIF
             ELSEIF (ccmd == 4) THEN
@@ -142,10 +145,17 @@ PROGRAM IPI_DRIVER
     ENDDO
     IF (vstyle == -1) THEN
         isinit = .true.
-    ELSEIF (vstyle == 0 .or. vstyle==1) THEN
+    ELSEIF (vstyle == 0) THEN
+        IF (par_count /= 1) THEN
+            WRITE(*,*) "Error: Wrong number of -o parameters provided. Expected: -o NCPU"
+            CALL EXIT(-1)
+        ENDIF
+        ncpus = vpars(1)
+        isinit = .true.
+    ELSEIF (vstyle == 1 .or. vstyle==2) THEN
         IF (par_count /= 2) THEN
             WRITE(*,*) "Error: Wrong number of -o parameters provided. Expected: -o NCPU,ISHIFT"
-            CALL EXIT(-1) ! Note that if initialization from the wrapper is implemented this exit should be removed.
+            CALL EXIT(-1)
         ENDIF
         ncpus = vpars(1)
         IF (vpars(2) > 0) THEN
@@ -154,10 +164,10 @@ PROGRAM IPI_DRIVER
             doshift = .FALSE.
         END IF
         isinit = .true.
-    ELSEIF (vstyle == 2) THEN
+    ELSEIF (vstyle == 3) THEN
         IF (par_count /= 3) THEN
             WRITE(*,*) "Error: Wrong number of -o parameters provided. Expected: -o NCPU,ISHIFT,NWOMIN"
-            CALL EXIT(-1) ! Note that if initialization from the wrapper is implemented this exit should be removed.
+            CALL EXIT(-1)
         ENDIF
         ncpus = vpars(1)
         IF (vpars(2) > 0) THEN
@@ -258,10 +268,12 @@ PROGRAM IPI_DRIVER
                     write(20,*) atoms(:,i)
                 ENDDO
                 CLOSE(20)
+                
+                IF (vstyle == 0) THEN
+                    call execute_command_line('seedfile_shift.py', WAIT = .true.)
+                END IF
 
-                call execute_command_line('python seedfile_shift.py', WAIT = .true.)
-
-		IF (vstyle > 0) THEN
+		IF (vstyle > 1) THEN
                     write(strbid, *) beadid
                     strbid = trim(adjustl(strbid))
 		    call execute_command_line('cp ../SR_wf.dir/'//strbid//' wf_now.d', WAIT = .true.)
@@ -273,7 +285,7 @@ PROGRAM IPI_DRIVER
                 call execute_command_line('runjob --np '//strncpu &
                 //' --exe /homea/hpb01/hpb015/HswfQMC/HswfQMC_exe --ranks-per-node 64', WAIT = .true.)
 
-		IF (vstyle > 0) THEN
+		IF (vstyle > 1) THEN
 		    call execute_command_line('cp ottimizzazione/SR_wf.d ../SR_wf.dir/'//strbid, WAIT = .true.)
 		END IF
                 
