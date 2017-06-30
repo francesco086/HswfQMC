@@ -9,57 +9,43 @@ COMPUTER:=$(shell hostname)
 USERNAME:=$(shell whoami)
 IDENTIFIER:=$(USERNAME)@$(COMPUTER)
 
-#set the flags for the compiler 
-FFLAGS=-O5 -qstrict -qarch=qp -qtune=qp -qsimd=noauto -qessl -qmaxmem=-1 -qfree=f90 -qport=mod
-#standard: append _exe to the executable name
-EXEC1=$(EXEC2)_exe
-
-#quick compile compiling mode
-ifeq ($(QUICK_COMPILE),true)
-	FFLAGS=-O0
-	EXEC1=$(EXEC2)_qc
-endif
-
-#debug compiling mode
-ifeq ($(DEBUG),true)
-  	FFLAGS=-O0 -g -fbounds-check -ffpe-trap=zero,overflow,underflow,invalid -fbacktrace
-	EXEC1=$(EXEC2)_debug
-endif
-
-
-
-#set the libraries and machine-depending variables
-
 #stored settings for users generated with pilotHswfQMC setmakefile
 include makefile.users_settings
 
 #by hand
 ifeq ($(IDENTIFIER),username@hostname)    #insert your username and hostname
-	EXEC=             #Name of the executable. Standard is: EXEC=$(EXEC1)
-	LIBS=             #necessary library, BLAS AND LAPACK. Therefore usually: LIBS=-llapack -lblas
-	LDFLAGS=          #path to the libraries, if needed. With system libraries is empty.
-	FC=               #fortran compiler. Normally: FC=gfortran
+        EXEC=             #Name of the executable. Standard is: EXEC=$(EXEC1)
+        LIBS=             #necessary library, BLAS AND LAPACK. Therefore usually: LIBS=-llapack -lblas
+        LDFLAGS=          #path to the libraries, if needed. With system libraries is empty.
+        FC=               #fortran compiler. Normally: FC=gfortran
+        XL=               #IBM XL flag. Normally: XL=false
+endif
+
+#standard: append _exe to the executable name
+EXEC1=$(EXEC2)_exe
+
+#set the flags for the compiler
+
+ifeq ($(XL),true)
+	FFLAGS=-O5 -qstrict -qarch=qp -qtune=qp -qsimd=noauto -qessl -qmaxmem=-1 -qfree=f90 -qport=mod
+
+else
+	FFLAGS=-O3 -ffree-line-length-none
+	#quick compile compiling mode
+	ifeq ($(QUICK_COMPILE),true)
+		FFLAGS=-O0
+		EXEC1=$(EXEC2)_qc
+	endif
+
+	#debug compiling mode
+	ifeq ($(DEBUG),true)
+		FFLAGS=-O0 -g -fbounds-check -ffpe-trap=zero,overflow,underflow,invalid -fbacktrace
+		EXEC1=$(EXEC2)_debug
+	endif
 endif
 
 
-#OLD SETTINGS
-#ifeq ($(COMPUTER),macbook)
-#	EXEC=$(EXEC1)_macbook
-#	# elenco librerie dinamiche (quelle che aggiungi tu a mano per l'eseguibile in questione
-#	# che non centrano con quelle di sistema statiche)
-#   LIBS=-lrefblas -llapack
-#	# questo è per includere il percorso locale dove hai le tue lapack o quantaltro compilato
-#	# correttamente; se c'è una versione di sistema delle lapack non serve esplicitarlo
-#   LDFLAGS=-L/Users/kenzo/lib/lapack-3.5.0/
-#   FC=mpif90-openmpi-gcc49
-#endif
-#ifeq ($(COMPUTER),login01.mogon)
-#	EXEC=$(EXEC1)
-#	FC=mpif90
-#    	LIBS=-lmylapack -lmyblas
-#    	LDFLAGS=-L/home/calcavec/lapack-3.4.2/
-#endif
-
+# Now make it
 
 # elenco degli oggetti da creare (c'è sempre l'oggetto del programma principale e gli oggetti
 # dei vari moduli)

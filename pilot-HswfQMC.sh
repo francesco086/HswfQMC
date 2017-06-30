@@ -293,7 +293,7 @@ complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh" >> ~/.${FILE_TO_SET}
 			exit
 			;;
 		install_lapack)
-			echo "Download and compile the lapack library"
+			echo "Download and compile the lapack library (For IBM XL please do it manually / use system's libraries!)"
 			cd ${pilot_PATH}
 			echo "Which fortran compiler do you use? "
 			read FF
@@ -322,23 +322,30 @@ complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh" >> ~/.${FILE_TO_SET}
 			exit
 			;;
 		install_markuspline)
-         echo "Download and compile the markuspline library (https://github.com/francesco086/markuspline)"
+                    echo "Download and compile the markuspline library (https://github.com/francesco086/markuspline)"
 			cd ${pilot_PATH}
 			echo "Which fortran compiler do you use? [press enter for default: gfortran]"
 			read FF
 			if [ "${FF}" = "" ]
-         then
-            FF="gfortran"
-         fi
-         \rm -r -f markuspline/
-         git clone https://github.com/francesco086/markuspline
+                        then
+                            FF="gfortran"
+                        else
+                            echo "Are you using an IBM XL compiler on Blue Gene? [y/n]"
+                            read ANSWBG
+                        fi
+                        \rm -r -f markuspline/
+                        git clone https://github.com/francesco086/markuspline
 			cd markuspline/
-         #${FF} -c -O3 module_markuspline.f90 -L${pilot_PATH}/${LAPACK_FOLDER} -llapack${HswfQMC_NAME} -lblas${HswfQMC_NAME}
-	 cp ../source/module_markuspline_XL.f90 module_markuspline.f90
-         ${FF} -c -O3 -qstrict -qarch=qp -qtune=qp -qsimd=auto -qessl -qmaxmem=-1 -qfree=f90 -qport=mod module_markuspline.f90 -L${LAPACK_LIB} -L/bgsys/local/lib -llapack -lesslbg
-	 ar rcv libmarkuspline.a *.o
-         ranlib libmarkuspline.a
-         mv libmarkuspline.a libmarkuspline${HswfQMC_NAME}.a
+                        if [ "$ANSWBG" = "y" ]
+                        then
+                            patch <../source/markuspline_XL.patch module_markuspline.f90
+                            ${FF} -c -O3 -qstrict -qarch=qp -qtune=qp -qsimd=auto -qessl -qmaxmem=-1 -qfree=f90 -qport=mod module_markuspline.f90 -L${LAPACK_LIB} -L/bgsys/local/lib -llapack -lesslbg
+                        else
+                            ${FF} -c -O3 module_markuspline.f90 -L${pilot_PATH}/${LAPACK_FOLDER} -llapack${HswfQMC_NAME} -lblas${HswfQMC_NAME}
+                        fi
+	                ar rcv libmarkuspline.a *.o
+                        ranlib libmarkuspline.a
+                        mv libmarkuspline.a libmarkuspline${HswfQMC_NAME}.a
 			cd $CURRENT_PATH
 			echo ""
 			echo "markuspline library compiled! In order to use it, insert in the Makefile:"
@@ -395,7 +402,7 @@ complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh" >> ~/.${FILE_TO_SET}
 					else
 						echo "        LIBS=${ANSWLIBS}" >> source/makefile.users_settings
 					fi
-					echo echo "LDFLAGS=[press enter for default: -empty-]"
+					echo "LDFLAGS=[press enter for default: -empty-]"
                                         read ANSWLDFLAGS
 					echo "        LDFLAGS=${ANSWLDFLAGS}" >> source/makefile.users_settings
 				fi
@@ -406,6 +413,12 @@ complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh" >> ~/.${FILE_TO_SET}
                                         echo "        FC=mpif90" >> source/makefile.users_settings
                                 else
                                         echo "        FC=${ANSWFC}" >> source/makefile.users_settings
+                                        echo "Are you using an IBM XL compiler? [y/n]"
+                                        read ANSWXL
+                                        if [ "$ANSWXL" = "y" ]
+                                        then
+                                                echo "        XL=true" >> source/makefile.users_settings
+                                        fi
                                 fi
 				echo "endif" >> source/makefile.users_settings
 				echo "" >> source/makefile.users_settings
