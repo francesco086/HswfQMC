@@ -33,13 +33,13 @@ else
 	FFLAGS=-O3 -ffree-line-length-none
 	#quick compile compiling mode
 	ifeq ($(QUICK_COMPILE),true)
-		FFLAGS=-O0
+		FFLAGS=-O0 -ffree-line-length-none
 		EXEC1=$(EXEC2)_qc
 	endif
 
 	#debug compiling mode
 	ifeq ($(DEBUG),true)
-		FFLAGS=-O0 -g -fbounds-check -ffpe-trap=zero,overflow,underflow,invalid -fbacktrace
+		FFLAGS=-O0 -ffree-line-length-none -g -fbounds-check -ffpe-trap=zero,overflow,underflow,invalid -fbacktrace
 		EXEC1=$(EXEC2)_debug
 	endif
 endif
@@ -53,7 +53,6 @@ OBJECTS=main.o module_dft.o module_dati_fisici.o module_dati_mc.o module_dnfH.o 
 
 # crea tutti gli oggetti e li linka correttamente con le librerie; scrivere "make"
 all: $(OBJECTS)
-#	$(FC) $(FFLAGS) -o $(EXEC) $(OBJECTS) -I/homea/hpb01/hpb015/HswfQMC/markuspline -L/homea/hpb01/hpb015/HswfQMC/markuspline -lmarkusplineHswfQMC -L$(LAPACK_LIB) -L/bgsys/local/lib -lblas -llapack -lesslbg
 	$(FC) $(FFLAGS) $(LDFLAGS) -o $(EXEC) $(OBJECTS) $(LIBS)
 
 # rimuove tutti gli oggetti e moduli creati lasciando solo i sorgenti; "make clean"
