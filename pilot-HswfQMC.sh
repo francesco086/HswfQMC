@@ -329,6 +329,7 @@ complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh" >> ~/.${FILE_TO_SET}
 			if [ "${FF}" = "" ]
                         then
                             FF="gfortran"
+                            ANSWBG="n"
                         else
                             echo "Are you using an IBM XL compiler on Blue Gene? [y/n]"
                             read ANSWBG
