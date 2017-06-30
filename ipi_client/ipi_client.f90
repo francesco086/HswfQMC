@@ -103,10 +103,10 @@ PROGRAM IPI_DRIVER
                 WRITE(*,*) " The -u flag enables the use of unix sockets instead of internet sockets. "
                 WRITE(*,*) ""
                 WRITE(*,*) " You may have to provide parameters via -o according to the WF optimization mode:"
-                WRITE(*,*) " Alternating wavefunction optimization mode (-m alt):  -o NCPU,ISHIFT,NWOMIN "
-                WRITE(*,*) " Simultaneous wavefunction optimization mode (-m sim): -o NCPU,ISHIFT "
-                WRITE(*,*) " Fixed wavefunction mode (-m fix):                     -o NCPU,ISHIFT "
                 WRITE(*,*) " Fixed wavefunction force sampling mode (-m ffs):      -o NCPU        "
+                WRITE(*,*) " Fixed wavefunction mode (-m fix):                     -o NCPU,ISHIFT "
+                WRITE(*,*) " Simultaneous wavefunction optimization mode (-m sim): -o NCPU,ISHIFT (PI with nbeads>1 out of function!)"
+                WRITE(*,*) " Alternating wavefunction optimization mode (-m alt):  -o NCPU,ISHIFT,NWOMIN (not implemented yet!)"
                 WRITE(*,*) " In case of the no operation mode there are no options to be set."
                 CALL EXIT(-1)
             ENDIF
@@ -245,7 +245,7 @@ PROGRAM IPI_DRIVER
                 atoms(:,i) = msgbuffer(3*(i-1)+1:3*i)
             ENDDO
 
-            CALL readbuffer(socket, beadid, 4) ! And finally the replica/bead id
+            !CALL readbuffer(socket, beadid, 4) ! And finally the replica/bead id
             
             pot = 0
             forces = 0
