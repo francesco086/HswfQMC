@@ -1009,7 +1009,7 @@ MODULE variational_opt
 				END IF
 				CALL bracket_min_multidim_v2(N,p0,direzione,first_step,a,fa,ida,b,fb,idb,c,fc,idc)
 				CALL parabgold_search_multidim(N,p0,direzione,a,fa,ida,b,fb,idb,c,fc,idc)
-				CALL SYSTEM ('export ID_TO_ERASE=opt00; find estimatori/ -name \'*\'$ID_TO_ERASE\'*\' -exec rm -f \'{}\' \\; find posizioni/ -name \'*\'$ID_TO_ERASE\'*\' -exec rm -f \'{}\' \\')
+				CALL SYSTEM ('export ID_TO_ERASE=opt00; find estimatori/ -name *$ID_TO_ERASE* -exec rm -f {} \\; find posizioni/ -name *$ID_TO_ERASE* -exec rm -f {} \\')
 				p0=p0+b*direzione
 				IF (stampa_dati_funzione_onda) THEN
 					CALL inizializza_dati_fisici()
@@ -1140,7 +1140,7 @@ MODULE variational_opt
 		CALL parabgold_search_multidim(N,partenza,direzione,a,fa,ida,b,fb,idb,c,fc,idc)
 		IF (mpi_myrank==0) THEN 
 			INQUIRE(FILE='posizioni/inizio-opt00_e_0000.pos',EXIST=flag_file)
-			IF (flag_file) CALL SYSTEM ('export ID_TO_ERASE=opt00; find estimatori/ -name \'*\'$ID_TO_ERASE\'*\' -exec rm -f \'{}\' \\; find posizioni/ -name \'*\'$ID_TO_ERASE\'*\' -exec rm -f \'{}\' \\')
+			IF (flag_file) CALL SYSTEM ('export ID_TO_ERASE=opt00; find estimatori/ -name *$ID_TO_ERASE* -exec rm -f {} \\; find posizioni/ -name *$ID_TO_ERASE* -exec rm -f {} \\')
 		END IF
 		p0=partenza+b*direzione
 
@@ -2413,7 +2413,7 @@ MODULE variational_opt
 		IF (mpi_myrank==0) THEN
 			DO num_val_en = 1, 10, 1                    !elimino i dati ormai inutili
 				id='b'//CHAR(MOD(num_val_en,10)+48)
-				IF ((id/=ida) .AND. (id/=idb) .AND. (id/=idc)) CALL SYSTEM ('export ID_TO_ERASE=opt'//id//'; find estimatori/ -name \'*\'$ID_TO_ERASE\'*\' -exec rm -f \'{}\' \\; find posizioni/ -name \'*\'$ID_TO_ERASE\'*\' -exec rm -f \'{}\' \\')
+				IF ((id/=ida) .AND. (id/=idb) .AND. (id/=idc)) CALL SYSTEM ('export ID_TO_ERASE=opt'//id//'; find estimatori/ -name *$ID_TO_ERASE* -exec rm -f {} \\; find posizioni/ -name *$ID_TO_ERASE* -exec rm -f {} \\')
 			END DO
 		END IF
 
@@ -2754,7 +2754,7 @@ MODULE variational_opt
 		IF (mpi_myrank==0) THEN
 			DO num_val_en = 1, 10, 1                    !elimino i dati ormai inutili
 				id='b'//CHAR(MOD(num_val_en,10)+48)
-				IF ((id/=ida) .AND. (id/=idb) .AND. (id/=idc)) CALL SYSTEM ('export ID_TO_ERASE=opt'//id//'; find estimatori/ -name \'*\'$ID_TO_ERASE\'*\' -exec rm -f \'{}\' \\; find posizioni/ -name \'*\'$ID_TO_ERASE\'*\' -exec rm -f \'{}\' \\')
+				IF ((id/=ida) .AND. (id/=idb) .AND. (id/=idc)) CALL SYSTEM ('export ID_TO_ERASE=opt'//id//'; find estimatori/ -name *$ID_TO_ERASE* -exec rm -f {} \\; find posizioni/ -name *$ID_TO_ERASE* -exec rm -f {} \\')
 			END DO
 		END IF
 
@@ -2886,9 +2886,9 @@ MODULE variational_opt
 		IF (mpi_myrank==0) THEN
 			DO i = 1, 10, 1                    !elimino i dati ormai inutili
 				id='p'//CHAR(MOD(i,10)+48)
-				IF (id/=idb) CALL SYSTEM ('export ID_TO_ERASE=opt'//id//'; find estimatori/ -name \'*\'$ID_TO_ERASE\'*\' -exec rm -f \'{}\' \\; find posizioni/ -name \'*\'$ID_TO_ERASE\'*\' -exec rm -f \'{}\' \\')
+				IF (id/=idb) CALL SYSTEM ('export ID_TO_ERASE=opt'//id//'; find estimatori/ -name *$ID_TO_ERASE* -exec rm -f {} \\; find posizioni/ -name *$ID_TO_ERASE* -exec rm -f {} \\')
 			END DO
-			IF (idb/='b') CALL SYSTEM ('export ID_TO_ERASE=optb; find estimatori/ -name \'*\'$ID_TO_ERASE\'*\' -exec rm -f \'{}\' \\; find posizioni/ -name \'*\'$ID_TO_ERASE\'*\' -exec rm -f \'{}\' \\')
+			IF (idb/='b') CALL SYSTEM ('export ID_TO_ERASE=optb; find estimatori/ -name *$ID_TO_ERASE* -exec rm -f {} \\; find posizioni/ -name *$ID_TO_ERASE* -exec rm -f {} \\')
 		END IF
 		IF (mpi_myrank==0) THEN
 			PRINT * , 'VAR_OPT: Parabgold Search - sono stati necessari ', contatore, ' passi'

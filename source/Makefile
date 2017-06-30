@@ -30,16 +30,16 @@ ifeq ($(XL),true)
 	FFLAGS=-O5 -qstrict -qarch=qp -qtune=qp -qsimd=noauto -qessl -qmaxmem=-1 -qfree=f90 -qport=mod
 
 else
-	FFLAGS=-O3 -ffree-line-length-none
+	FFLAGS=-O3 -ffree-line-length-none -fbackslash
 	#quick compile compiling mode
 	ifeq ($(QUICK_COMPILE),true)
-		FFLAGS=-O0 -ffree-line-length-none
+		FFLAGS=-O0 -ffree-line-length-none -fbackslash
 		EXEC1=$(EXEC2)_qc
 	endif
 
 	#debug compiling mode
 	ifeq ($(DEBUG),true)
-		FFLAGS=-O0 -ffree-line-length-none -g -fbounds-check -ffpe-trap=zero,overflow,underflow,invalid -fbacktrace
+		FFLAGS=-O0 -ffree-line-length-none -fbackslash -g -fbounds-check -ffpe-trap=zero,overflow,underflow,invalid -fbacktrace
 		EXEC1=$(EXEC2)_debug
 	endif
 endif
