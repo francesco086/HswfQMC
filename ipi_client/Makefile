@@ -1,6 +1,6 @@
 FC=gfortran
 FFLAGS=-O2 -ffree-line-length-none
-EXEC=ipi_client.x
+EXEC=HswfQMC_ipic
 
 OBJECTS=ipi_client.o sockets.o molshift.o
 

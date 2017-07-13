@@ -185,7 +185,7 @@ do
 			echo "Build the i-pi client executable ipi_client.x"
 			cd ipi_client
 			make
-                        mv ipi_client.x ../
+                        mv HswfQMC_ipic ../
 			cd $CURRENT_PATH
 			exit
 			;;
