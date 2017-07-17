@@ -60,9 +60,9 @@ PROGRAM IPI_DRIVER
     DOUBLE PRECISION cell_h(3,3), cell_ih(3,3), virial(3,3)
 
     ! PARAMETERS CONCERNING VMC (NCPUS,NWOMIN)
-    INTEGER ncpus,nwomin
+    INTEGER ncpus,nwomin,mpicom
     CHARACTER*1024 strncpu, strbid
-    LOGICAL DOSHIFT
+    LOGICAL doshift
     INTEGER, ALLOCATABLE          :: invindarr(:)
 
     ! ITERATORS
@@ -77,6 +77,8 @@ PROGRAM IPI_DRIVER
     verbose = .false.
     par_count = 0
     vstyle = -1
+    doshift = .FALSE.
+    mpicom = 0
     nargs = IARGC()
 
     DO i = 1, nargs
@@ -103,11 +105,16 @@ PROGRAM IPI_DRIVER
                 WRITE(*,*) " The -u flag enables the use of unix sockets instead of internet sockets. "
                 WRITE(*,*) ""
                 WRITE(*,*) " You may have to provide parameters via -o according to the WF optimization mode:"
-                WRITE(*,*) " Fixed wavefunction force sampling mode (-m ffs):      -o NCPU        "
-                WRITE(*,*) " Fixed wavefunction mode (-m fix):                     -o NCPU,ISHIFT "
-                WRITE(*,*) " Simultaneous wavefunction optimization mode (-m sim): -o NCPU,ISHIFT (PI with nbeads>1 out of function!)"
-                WRITE(*,*) " Alternating wavefunction optimization mode (-m alt):  -o NCPU,ISHIFT,NWOMIN (not implemented yet!)"
+                WRITE(*,*) " Fixed wavefunction force sampling mode (-m ffs):      -o NCPU,MPICOM       "
+                WRITE(*,*) " Fixed wavefunction mode (-m fix):                     -o NCPU,MPICOM,ISHIFT "
+                WRITE(*,*) " Simultaneous wavefunction optimization mode (-m sim): -o NCPU,MPICOM,ISHIFT (PI with nbeads>1 out of function!)"
+                WRITE(*,*) " Alternating wavefunction optimization mode (-m alt):  -o NCPU,MPICOM,ISHIFT,NWOMIN (not implemented yet!)"
                 WRITE(*,*) " In case of the no operation mode there are no options to be set."
+                WRITE(*,*) " Option Documentation:"
+                WRITE(*,*) " NCPU   = Number of CPUs"
+                WRITE(*,*) " MPICOM = MPI Execution Command: 0 -> mpirun, 1 -> srun, 2 -> runjob"
+                WRITE(*,*) " ISHIFT = Molecular Partner Shifting Flag. 0 -> disabled, 1 -> enabled"
+                WRITE(*,*) " NWOMIN = Number of wavefunction optimizations without new minimum before termination."
                 CALL EXIT(-1)
             ENDIF
             IF (ccmd == 1) THEN
@@ -146,36 +153,39 @@ PROGRAM IPI_DRIVER
     IF (vstyle == -1) THEN
         isinit = .true.
     ELSEIF (vstyle == 0) THEN
-        IF (par_count /= 1) THEN
-            WRITE(*,*) "Error: Wrong number of -o parameters provided. Expected: -o NCPU"
+        IF (par_count /= 2) THEN
+            WRITE(*,*) "Error: Wrong number of -o parameters provided. Expected: -o NCPU,MPICOM"
             CALL EXIT(-1)
         ENDIF
         ncpus = vpars(1)
+        mpicom = vpars(2)
         isinit = .true.
     ELSEIF (vstyle == 1 .or. vstyle==2) THEN
-        IF (par_count /= 2) THEN
-            WRITE(*,*) "Error: Wrong number of -o parameters provided. Expected: -o NCPU,ISHIFT"
+        IF (par_count /= 3) THEN
+            WRITE(*,*) "Error: Wrong number of -o parameters provided. Expected: -o NCPU,MPICOM,ISHIFT"
             CALL EXIT(-1)
         ENDIF
         ncpus = vpars(1)
-        IF (vpars(2) > 0) THEN
+        mpicom = vpars(2)
+        IF (vpars(3) > 0) THEN
             doshift = .TRUE.
         ELSE
             doshift = .FALSE.
         END IF
         isinit = .true.
     ELSEIF (vstyle == 3) THEN
-        IF (par_count /= 3) THEN
-            WRITE(*,*) "Error: Wrong number of -o parameters provided. Expected: -o NCPU,ISHIFT,NWOMIN"
+        IF (par_count /= 4) THEN
+            WRITE(*,*) "Error: Wrong number of -o parameters provided. Expected: -o NCPU,MPICOM,ISHIFT,NWOMIN"
             CALL EXIT(-1)
         ENDIF
         ncpus = vpars(1)
-        IF (vpars(2) > 0) THEN
+        mpicom = vpars(2)
+        IF (vpars(3) > 0) THEN
             doshift = .TRUE.
         ELSE
             doshift = .FALSE.
         END IF
-        nwomin = vpars(3)
+        nwomin = vpars(4)
         isinit = .true.
     ENDIF
 
@@ -281,9 +291,15 @@ PROGRAM IPI_DRIVER
                 
                 write (strncpu, *) ncpus
                 strncpu = trim(adjustl(strncpu))
-	        !call execute_command_line('mpirun -np '//strncpu//' HswfQMC_exe', WAIT = .true.)
-                call execute_command_line('runjob --np '//strncpu &
-                //' --exe /homea/hpb01/hpb015/HswfQMC/HswfQMC_exe --ranks-per-node 64', WAIT = .true.)
+
+                IF (mpicom == 1) THEN
+                   call execute_command_line('srun -n '//strncpu//' HswfQMC_exe', WAIT = .true.)
+                ELSE IF (mpicom == 2) THEN
+                   call execute_command_line('runjob --np '//strncpu &
+                        //' --exe /homea/hpb01/hpb015/HswfQMC/HswfQMC_exe --ranks-per-node 64', WAIT = .true.)
+	        ELSE
+                   call execute_command_line('mpirun -np '//strncpu//' HswfQMC_exe', WAIT = .true.)
+                END IF
 
 		IF (vstyle > 1) THEN
 		    call execute_command_line('cp ottimizzazione/SR_wf.d ../SR_wf.dir/'//strbid, WAIT = .true.)
