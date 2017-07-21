@@ -43,8 +43,8 @@ PROGRAM IPI_DRIVER
     CHARACTER*1024 :: cmdbuffer, vops
     INTEGER ccmd, vstyle
     LOGICAL verbose
-    INTEGER commas(4), par_count      ! stores the index of commas in the parameter string
-    INTEGER vpars(4), nargs           ! array to store the parameters of the potential
+    INTEGER commas(2), par_count_o, par_count_c      ! stores the index of commas in the parameter string
+    INTEGER vpars_o(2), vpars_c(2), nargs           ! array to store the parameters of the potential
 
     ! SOCKET COMMUNICATION BUFFERS
     CHARACTER*12 :: header
@@ -74,8 +74,9 @@ PROGRAM IPI_DRIVER
     inet = 1
     host = "localhost"//achar(0)
     port = 31415
-    verbose = .false.
-    par_count = 0
+    verbose = .FALSE.
+    par_count_o = 0
+    par_count_c = 0
     vstyle = -1
     doshift = .FALSE.
     mpicom = 0
@@ -90,26 +91,31 @@ PROGRAM IPI_DRIVER
             ccmd = 1
         ELSEIF (cmdbuffer == "-p") THEN ! reads the port number
             ccmd = 2
-        ELSEIF (cmdbuffer == "-m") THEN ! reads the handling of electronic parameter optimization
+        ELSEIF (cmdbuffer == "-m") THEN ! reads the mode of electronic parameter optimization
             ccmd = 3
-        ELSEIF (cmdbuffer == "-o") THEN ! reads the parameters
+        ELSEIF (cmdbuffer == "-o") THEN ! reads the options for mode
             ccmd = 4
+        ELSEIF (cmdbuffer == "-c") THEN ! reads the CPU/MPI configuration
+            ccmd = 5
         ELSEIF (cmdbuffer == "-v") THEN ! flag for verbose standard output
             verbose = .true.
         ELSE
             IF (ccmd == 0) THEN
                 WRITE(*,*) " Unrecognized command line argument", ccmd
                 WRITE(*,*) " SYNTAX: ipi_driver.x [-u] -h hostname -p port -m [alt|sim|fix|ffs|nop] " &
-                     //"[-o comma,separated,parameters] [-v] "
+                     //"[-o comma,separated,options] [-c comma,separated,options] [-v] "
                 WRITE(*,*) ""
                 WRITE(*,*) " The -u flag enables the use of unix sockets instead of internet sockets. "
                 WRITE(*,*) ""
-                WRITE(*,*) " You may have to provide parameters via -o according to the WF optimization mode:"
-                WRITE(*,*) " Fixed wavefunction force sampling mode (-m ffs):      -o NCPU,MPICOM       "
-                WRITE(*,*) " Fixed wavefunction mode (-m fix):                     -o NCPU,MPICOM,ISHIFT "
-                WRITE(*,*) " Simultaneous wavefunction optimization mode (-m sim): -o NCPU,MPICOM,ISHIFT (PI with nbeads>1 out of function!)"
-                WRITE(*,*) " Alternating wavefunction optimization mode (-m alt):  -o NCPU,MPICOM,ISHIFT,NWOMIN (not implemented yet!)"
-                WRITE(*,*) " In case of the no operation mode there are no options to be set."
+                WRITE(*,*) " You may have to provide options via -o according to the wavefunction optimization mode:"
+                WRITE(*,*) " Fixed wavefunction mode (-m fix):                     -o ISHIFT "
+                WRITE(*,*) " Simultaneous wavefunction optimization mode (-m sim): -o ISHIFT (PI with nbeads>1 out of function!)"
+                WRITE(*,*) " Alternating wavefunction optimization mode (-m alt):  -o ISHIFT,NWOMIN (not implemented yet!)"
+                WRITE(*,*) " In case of the no operation mode (-m nop) and fixed force sampling (-m ffs) there are no options to be set."
+                WRITE(*,*) ""
+                WRITE(*,*) " You may have to provide options via -c concerning the CPU/MPI configuration:"
+                WRITE(*,*) " -c NCPU,MPICOM"
+                WRITE(*,*) ""
                 WRITE(*,*) " Option Documentation:"
                 WRITE(*,*) " NCPU   = Number of CPUs"
                 WRITE(*,*) " MPICOM = MPI Execution Command: 0 -> mpirun, 1 -> srun, 2 -> runjob"
@@ -138,56 +144,63 @@ PROGRAM IPI_DRIVER
                     CALL EXIT(-1)
                 ENDIF
             ELSEIF (ccmd == 4) THEN
-                par_count = 1
+                par_count_o = 1
                 commas(1) = 0
-                DO WHILE (index(cmdbuffer(commas(par_count)+1:), ',') > 0)
-                    commas(par_count + 1) = index(cmdbuffer(commas(par_count)+1:), ',') + commas(par_count)
-                    READ(cmdbuffer(commas(par_count)+1:commas(par_count + 1)-1),*) vpars(par_count)
-                    par_count = par_count + 1
+                DO WHILE (index(cmdbuffer(commas(par_count_o)+1:), ',') > 0)
+                    commas(par_count_o + 1) = index(cmdbuffer(commas(par_count_o)+1:), ',') + commas(par_count_o)
+                    READ(cmdbuffer(commas(par_count_o)+1:commas(par_count_o + 1)-1),*) vpars_o(par_count_o)
+                    par_count_o = par_count_o + 1
                 ENDDO
-                READ(cmdbuffer(commas(par_count)+1:),*) vpars(par_count)
+                READ(cmdbuffer(commas(par_count_o)+1:),*) vpars_o(par_count_o)
+            ELSEIF (ccmd == 5) THEN
+                par_count_c = 1
+                commas(1) = 0
+                DO WHILE (index(cmdbuffer(commas(par_count_c)+1:), ',') > 0)
+                    commas(par_count_c + 1) = index(cmdbuffer(commas(par_count_c)+1:), ',') + commas(par_count_c)
+                    READ(cmdbuffer(commas(par_count_c)+1:commas(par_count_c + 1)-1),*) vpars_c(par_count_c)
+                    par_count_c = par_count_c + 1
+                ENDDO
+                READ(cmdbuffer(commas(par_count_c)+1:),*) vpars_c(par_count_c)
             ENDIF
             ccmd = 0
         ENDIF
     ENDDO
-    IF (vstyle == -1) THEN
-        isinit = .true.
-    ELSEIF (vstyle == 0) THEN
-        IF (par_count /= 2) THEN
-            WRITE(*,*) "Error: Wrong number of -o parameters provided. Expected: -o NCPU,MPICOM"
-            CALL EXIT(-1)
-        ENDIF
-        ncpus = vpars(1)
-        mpicom = vpars(2)
-        isinit = .true.
+    IF (vstyle < 1) THEN
+        isinit = .TRUE.
     ELSEIF (vstyle == 1 .or. vstyle==2) THEN
-        IF (par_count /= 3) THEN
-            WRITE(*,*) "Error: Wrong number of -o parameters provided. Expected: -o NCPU,MPICOM,ISHIFT"
+        IF (par_count_o /= 1) THEN
+            WRITE(*,*) "Error: Wrong number of -o parameters provided. Expected: -o ISHIFT"
             CALL EXIT(-1)
         ENDIF
-        ncpus = vpars(1)
-        mpicom = vpars(2)
-        IF (vpars(3) > 0) THEN
+        IF (vpars_o(1) > 0) THEN
             doshift = .TRUE.
         ELSE
             doshift = .FALSE.
         END IF
-        isinit = .true.
+        isinit = .TRUE.
     ELSEIF (vstyle == 3) THEN
-        IF (par_count /= 4) THEN
-            WRITE(*,*) "Error: Wrong number of -o parameters provided. Expected: -o NCPU,MPICOM,ISHIFT,NWOMIN"
+        IF (par_count_o /= 2) THEN
+            WRITE(*,*) "Error: Wrong number of -o parameters provided. Expected: -o ISHIFT,NWOMIN"
             CALL EXIT(-1)
         ENDIF
-        ncpus = vpars(1)
-        mpicom = vpars(2)
-        IF (vpars(3) > 0) THEN
+        IF (vpars_o(1) > 0) THEN
             doshift = .TRUE.
         ELSE
             doshift = .FALSE.
         END IF
-        nwomin = vpars(4)
-        isinit = .true.
+        nwomin = vpars_o(2)
+        isinit = .TRUE.
     ENDIF
+
+    IF (par_count_c == 1) THEN
+        ncpus = vpars_c(1)
+    ELSEIF (par_count_c == 2) THEN
+        ncpus = vpars_c(1)
+        mpicom = vpars_c(2)
+    ELSE
+        WRITE(*,*) "Error: Wrong number of -c parameters provided. Expected: -c NCPU or -c NCPU,MPICOM"
+        CALL EXIT(-1)
+    END IF
 
     IF (verbose) THEN
         WRITE(*,*) " DRIVER - Connecting to host ", trim(host)
