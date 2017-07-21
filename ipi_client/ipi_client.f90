@@ -62,8 +62,9 @@ PROGRAM IPI_DRIVER
     ! PARAMETERS CONCERNING VMC (NCPUS,NWOMIN)
     INTEGER ncpus,nwomin,mpicom
     CHARACTER*1024 strncpu, strbid
-    LOGICAL doshift
+    LOGICAL domshift, dolimit, notlimit
     INTEGER, ALLOCATABLE          :: invindarr(:)
+    DOUBLE PRECISION              :: flimit
 
     ! ITERATORS
     INTEGER i,k,l
@@ -78,7 +79,8 @@ PROGRAM IPI_DRIVER
     par_count_o = 0
     par_count_c = 0
     vstyle = -1
-    doshift = .FALSE.
+    domshift = .FALSE.
+    dolimit = .FALSE.
     mpicom = 0
     nargs = IARGC()
 
@@ -97,6 +99,8 @@ PROGRAM IPI_DRIVER
             ccmd = 4
         ELSEIF (cmdbuffer == "-c") THEN ! reads the CPU/MPI configuration
             ccmd = 5
+        ELSEIF (cmdbuffer == "-l") THEN ! reads the force amplitude limit (dirty fix)
+            ccmd = 6
         ELSEIF (cmdbuffer == "-v") THEN ! flag for verbose standard output
             verbose = .true.
         ELSE
@@ -161,6 +165,11 @@ PROGRAM IPI_DRIVER
                     par_count_c = par_count_c + 1
                 ENDDO
                 READ(cmdbuffer(commas(par_count_c)+1:),*) vpars_c(par_count_c)
+            ELSEIF (ccmd == 6) THEN
+                READ(cmdbuffer(:),*) flimit !dirty fix force limit
+                IF (flimit > 0) THEN
+                    dolimit = .TRUE.
+                END IF
             ENDIF
             ccmd = 0
         ENDIF
@@ -173,9 +182,9 @@ PROGRAM IPI_DRIVER
             CALL EXIT(-1)
         ENDIF
         IF (vpars_o(1) > 0) THEN
-            doshift = .TRUE.
+            domshift = .TRUE.
         ELSE
-            doshift = .FALSE.
+            domshift = .FALSE.
         END IF
         isinit = .TRUE.
     ELSEIF (vstyle == 3) THEN
@@ -184,9 +193,9 @@ PROGRAM IPI_DRIVER
             CALL EXIT(-1)
         ENDIF
         IF (vpars_o(1) > 0) THEN
-            doshift = .TRUE.
+            domshift = .TRUE.
         ELSE
-            doshift = .FALSE.
+            domshift = .FALSE.
         END IF
         nwomin = vpars_o(2)
         isinit = .TRUE.
@@ -260,7 +269,7 @@ PROGRAM IPI_DRIVER
                 ALLOCATE(msgbuffer(3*nat))
                 ALLOCATE(atoms(3,nat))
                 ALLOCATE(forces(3,nat))
-                IF (doshift) ALLOCATE(invindarr(nat))
+                IF (domshift) ALLOCATE(invindarr(nat))
             ENDIF
 
             CALL readbuffer(socket, msgbuffer, nat*3*8) ! Now receive the current atom positions
@@ -283,7 +292,7 @@ PROGRAM IPI_DRIVER
             
             IF (vstyle > -1) THEN 
 
-                IF (doshift) CALL molshift(nat, box, atoms, invindarr)
+                IF (domshift) CALL molshift(nat, box, atoms, invindarr)
                
                 OPEN (UNIT=20, FILE='reticolo/rp_now.d', STATUS='REPLACE', ACTION='WRITE')
                 WRITE(20,*) box
@@ -291,10 +300,6 @@ PROGRAM IPI_DRIVER
                     WRITE(20,*) atoms(:,i)
                 ENDDO
                 CLOSE(20)
-                
-                IF (vstyle == 0) THEN
-                    CALL execute_command_line('seedfile_shift.py', WAIT = .true.)
-                END IF
 
 		IF (vstyle > 1) THEN
                     WRITE(strbid, *) beadid
@@ -305,26 +310,53 @@ PROGRAM IPI_DRIVER
                 WRITE (strncpu, *) ncpus
                 strncpu = trim(adjustl(strncpu))
 
-                IF (mpicom == 1) THEN
-                   CALL execute_command_line('srun -n '//strncpu//' HswfQMC_exe', WAIT = .true.)
-                ELSE IF (mpicom == 2) THEN
-                   CALL execute_command_line('runjob --np '//strncpu &
-                        //' --exe /homea/hpb01/hpb015/HswfQMC/HswfQMC_exe --ranks-per-node 64', WAIT = .true.)
-	        ELSE
-                   CALL execute_command_line('mpirun -np '//strncpu//' HswfQMC_exe', WAIT = .true.)
-                END IF
+                DO WHILE (.TRUE.)
 
-		IF (vstyle > 1) THEN
+                    IF (mpicom == 1) THEN
+                       CALL execute_command_line('srun -n '//strncpu//' HswfQMC_exe', WAIT = .true.)
+                    ELSE IF (mpicom == 2) THEN
+                       CALL execute_command_line('runjob --np '//strncpu &
+                            //' --exe /homea/hpb01/hpb015/HswfQMC/HswfQMC_exe --ranks-per-node 64', WAIT = .true.)
+	            ELSE
+                       CALL execute_command_line('mpirun -np '//strncpu//' HswfQMC_exe', WAIT = .true.)
+                    END IF
+
+		    IF (vstyle > 1) THEN
+		       CALL execute_command_line('cp ottimizzazione/SR_wf.d ../SR_wf.dir/'//strbid, WAIT = .true.)
+		    END IF
+                
+                    OPEN (UNIT=20, FILE='reticolo/LagrDyn_Frp-0000.d',ACTION='READ')
+                    DO i = 1, nat
+                       READ(20, *) forces(:,i)
+                    ENDDO
+                    forces(:,:) = forces(:,:) *0.5*nat !HswfQMC output values are per atom, convert to Hartree
+                    CLOSE(20)
+
+                    notlimit = .TRUE.
+                    IF (dolimit) THEN
+                        DO i = 1, nat
+                            IF (NORM2(forces(:,i)) > flimit) THEN
+                                notlimit = .FALSE.
+                            END IF
+                        ENDDO
+                    END IF
+
+                    IF (notlimit) THEN
+                        IF (vstyle == 0) THEN
+                            CALL execute_command_line('seedfile_shift.py', WAIT = .true.)
+                        END IF
+                        EXIT
+                    ELSE
+                        WRITE(*,*) "Force was above limit. Recalculating with new seed..."
+                        CALL execute_command_line('seedfile_shift.py', WAIT = .true.)
+                    END IF
+
+                ENDDO
+
+                IF (vstyle > 1) THEN
 		   CALL execute_command_line('cp ottimizzazione/SR_wf.d ../SR_wf.dir/'//strbid, WAIT = .true.)
 		END IF
-                
-                OPEN (UNIT=20, FILE='reticolo/LagrDyn_Frp-0000.d',ACTION='READ')
-                DO i = 1, nat
-                   READ(20, *) forces(:,i)
-                ENDDO
-                forces(:,:) = forces(:,:) *0.5*nat !HswfQMC output values are per atom, convert to Hartree
-                CLOSE(20)
-  	        
+
                 OPEN (UNIT=20, FILE='ottimizzazione/SR_energies.dat',ACTION='READ')
                 DO WHILE(ios.eq.0)
                     READ(20,*,iostat=ios) enhelp
@@ -332,7 +364,7 @@ PROGRAM IPI_DRIVER
                 pot = enhelp(2) *0.5*nat
                 CLOSE(20)
 
-                IF (doshift) THEN
+                IF (domshift) THEN
                     CALL molshift_back(nat, atoms, invindarr)
                     CALL molshift_back(nat, forces, invindarr)
                 END IF
@@ -375,7 +407,7 @@ PROGRAM IPI_DRIVER
     ENDDO
     IF (nat > 0) THEN
         DEALLOCATE(atoms, forces, msgbuffer)
-        IF (doshift) DEALLOCATE(invindarr)
+        IF (domshift) DEALLOCATE(invindarr)
     END IF
 
 END PROGRAM IPI_DRIVER
