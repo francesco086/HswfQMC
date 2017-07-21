@@ -273,48 +273,48 @@ PROGRAM IPI_DRIVER
                 IF (doshift) CALL molshift(nat, box, atoms, invindarr)
                
                 OPEN (UNIT=20, FILE='reticolo/rp_now.d', STATUS='REPLACE', ACTION='WRITE')
-                write(20,*) box
+                WRITE(20,*) box
                 DO i = 1, nat
-                    write(20,*) atoms(:,i)
+                    WRITE(20,*) atoms(:,i)
                 ENDDO
                 CLOSE(20)
                 
                 IF (vstyle == 0) THEN
-                    call execute_command_line('seedfile_shift.py', WAIT = .true.)
+                    CALL execute_command_line('seedfile_shift.py', WAIT = .true.)
                 END IF
 
 		IF (vstyle > 1) THEN
-                    write(strbid, *) beadid
+                    WRITE(strbid, *) beadid
                     strbid = trim(adjustl(strbid))
-		    call execute_command_line('cp ../SR_wf.dir/'//strbid//' wf_now.d', WAIT = .true.)
+		    CALL execute_command_line('cp ../SR_wf.dir/'//strbid//' wf_now.d', WAIT = .true.)
 		END IF
                 
-                write (strncpu, *) ncpus
+                WRITE (strncpu, *) ncpus
                 strncpu = trim(adjustl(strncpu))
 
                 IF (mpicom == 1) THEN
-                   call execute_command_line('srun -n '//strncpu//' HswfQMC_exe', WAIT = .true.)
+                   CALL execute_command_line('srun -n '//strncpu//' HswfQMC_exe', WAIT = .true.)
                 ELSE IF (mpicom == 2) THEN
-                   call execute_command_line('runjob --np '//strncpu &
+                   CALL execute_command_line('runjob --np '//strncpu &
                         //' --exe /homea/hpb01/hpb015/HswfQMC/HswfQMC_exe --ranks-per-node 64', WAIT = .true.)
 	        ELSE
-                   call execute_command_line('mpirun -np '//strncpu//' HswfQMC_exe', WAIT = .true.)
+                   CALL execute_command_line('mpirun -np '//strncpu//' HswfQMC_exe', WAIT = .true.)
                 END IF
 
 		IF (vstyle > 1) THEN
-		    call execute_command_line('cp ottimizzazione/SR_wf.d ../SR_wf.dir/'//strbid, WAIT = .true.)
+		   CALL execute_command_line('cp ottimizzazione/SR_wf.d ../SR_wf.dir/'//strbid, WAIT = .true.)
 		END IF
                 
                 OPEN (UNIT=20, FILE='reticolo/LagrDyn_Frp-0000.d',ACTION='READ')
                 DO i = 1, nat
-                   read(20, *) forces(:,i)
+                   READ(20, *) forces(:,i)
                 ENDDO
                 forces(:,:) = forces(:,:) *0.5*nat !HswfQMC output values are per atom, convert to Hartree
                 CLOSE(20)
   	        
                 OPEN (UNIT=20, FILE='ottimizzazione/SR_energies.dat',ACTION='READ')
-                DO while(ios.eq.0)
-                    read(20,*,iostat=ios) enhelp
+                DO WHILE(ios.eq.0)
+                    READ(20,*,iostat=ios) enhelp
                 ENDDO
                 pot = enhelp(2) *0.5*nat
                 CLOSE(20)
