@@ -43,7 +43,7 @@ PROGRAM IPI_DRIVER
 
     ! SOCKET COMMUNICATION BUFFERS
     CHARACTER*12 :: header
-    LOGICAL :: isinit=.false., hasdata=.false.
+    LOGICAL :: isinit, hasdata
     INTEGER cbuf
     CHARACTER*2048 :: initbuffer      ! it's unlikely a string this large will ever be passed...
     DOUBLE PRECISION, ALLOCATABLE :: msgbuffer(:)
@@ -64,26 +64,37 @@ PROGRAM IPI_DRIVER
     ! ITERATORS
     INTEGER i,k,l
 
-    ! parse the command line parameters
-    ! intialize defaults
-    ccmd = 0
+    ! intialize parameter defaults
     inet = 1
-    host = "localhost"//achar(0)
-    port = 31415
     verbose = .FALSE.
-    par_count_o = 0
-    par_count_c = 0
+    host = "localhost"//achar(0)
+    port = 54321
     vstyle = -1
     domshift = .FALSE.
-    dolimit = .FALSE.
+    nwomin = 0
+    ncpus = 1
     mpicom = 0
+    dolimit = .FALSE.
+
+    ! initialize control variables
+    isinit = .FALSE.
+    hasdata = .FALSE.
+    ccmd = 0
+    par_count_o = 0
+    par_count_c = 0
     nargs = IARGC()
 
+    nat = -1
+    beadid = 0
+    istep = 0
+
+    ! parse the command line parameters
     DO i = 1, nargs
         CALL GETARG(i, cmdbuffer)
         IF (cmdbuffer == "-u") THEN ! flag for unix socket
             inet = 0
-            ccmd = 0
+        ELSEIF (cmdbuffer == "-v") THEN ! flag for verbose standard output
+            verbose = .TRUE.
         ELSEIF (cmdbuffer == "-h") THEN ! read the hostname
             ccmd = 1
         ELSEIF (cmdbuffer == "-p") THEN ! reads the port number
@@ -94,35 +105,37 @@ PROGRAM IPI_DRIVER
             ccmd = 4
         ELSEIF (cmdbuffer == "-c") THEN ! reads the CPU/MPI configuration
             ccmd = 5
-        ELSEIF (cmdbuffer == "-l") THEN ! reads the force amplitude limit (dirty fix)
+        ELSEIF (cmdbuffer == "-l") THEN ! reads the force amplitude limit
             ccmd = 6
-        ELSEIF (cmdbuffer == "-v") THEN ! flag for verbose standard output
-            verbose = .true.
         ELSE
             IF (ccmd == 0) THEN
-                WRITE(*,*) " Unrecognized command line argument", ccmd
-                WRITE(*,*) " SYNTAX: ipi_driver.x [-u] -h hostname -p port -m [alt|sim|fix|ffs|nop] " &
-                     //"[-o comma,separated,options] [-c comma,separated,options] [-v] "
+                WRITE(*,*) " Unrecognized command line argument: ", cmdbuffer
+                WRITE(*,*) " SYNTAX: ipi_driver.x [-u] [-v] -h hostname -p port -m [alt|sim|fix|ffs|nop] " &
+                     //"[-o comma,separated,options] [-c comma,separated,options] "
                 WRITE(*,*) ""
                 WRITE(*,*) " The -u flag enables the use of unix sockets instead of internet sockets. "
                 WRITE(*,*) ""
-                WRITE(*,*) " You may have to provide options via -o according to the wavefunction optimization mode:"
+                WRITE(*,*) " The -v flag enables verbose mode. "
+                WRITE(*,*) ""
+                WRITE(*,*) " You may want to provide options via -o according to the wavefunction optimization mode:"
                 WRITE(*,*) " Fixed wavefunction mode (-m fix):                     -o ISHIFT "
-                WRITE(*,*) " Simultaneous wavefunction optimization mode (-m sim): -o ISHIFT (PI with nbeads>1 out of function!)"
+                WRITE(*,*) " Simultaneous wavefunction optimization mode (-m sim): -o ISHIFT "
                 WRITE(*,*) " Alternating wavefunction optimization mode (-m alt):  -o ISHIFT,NWOMIN (not implemented yet!)"
                 WRITE(*,*) " In case of the no operation mode (-m nop) and fixed force sampling (-m ffs) there are no options to be set."
                 WRITE(*,*) ""
-                WRITE(*,*) " You may have to provide options via -c concerning the CPU/MPI configuration:"
+                WRITE(*,*) " Option Documentation:"
+                WRITE(*,*) " ISHIFT = Molecular Partner Shifting Flag. 0 -> disabled, 1 -> enabled"
+                WRITE(*,*) " NWOMIN = Number of wavefunction optimizations without new minimum before termination."
+                WRITE(*,*) ""
+                WRITE(*,*) " You can provide options via -c concerning the CPU/MPI configuration:"
                 WRITE(*,*) " -c NCPU,MPICOM"
                 WRITE(*,*) ""
                 WRITE(*,*) " Option Documentation:"
                 WRITE(*,*) " NCPU   = Number of CPUs"
                 WRITE(*,*) " MPICOM = MPI Execution Command: 0 -> mpirun, 1 -> srun, 2 -> runjob"
-                WRITE(*,*) " ISHIFT = Molecular Partner Shifting Flag. 0 -> disabled, 1 -> enabled"
-                WRITE(*,*) " NWOMIN = Number of wavefunction optimizations without new minimum before termination."
+                WRITE(*,*) ""
                 CALL EXIT(-1)
-            ENDIF
-            IF (ccmd == 1) THEN
+            ELSEIF (ccmd == 1) THEN
                 host = trim(cmdbuffer)//achar(0)
             ELSEIF (ccmd == 2) THEN
                 READ(cmdbuffer,*) port
@@ -138,7 +151,7 @@ PROGRAM IPI_DRIVER
                 ELSEIF (trim(cmdbuffer) == "nop") THEN
                     vstyle = -1
                 ELSE
-                    WRITE(*,*) " Unrecognized optimization mode ", trim(cmdbuffer)
+                    WRITE(*,*) " Unrecognized wavefunction optimization mode ", trim(cmdbuffer)
                     WRITE(*,*) " Use -m [alt|sim|fix|ffs|nop] "
                     CALL EXIT(-1)
                 ENDIF
@@ -161,7 +174,7 @@ PROGRAM IPI_DRIVER
                 ENDDO
                 READ(cmdbuffer(commas(par_count_c)+1:),*) vpars_c(par_count_c)
             ELSEIF (ccmd == 6) THEN
-                READ(cmdbuffer(:),*) flimit !dirty fix force limit
+                READ(cmdbuffer(:),*) flimit ! force amplitude limit (dirty fix)
                 IF (flimit > 0) THEN
                     dolimit = .TRUE.
                 END IF
@@ -169,9 +182,10 @@ PROGRAM IPI_DRIVER
             ccmd = 0
         ENDIF
     ENDDO
+
     IF (vstyle < 1) THEN
-        isinit = .TRUE.
-    ELSEIF (vstyle == 1 .or. vstyle==2) THEN
+        CONTINUE
+    ELSEIF (vstyle < 3) THEN
         IF (par_count_o /= 1) THEN
             WRITE(*,*) "Error: Wrong number of -o parameters provided. Expected: -o ISHIFT"
             CALL EXIT(-1)
@@ -181,7 +195,6 @@ PROGRAM IPI_DRIVER
         ELSE
             domshift = .FALSE.
         END IF
-        isinit = .TRUE.
     ELSEIF (vstyle == 3) THEN
         IF (par_count_o /= 2) THEN
             WRITE(*,*) "Error: Wrong number of -o parameters provided. Expected: -o ISHIFT,NWOMIN"
@@ -193,8 +206,13 @@ PROGRAM IPI_DRIVER
             domshift = .FALSE.
         END IF
         nwomin = vpars_o(2)
-        isinit = .TRUE.
     ENDIF
+
+    IF (vstyle < 2) THEN
+        isinit = .TRUE.
+    ELSE
+        isinit = .FALSE. ! WF optimization enabled -> we need to know our bead id
+    END IF
 
     IF (par_count_c == 1) THEN
         ncpus = vpars_c(1)
@@ -218,9 +236,6 @@ PROGRAM IPI_DRIVER
     ! Calls the interface to the C sockets to open a communication channel
     CALL open_socket(socket, inet, port, host)
 
-    nat = -1
-    beadid = 0
-    istep = 0
     DO WHILE (.TRUE.) ! Loops forever (or until the wrapper ends!)
 
         ! Reads from the socket one message header
@@ -237,10 +252,11 @@ PROGRAM IPI_DRIVER
                 CALL writebuffer(socket,"READY       ",MSGLEN)  ! We are idling and eager to compute something
             ENDIF
         ELSEIF (trim(header) == "INIT") THEN     ! The driver is kindly providing a string for initialization
-            CALL readbuffer(socket, cbuf, 4)
+            CALL readbuffer(socket, beadid)
+            CALL readbuffer(socket, cbuf)
             CALL readbuffer(socket, initbuffer, cbuf)
             IF (verbose) WRITE(*,*) " Initializing system from wrapper, using ", trim(initbuffer)
-            isinit=.true. ! We actually do nothing with this string, thanks anyway. Could be used to pass some information (e.g. the input parameters, or the index of the replica, from the driver
+            isinit = .TRUE.
         ELSEIF (trim(header) == "POSDATA") THEN  ! The driver is sending the positions of the atoms. Here is where we do the calculation!
 
             ! Parses the flow of data from the socket
@@ -272,8 +288,6 @@ PROGRAM IPI_DRIVER
                 atoms(:,i) = msgbuffer(3*(i-1)+1:3*i)
             ENDDO
 
-            !CALL readbuffer(socket, beadid, 4) ! And finally the replica/bead id
-            
             pot = 0
             forces = 0
             virial = 0
@@ -350,6 +364,7 @@ PROGRAM IPI_DRIVER
 
                 IF (vstyle > 1) THEN
 		   CALL execute_command_line('cp ottimizzazione/SR_wf.d ../SR_wf.dir/'//strbid, WAIT = .true.)
+                   isinit = .FALSE.
 		END IF
 
                 OPEN (UNIT=20, FILE='ottimizzazione/SR_energies.dat',ACTION='READ')
@@ -375,7 +390,7 @@ PROGRAM IPI_DRIVER
             END IF
 
             IF (verbose) WRITE(*,*) " Calculated energy is ", pot
-            hasdata = .true. ! Signal that we have data ready to be passed back to the wrapper
+            hasdata = .TRUE. ! Signal that we have data ready to be passed back to the wrapper
 
         ELSEIF (trim(header) == "GETFORCE") THEN  ! The driver calculation is finished, it's time to send the results back to the wrapper
 
@@ -394,7 +409,7 @@ PROGRAM IPI_DRIVER
             CALL writebuffer(socket,cbuf,4) ! This would write out the "extras" string, but in this case we only use a dummy string.
             CALL writebuffer(socket,"nothing",7)
 
-            hasdata = .false.
+            hasdata = .FALSE.
         ELSE
             WRITE(*,*) " Unexpected header ", header
             CALL EXIT(-1)
