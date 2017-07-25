@@ -363,7 +363,6 @@ PROGRAM IPI_DRIVER
 
                 IF (vstyle > 1) THEN
 		   CALL execute_command_line('cp ottimizzazione/SR_wf.d ../SR_wf.dir/'//strbid, WAIT = .true.)
-                   isinit = .FALSE.
 		END IF
 
                 OPEN (UNIT=20, FILE='ottimizzazione/SR_energies.dat',ACTION='READ')
