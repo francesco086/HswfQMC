@@ -252,10 +252,9 @@ PROGRAM IPI_DRIVER
                 CALL writebuffer(socket,"READY       ",MSGLEN)  ! We are idling and eager to compute something
             ENDIF
         ELSEIF (trim(header) == "INIT") THEN     ! The driver is kindly providing a string for initialization
-            CALL readbuffer(socket, beadid)
-            CALL readbuffer(socket, cbuf)
+            CALL readbuffer(socket, beadid, 4)
+            CALL readbuffer(socket, cbuf, 4)
             CALL readbuffer(socket, initbuffer, cbuf)
-            IF (verbose) WRITE(*,*) " Initializing system from wrapper, using ", trim(initbuffer)
             isinit = .TRUE.
         ELSEIF (trim(header) == "POSDATA") THEN  ! The driver is sending the positions of the atoms. Here is where we do the calculation!
 
