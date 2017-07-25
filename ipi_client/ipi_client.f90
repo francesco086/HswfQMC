@@ -54,9 +54,9 @@ PROGRAM IPI_DRIVER
     INTEGER nat, beadid, ios, istep
     DOUBLE PRECISION cell_h(3,3), cell_ih(3,3), virial(3,3)
 
-    ! PARAMETERS CONCERNING VMC (NCPUS,NWOMIN)
-    INTEGER ncpus,nwomin,mpicom
-    CHARACTER*1024 strncpu, strbid
+    ! PARAMETERS CONCERNING VMC (NRANKS,NWOMIN)
+    INTEGER nranks,mpicom,nwomin
+    CHARACTER*1024 strnranks, strbid
     LOGICAL domshift, dolimit, notlimit
     INTEGER, ALLOCATABLE          :: invindarr(:)
     DOUBLE PRECISION              :: flimit
@@ -72,7 +72,7 @@ PROGRAM IPI_DRIVER
     vstyle = -1
     domshift = .FALSE.
     nwomin = 0
-    ncpus = 1
+    nranks = 1
     mpicom = 0
     dolimit = .FALSE.
 
@@ -103,7 +103,7 @@ PROGRAM IPI_DRIVER
             ccmd = 3
         ELSEIF (cmdbuffer == "-o") THEN ! reads the options for mode
             ccmd = 4
-        ELSEIF (cmdbuffer == "-c") THEN ! reads the CPU/MPI configuration
+        ELSEIF (cmdbuffer == "-c") THEN ! reads the MPI/Rank configuration
             ccmd = 5
         ELSEIF (cmdbuffer == "-l") THEN ! reads the force amplitude limit
             ccmd = 6
@@ -127,11 +127,11 @@ PROGRAM IPI_DRIVER
                 WRITE(*,*) " ISHIFT = Molecular Partner Shifting Flag. 0 -> disabled, 1 -> enabled"
                 WRITE(*,*) " NWOMIN = Number of wavefunction optimizations without new minimum before termination."
                 WRITE(*,*) ""
-                WRITE(*,*) " You can provide options via -c concerning the CPU/MPI configuration:"
-                WRITE(*,*) " -c NCPU,MPICOM"
+                WRITE(*,*) " You can provide options via -c concerning the MPI/Rank configuration:"
+                WRITE(*,*) " -c NRANKS,MPICOM"
                 WRITE(*,*) ""
                 WRITE(*,*) " Option Documentation:"
-                WRITE(*,*) " NCPU   = Number of CPUs"
+                WRITE(*,*) " NRANKS = Number of MPI Ranks"
                 WRITE(*,*) " MPICOM = MPI Execution Command: 0 -> mpirun, 1 -> srun, 2 -> runjob"
                 WRITE(*,*) ""
                 CALL EXIT(-1)
@@ -215,12 +215,12 @@ PROGRAM IPI_DRIVER
     END IF
 
     IF (par_count_c == 1) THEN
-        ncpus = vpars_c(1)
+        nranks = vpars_c(1)
     ELSEIF (par_count_c == 2) THEN
-        ncpus = vpars_c(1)
+        nranks = vpars_c(1)
         mpicom = vpars_c(2)
     ELSE
-        WRITE(*,*) "Error: Wrong number of -c parameters provided. Expected: -c NCPU or -c NCPU,MPICOM"
+        WRITE(*,*) "Error: Wrong number of -c parameters provided. Expected: -c NRANKS or -c NRANKS,MPICOM"
         CALL EXIT(-1)
     END IF
 
@@ -316,18 +316,18 @@ PROGRAM IPI_DRIVER
 		    CALL execute_command_line('cp ../SR_wf.dir/'//strbid//' wf_now.d', WAIT = .true.)
 		END IF
                 
-                WRITE (strncpu, *) ncpus
-                strncpu = trim(adjustl(strncpu))
+                WRITE (strnranks, *) nranks
+                strnranks = trim(adjustl(strnranks))
 
                 DO WHILE (.TRUE.)
 
                     IF (mpicom == 1) THEN
-                       CALL execute_command_line('srun -n '//strncpu//' HswfQMC_exe', WAIT = .true.)
+                       CALL execute_command_line('srun -n '//strnranks//' HswfQMC_exe', WAIT = .true.)
                     ELSE IF (mpicom == 2) THEN
-                       CALL execute_command_line('runjob --np '//strncpu &
+                       CALL execute_command_line('runjob --np '//strnranks &
                             //' --exe /homea/hpb01/hpb015/HswfQMC/HswfQMC_exe --ranks-per-node 64', WAIT = .true.)
 	            ELSE
-                       CALL execute_command_line('mpirun -np '//strncpu//' HswfQMC_exe', WAIT = .true.)
+                       CALL execute_command_line('mpirun -np '//strnranks//' HswfQMC_exe', WAIT = .true.)
                     END IF
 
 		    IF (vstyle > 1) THEN
