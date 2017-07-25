@@ -1,6 +1,8 @@
-! The main program which runs our driver test case potentials
+! An adaption of driver code from the i-PI MD software 
+! which serves as HswfQMC's interface to i-PI
 ! 
 ! Copyright (C) 2013, Joshua More and Michele Ceriotti
+! Copyright (C) 2015-2017, Jan Kessler
 ! 
 ! Permission is hereby granted, free of charge, to any person obtaining
 ! a copy of this software and associated documentation files (the
@@ -21,14 +23,7 @@
 ! TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 ! SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 !
-!
-! Currently the potentials implemented are the Lennard-Jones
-! potential, the Silvera-Goldman para-hydrogen potential and
-! the ideal gas (i.e. no interaction at all)
-!
 ! -------------------------------------------------------------------------
-! Modified by Jan Kessler (2015-2017)
-! An adaption of the I-Pi driver example to HswfQMC
 
 PROGRAM IPI_DRIVER
 
