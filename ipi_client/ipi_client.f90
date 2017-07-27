@@ -355,7 +355,6 @@
 
             IF (vstyle > 1) THEN
                CALL execute_command_line('cp ottimizzazione/SR_wf.d ../SR_wf.dir/'//strrid, WAIT = .true.)
-               isinit=.FALSE. ! we want to make sure that the beadid didn't change next time
             END IF
 
             OPEN (UNIT=20, FILE='ottimizzazione/SR_energies.dat',ACTION='READ')
@@ -407,6 +406,8 @@
          IF (verbose > 1) WRITE(*,*) "    !write!=> extra: nothing"
 
          hasdata = .false.
+         IF (vstyle > 1) isinit=.FALSE. ! we want to make sure that the beadid didn't change next time
+
       ELSE
          WRITE(*,*) " Unexpected header ", header
          STOP "ENDED"
