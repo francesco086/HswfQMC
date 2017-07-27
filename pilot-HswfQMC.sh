@@ -186,6 +186,7 @@ do
 			cd ipi_client
 			make clean
 			make
+			mv ipi_client.x ../HswfQMC_ipic
 			cd $CURRENT_PATH
 			exit
 			;;

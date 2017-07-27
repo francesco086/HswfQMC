@@ -34,7 +34,6 @@ sockets.o: sockets.c
 
 ipi_client.x: sockets.o fsockets.o ipi_client.o molshift.o
 	$(FC) $(FFLAGS) -o ipi_client.x $^
-	ln -fs ipi_client.x ../HswfQMC_ipic
 
 molshift_file.x: molshift.o molshift_file.o
 	$(FC) $(FFLAGS) -o molshift_file.x $^
