@@ -65,7 +65,8 @@ source/makefile.users_settings*
 HswfQMC*
 source/HswfQMC*
 ipi_client/*.o
-ipi_client/HswfQMC*
+ipi_client/*.x
+ipi_client/*.mod
 ipi_client/molxyz_shifted
 lapack_lib
 markuspline
