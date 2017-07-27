@@ -252,8 +252,6 @@
          IF (verbose > 1) WRITE(*,*) "    !read!=> cell-1: ", mtxbuf
          cell_ih = RESHAPE(mtxbuf, (/3,3/))
 
-         cell_h = transpose(cell_h)
-         cell_ih = transpose(cell_ih)
          ! We assume an upper triangular cell-vector matrix
          volume = cell_h(1,1)*cell_h(2,2)*cell_h(3,3)
          box(1) = cell_h(1,1)
@@ -372,13 +370,13 @@
                CALL molshift_back(nat, forces, invindarr)
             END IF
 
-            !DO i = 1, nat
-            !   DO k = 1, 3
-            !      DO l = k, 3
-            !         virial(k,l) = virial(k,l) + forces(k,i)*atoms(l,i)
-            !      ENDDO
-            !   ENDDO
-            !ENDDO
+            DO i = 1, nat
+               DO k = 1, 3
+                  DO l = k, 3
+                     virial(k,l) = virial(k,l) + atoms(k,i)*forces(l,i)
+                  ENDDO
+               ENDDO
+            ENDDO
          END IF
 
          IF (verbose > 0) WRITE(*,*) " Calculated energy is ", pot
@@ -386,11 +384,9 @@
          hasdata = .true. ! Signal that we have data ready to be passed back to the wrapper
       ELSEIF (trim(header) == "GETFORCE") THEN  ! The driver calculation is finished, it's time to send the results back to the wrapper
 
-         ! Data must be re-formatted (and units converted) in the units and shapes used in the wrapper
          DO i = 1, nat
             msgbuffer(3*(i-1)+1:3*i) = forces(:,i)
          ENDDO
-         virial = transpose(virial)
 
          CALL writebuffer(socket,"FORCEREADY  ",MSGLEN)
          IF (verbose > 1) WRITE(*,*) "    !write!=> ", "FORCEREADY  "
