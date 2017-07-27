@@ -252,9 +252,6 @@
          IF (verbose > 1) WRITE(*,*) "    !read!=> cell-1: ", mtxbuf
          cell_ih = RESHAPE(mtxbuf, (/3,3/))
 
-         ! The wrapper uses atomic units for everything, and row major storage.
-         ! At this stage one should take care that everything is converted in the
-         ! units and storage mode used in the driver.
          cell_h = transpose(cell_h)
          cell_ih = transpose(cell_ih)
          ! We assume an upper triangular cell-vector matrix
@@ -269,8 +266,8 @@
             nat = cbuf
             IF (verbose > 0) WRITE(*,*) " Allocating buffer and data arrays, with ", nat, " atoms"
             ALLOCATE(msgbuffer(3*nat))
-            ALLOCATE(atoms(nat,3))
-            ALLOCATE(forces(nat,3))
+            ALLOCATE(atoms(3,nat))
+            ALLOCATE(forces(3,nat))
             IF (domshift) ALLOCATE(invindarr(nat))
             msgbuffer = 0.0d0
             atoms = 0.0d0
@@ -281,7 +278,7 @@
          CALL readbuffer(socket, msgbuffer, nat*3)
          IF (verbose > 1) WRITE(*,*) "    !read!=> positions: ", msgbuffer
          DO i = 1, nat
-            atoms(i,:) = msgbuffer(3*(i-1)+1:3*i)
+            atoms(:,i) = msgbuffer(3*(i-1)+1:3*i)
          ENDDO
 
          pot = 0.0d0
@@ -375,13 +372,13 @@
                CALL molshift_back(nat, forces, invindarr)
             END IF
 
-            DO i = 1, nat
-               DO k = 1, 3
-                  DO l = k, 3
-                     virial(k,l) = virial(k,l) + forces(k,i)*atoms(l,i)
-                  ENDDO
-               ENDDO
-            ENDDO
+            !DO i = 1, nat
+            !   DO k = 1, 3
+            !      DO l = k, 3
+            !         virial(k,l) = virial(k,l) + forces(k,i)*atoms(l,i)
+            !      ENDDO
+            !   ENDDO
+            !ENDDO
          END IF
 
          IF (verbose > 0) WRITE(*,*) " Calculated energy is ", pot
@@ -391,7 +388,7 @@
 
          ! Data must be re-formatted (and units converted) in the units and shapes used in the wrapper
          DO i = 1, nat
-            msgbuffer(3*(i-1)+1:3*i) = forces(i,:)
+            msgbuffer(3*(i-1)+1:3*i) = forces(:,i)
          ENDDO
          virial = transpose(virial)
 
