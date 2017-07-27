@@ -184,6 +184,7 @@ do
 			cd ${pilot_PATH}
 			echo "Build the i-pi client executable HswfQMC_ipic"
 			cd ipi_client
+			make clean
 			make
 			cd $CURRENT_PATH
 			exit
