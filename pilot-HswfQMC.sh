@@ -182,10 +182,9 @@ do
 			;;
 		make_ipic)
 			cd ${pilot_PATH}
-			echo "Build the i-pi client executable ipi_client.x"
+			echo "Build the i-pi client executable HswfQMC_ipic"
 			cd ipi_client
 			make
-                        mv HswfQMC_ipic ../
 			cd $CURRENT_PATH
 			exit
 			;;
