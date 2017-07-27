@@ -30,22 +30,22 @@ SUBROUTINE molshift(N, L, POSARR, INVINDARR)
 IMPLICIT NONE
 
 ! Passed variables
-INTEGER, INTENT(IN)       ::      N
-REAL(8), INTENT(IN)       ::      L(3)
-REAL(8), INTENT(INOUT)    ::      POSARR(3,N)
-INTEGER, INTENT(OUT)      ::      INVINDARR(N)
+INTEGER, INTENT(IN)    ::    N
+REAL(8), INTENT(IN)    ::    L(3)
+REAL(8), INTENT(INOUT) ::    POSARR(3,N)
+INTEGER, INTENT(OUT)   ::    INVINDARR(N)
 
 
 ! Working variables
-INTEGER		::	N_PART
-REAL(8)	        ::	NEWARR(3,N), DISTARR(N)
-INTEGER         ::      INDARR(N)
-LOGICAL         ::	ISPAIR(N)
+INTEGER    ::    N_PART
+REAL(8)    ::    NEWARR(3,N), DISTARR(N)
+INTEGER    ::    INDARR(N)
+LOGICAL    ::    ISPAIR(N)
 
 
 ! Helper variables
-REAL(8)		::	distv(3), LR(3)
-INTEGER		::	i,j,inew,jnew
+REAL(8)    ::    distv(3), LR(3)
+INTEGER    ::    i,j,inew,jnew
 
 N_PART = N/2
 

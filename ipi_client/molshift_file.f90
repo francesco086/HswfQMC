@@ -27,14 +27,14 @@
 PROGRAM molshift_file
 IMPLICIT NONE
 
-REAL(8)		::	L(3)
-INTEGER		::	N, N_PART
+REAL(8)    ::    L(3)
+INTEGER    ::    N, N_PART
 
-REAL(8), ALLOCATABLE	::	POSARR(:,:), NEWARR(:,:), DISTARR(:)
-INTEGER, ALLOCATABLE	::	INVINDARR(:)
+REAL(8), ALLOCATABLE    ::    POSARR(:,:), NEWARR(:,:), DISTARR(:)
+INTEGER, ALLOCATABLE    ::    INVINDARR(:)
 
-REAL(8)		::	distv(3), LR(3)
-INTEGER		::	i,j
+REAL(8)    ::    distv(3), LR(3)
+INTEGER    ::    i,j
 
 N = 64
 N_PART = N/2
