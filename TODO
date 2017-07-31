@@ -1,0 +1,4 @@
+Things to be done which require a pull request with changes to the examples in i-Pi (better all at once):
+ * Merge release to master -> make i-Pi examples use new master
+ * Renaming randomseed1.d -> randomseed.d in pilot, seedfile_shift, ipi_client and templates/qespresso
+ * Renaming wf_now.d -> dati_funzione_onda.d in ipi_client (?). Keep rp_now.d in reticolo?
