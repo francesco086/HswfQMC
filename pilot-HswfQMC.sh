@@ -224,7 +224,8 @@ do
             then
                 rm -f -r estimatori posizioni ottimizzazione
                 rm -f output.d
-                rm -f nohup.out
+                rm -f *.out
+                rm -f screenlog.*
                 rm -f reticolo/*.d
                 mkdir estimatori
                 mkdir posizioni
@@ -245,8 +246,10 @@ do
                 rm -f -r estimatori posizioni
                 rm -f ottimizzazione/*.dat
                 rm -f output.d
-                rm -f nohup.out
+                rm -f *.out
+                rm -f screenlog.*
                 rm -f reticolo/SR_Rp-*.d
+                rm -f reticolo/LagrDyn_Frp-*.d
                 mkdir estimatori
                 mkdir posizioni
                 mkdir estimatori/gradiente
