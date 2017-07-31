@@ -23,7 +23,7 @@ MODULE dati_mc
 	REAL (KIND=8), SAVE :: time_VMC_start
    CHARACTER (LEN=9) :: SR_kind
    LOGICAL, PROTECTED, SAVE :: SR_adaptative_beta, SR_lambda, SR_lambda_Rp
-   LOGICAL, PROTECTED, SAVE :: SR_change_bound
+   LOGICAL, PROTECTED, SAVE :: SR_change_bound, SR_change_bound_Rp = .FALSE.
    REAL(KIND=8), SAVE :: SR_beta, SR_beta_Rp, SR_max_change, SR_min_change, SR_max_SVD_MIN, SR_maxdeltaPsi
    REAL(KIND=8), SAVE :: lambda_init, min_lambda, max_lambda, lambda_Rp_init, min_lambda_Rp, max_lambda_Rp
    INTEGER, PROTECTED, SAVE :: SR_num_max_WO_MIN
