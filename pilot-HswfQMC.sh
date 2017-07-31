@@ -60,9 +60,7 @@ do
 			echo "Make the current folder a working folder (with all necessary input files and folders)"
 			mkdir estimatori estimatori/gradiente ottimizzazione ottimizzazione/splines posizioni reticolo
 			cp ${pilot_PATH}/input_templates/* .
-			PATHRANDOM="${pilot_PATH}/random_seed"
-			sed -i.sedbak "s|RANDOM_SEED_FOLDER|${PATHRANDOM}|" dati_mc.d
-			rm *.sedbak
+                        cp ${pilot_PATH}/random_seed/randomseed1.d .
 			exit
 			;;
 
@@ -85,9 +83,6 @@ do
             echo "ERROR: Impossible to find the folder posizioni/ . ABORT!"
             exit
          fi
-	      PATHRANDOM="${pilot_PATH}/random_seed"
-	      sed -i.sedbak "s|RANDOM_SEED_FOLDER|${PATHRANDOM}|" dati_mc.d
-	      \rm -f *.sedbak
          \rm -f output.d
          HswfQMC_exe > /dev/null 2>&1
          #Extract from the output file the size of the simulation box and save it in the file L.d

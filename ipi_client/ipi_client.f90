@@ -203,6 +203,9 @@
       STOP "ENDED"
    END IF
 
+   !Backup the initial random seed file
+   CALL execute_command_line('cp randomseed1.d randomseed1.bak', WAIT = .true.)
+
    IF (verbose > 0) THEN
       WRITE(*,*) " DRIVER - Connecting to host ", trim(host)
       IF (inet > 0) THEN
