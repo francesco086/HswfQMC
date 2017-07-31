@@ -58,6 +58,17 @@ xcuserdata
 DerivedData
 *.xcuserstate
 
+# -- Emacs files (from github's Global/Emacs.gitignore) --
+
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
 # -- project specific ignores --
 source/*.o
 source/*.mod
