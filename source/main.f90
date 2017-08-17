@@ -19,7 +19,7 @@ PROGRAM main
 			OPEN (UNIT=7, FILE='output.d', STATUS='OLD', POSITION='APPEND')
 			IF (mpi_myrank==0) THEN
 				PRINT * , 'Esisteva giá un file output.d, proseguo.'
-				IF (flag_output) WRITE (7, *), 'Esisteva giá un file output.d, proseguo.'
+				IF (flag_output) WRITE (7, *) 'Esisteva giá un file output.d, proseguo.'
 			END IF
 		ELSE IF (mpi_myrank==0) THEN
 			OPEN (UNIT=7, FILE='output.d', STATUS='NEW')
@@ -57,12 +57,12 @@ PROGRAM main
 		delta_t=time2-time1
 		CALL MPI_REDUCE(delta_t,t_sum,1,MPI_REAL,MPI_SUM,0,MPI_COMM_WORLD,mpi_ierr)
 		IF (mpi_myrank==0) THEN
-			PRINT *, 
+			PRINT *, ""
 			PRINT '(A39,F10.1,A6)' , '< < < TEMPO EFFETTIVO CAMPIONAMENTO = ', t_sum, ' > > >'
-			IF (flag_output) WRITE (7, '(A39,F10.1,A6)'), &
+			IF (flag_output) WRITE (7, '(A39,F10.1,A6)') &
 			  '< < < TEMPO EFFETTIVO CAMPIONAMENTO = ', t_sum, ' > > >'
 			PRINT '(1X,A19,E12.5,A6)' , '< < < EFFICIENZA = ', 1./(t_sum*variance_efficiency), ' > > >'
-			IF (flag_output) WRITE (7, '(1X,A19,E12.5,A6)'), &
+			IF (flag_output) WRITE (7, '(1X,A19,E12.5,A6)') &
 			  '< < < EFFICIENZA = ', 1./(t_sum*variance_efficiency), ' > > >'
 		END IF
    CASE('q-e_gen')

@@ -24,9 +24,9 @@ MODULE variational_opt
 
 	SUBROUTINE inizializza_variational_opt()
 		USE dati_fisici
-		USE funzione_onda
+		!USE funzione_onda
 		USE walkers
-      USE variational_calculations
+      		USE variational_calculations
 		IMPLICIT NONE
 		INTEGER :: cont, i, j, ih
 		
@@ -256,7 +256,7 @@ MODULE variational_opt
 			num_par_var=num_par_var+3*N_part
 			num_coord_Rp=3*N_part
       ELSE
-         num_coord_Rp=0.d0
+         num_coord_Rp=0
 		END IF
 		
 		!!!!!!!
@@ -654,7 +654,7 @@ MODULE variational_opt
 
 		IF (mpi_myrank==0) THEN
 			PRINT * , 'VAR_OPT: il numero di parametri da ottimizzare é ', num_par_var
-			IF (flag_output) WRITE (7, *), 'VAR_OPT: il numero di parametri da ottimizzare é ', num_par_var
+			IF (flag_output) WRITE (7, *) 'VAR_OPT: il numero di parametri da ottimizzare é ', num_par_var
 		END IF
 		
 		CALL chiudi_dati_funzione_onda()
@@ -689,7 +689,7 @@ MODULE variational_opt
 			CALL stochastic_reconfiguration(parametri_var,num_par_var,.FALSE.,.TRUE.)
 		END SELECT
 		IF (mpi_myrank==0) THEN
-			WRITE (stringa, '(I4.4)'), num_par_var
+			WRITE (stringa, '(I4.4)') num_par_var
 			PRINT * , '    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # '
 			PRINT * , 'VAR_OPT: Ottimizzazione terminata.'
 			!PRINT * , 'Optimal parameters: '
@@ -697,12 +697,12 @@ MODULE variational_opt
 			PRINT '(11x,A9,F9.6,A6,F9.6)' , 'Energia: ', E_min(1), '  +-  ', E_min(2)
 			PRINT * , '    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # '
 			IF (flag_output) THEN
-				WRITE (7, *) , '    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # '
-				WRITE (7, *) , 'VAR_OPT: Ottimizzazione terminata.'
-				!WRITE (7, *) , 'Optimal parameters: '
-				!WRITE (7, '('//stringa//'(F9.3,1X))') , parametri_var
-				WRITE (7, '(11X,A9,F9.6,A6,F9.6)') , 'Energia: ', E_min(1), '  +-  ', E_min(2)
-				WRITE (7, *) , '    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # '
+				WRITE (7, *) '    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # '
+				WRITE (7, *) 'VAR_OPT: Ottimizzazione terminata.'
+				!WRITE (7, *) 'Optimal parameters: '
+				!WRITE (7, '('//stringa//'(F9.3,1X))') parametri_var
+				WRITE (7, '(11X,A9,F9.6,A6,F9.6)') 'Energia: ', E_min(1), '  +-  ', E_min(2)
+				WRITE (7, *) '    # # # # # # # # # # # # # # # # # # # # # # # # # # # # # # '
 			END IF
 		END IF
 		IF (stampa_dati_funzione_onda) THEN
@@ -770,11 +770,10 @@ MODULE variational_opt
 			CALL chiudi_VMC()
 		ELSE
 			cont_N_mc_increase=cont_N_mc_increase+1
-			IF (cont_N_mc_increase>5) STOP 'N_mc é diventato troppo grande &
-			  [ module_variational_opt.f90 > aumenta_precisione_energie ]'
+			IF (cont_N_mc_increase>5) STOP 'N_mc é diventato troppo grande[ module_variational_opt.f90 > aumenta_precisione_energie ]'
 			IF ((mpi_myrank==0) .AND. (verbose_mode)) THEN
 				PRINT * , 'VAR_OPT: aumento l accuratezza della simulazione ', id
-				IF (flag_output) WRITE (7, *), 'VAR_OPT: aumento l accuratezza della simulazione ', id
+				IF (flag_output) WRITE (7, *) 'VAR_OPT: aumento l accuratezza della simulazione ', id
 			END IF
 			CALL inizializza_VMC('opt'//id,CONTINUA=.TRUE.)
 			CALL setta_parametri(par,num)
@@ -842,8 +841,7 @@ MODULE variational_opt
 			CALL chiudi_variational_calculations()
 		ELSE
 			cont_N_mc_increase=cont_N_mc_increase+1
-			IF (cont_N_mc_increase>5) STOP 'N_mc é diventato troppo grande &
-			  [ module_variational_opt.f90 > aumenta_precisione_energie ]'
+			IF (cont_N_mc_increase>5) STOP 'N_mc é diventato troppo grand [ module_variational_opt.f90 > aumenta_precisione_energie ]'
 			CALL inizializza_VMC('opt'//id,CONTINUA=.TRUE.)
 			CALL setta_parametri(par_pt(1:num,0),num)
 			CALL prima_valutazione_funzione_onda()
@@ -874,7 +872,7 @@ MODULE variational_opt
 		CALL setta_parametri(par,num)
       IF (mpi_myrank==0) THEN
          PRINT *, "Cambiato L = ", L, "   [bohr]"
-         IF (flag_output) WRITE(UNIT=7, FMT=*), "Cambiato L = ", L, "   [bohr]"
+         IF (flag_output) WRITE(UNIT=7, FMT=*) "Cambiato L = ", L, "   [bohr]"
       END IF
 		CALL prima_valutazione_funzione_onda()
 		CALL valuta_step_mc(accettabile)
@@ -945,7 +943,7 @@ MODULE variational_opt
 		DO WHILE (flag_loop)
 			IF (mpi_myrank==0) THEN
 				PRINT * , 'VAR_OPT: ruoto la base per la ricerca del minimo'
-				IF (flag_output) WRITE (7, *), 'VAR_OPT: ruoto la base per la ricerca del minimo'
+				IF (flag_output) WRITE (7, *) 'VAR_OPT: ruoto la base per la ricerca del minimo'
 			END IF
 			CALL genera_matrice_rotazione_eulero(N,teta)
 			DO i = 1, N, 1
@@ -958,7 +956,7 @@ MODULE variational_opt
 				contatore=0
 				IF (mpi_myrank==0) THEN
 					PRINT * , 'VAR_OPT: Ruotando la base ho trovato un nuovo minimo'
-					IF (flag_output) WRITE (7, *), 'VAR_OPT: Ruotando la base ho trovato un nuovo minimo'
+					IF (flag_output) WRITE (7, *) 'VAR_OPT: Ruotando la base ho trovato un nuovo minimo'
 				END IF
 			ELSE
 				contatore=contatore+1
@@ -966,7 +964,7 @@ MODULE variational_opt
 			IF (contatore>N_max_rot) flag_loop=.FALSE.
 			IF (mpi_myrank==0) THEN
 				PRINT * , 'VAR_OPT: Ruotare la base é stato inutile'
-				IF (flag_output) WRITE (7, *), 'VAR_OPT: Ruotare la base é stato inutile'
+				IF (flag_output) WRITE (7, *) 'VAR_OPT: Ruotare la base é stato inutile'
 			END IF
 		END DO
 		
@@ -1005,13 +1003,13 @@ MODULE variational_opt
 					PRINT * , 'VAR_OPT: cerco il minimo lungo l asse ', i
 					PRINT "(8X,20(2X,F5.2))" , direzione
 					IF (flag_output) THEN
-						WRITE (7, *), 'VAR_OPT: cerco il minimo lungo l asse ', i
-						WRITE (7, "(8X,20(2X,F5.2))"), direzione
+						WRITE (7, *) 'VAR_OPT: cerco il minimo lungo l asse ', i
+						WRITE (7, "(8X,20(2X,F5.2))") direzione
 					END IF
 				END IF
 				CALL bracket_min_multidim_v2(N,p0,direzione,first_step,a,fa,ida,b,fb,idb,c,fc,idc)
 				CALL parabgold_search_multidim(N,p0,direzione,a,fa,ida,b,fb,idb,c,fc,idc)
-				!CALL SYSTEM ('export ID_TO_ERASE=opt00; find estimatori/ -name '*'$ID_TO_ERASE'*' -exec rm -f '{}' \; find posizioni/ -name '*'$ID_TO_ERASE'*' -exec rm -f '{}' \')
+				CALL SYSTEM ('export ID_TO_ERASE=opt00; find estimatori/ -name *$ID_TO_ERASE* -exec rm -f {} \\; find posizioni/ -name *$ID_TO_ERASE* -exec rm -f {} \\')
 				p0=p0+b*direzione
 				IF (stampa_dati_funzione_onda) THEN
 					CALL inizializza_dati_fisici()
@@ -1026,9 +1024,9 @@ MODULE variational_opt
 					  fb(1), ' +- ', fb(2)
 					PRINT * , '         usando il fattore b=', b
 					IF (flag_output) THEN
-						WRITE (7, *), 'VAR_OPT: Seguendo l asse ', i, ' ho trovato come nuovo minimo ', &
+						WRITE (7, *) 'VAR_OPT: Seguendo l asse ', i, ' ho trovato come nuovo minimo ', &
 						  fb(1), ' +- ', fb(2)
-						WRITE (7, *), '         usando il fattore b=', b
+						WRITE (7, *) '         usando il fattore b=', b
 					END IF
 				END IF
 			END DO
@@ -1039,9 +1037,9 @@ MODULE variational_opt
 				PRINT * , '                                                                     partendo da ', &
 				  fold(1), ' +- ', fold(2)
 				IF (flag_output) THEN
-					WRITE (7, *) , 'VAR_OPT: Alla fine di una routine su tutti gli assi ho trovato come nuovo minimo ', &
+					WRITE (7, *) 'VAR_OPT: Alla fine di una routine su tutti gli assi ho trovato come nuovo minimo ', &
 					  fnew(1), ' +- ', fnew(2)
-					WRITE (7, *) , '                                                                     partendo da ', &
+					WRITE (7, *) '                                                                     partendo da ', &
 					  fold(1), ' +- ', fold(2)
 				END IF
 			END IF
@@ -1087,18 +1085,17 @@ MODULE variational_opt
 		END DO
 		id='00'
 		CALL calcola_energie(id,pts(1:N,0:N),N,N,f0(1:2,0:N),accettabile)		
-		IF (.NOT. accettabile) STOP 'I parametri variazionali iniziali non sono accettabili &
-		  [ module_variational_opt.f90 > conj_grad ]'
+		IF (.NOT. accettabile) STOP 'I parametri variazionali iniziali non sono accettabili [ module_variational_opt.f90 > conj_grad ]'
 		DO i = 1, N, 1
 			grad(i)=f0(1,i)/step
 		END DO
 		
 		IF (mpi_myrank==0) THEN
 			PRINT * , 'VAR_OPT: Ho calcolato il primo gradiente. La direzione da seguire é '
-			IF (flag_output) WRITE (7, *), 'VAR_OPT: Ho calcolato il primo gradiente. La direzione da seguire é '
+			IF (flag_output) WRITE (7, *) 'VAR_OPT: Ho calcolato il primo gradiente. La direzione da seguire é '
 			DO i = 1, N, 1
 				PRINT * , i, ' - ', f0(1,i)/step, ' +- ', f0(2,i)/step
-				IF (flag_output) WRITE (7, *), i, ' - ', f0(1,i)/step, ' +- ', f0(2,i)/step
+				IF (flag_output) WRITE (7, *) i, ' - ', f0(1,i)/step, ' +- ', f0(2,i)/step
 			END DO
 		END IF
 		
@@ -1114,10 +1111,10 @@ MODULE variational_opt
 			END DO
 			IF (mpi_myrank==0) THEN
 				PRINT * , 'VAR_OPT: Ho migliorato la precisione del gradiente. La direzione da seguire é '
-				IF (flag_output) WRITE (7, *), 'VAR_OPT: Ho migliorato la precisione del gradiente. La direzione da seguire é '
+				IF (flag_output) WRITE (7, *) 'VAR_OPT: Ho migliorato la precisione del gradiente. La direzione da seguire é '
 				DO i = 1, N, 1
 					PRINT * , i, ' - ', f0(1,i)/step, ' +- ', f0(2,i)/step
-					WRITE (7, *), i, ' - ', f0(1,i)/step, ' +- ', f0(2,i)/step
+					WRITE (7, *) i, ' - ', f0(1,i)/step, ' +- ', f0(2,i)/step
 				END DO
 			END IF
 			migliora_gradiente=.FALSE.
@@ -1143,9 +1140,7 @@ MODULE variational_opt
 		CALL parabgold_search_multidim(N,partenza,direzione,a,fa,ida,b,fb,idb,c,fc,idc)
 		IF (mpi_myrank==0) THEN 
 			INQUIRE(FILE='posizioni/inizio-opt00_e_0000.pos',EXIST=flag_file)
-			IF (flag_file) CALL SYSTEM ("export ID_TO_ERASE=opt00; &
-			  find estimatori/ -name '*'$ID_TO_ERASE'*' -exec rm -f '{}' \; &
-			  find posizioni/ -name '*'$ID_TO_ERASE'*' -exec rm -f '{}' \")
+			IF (flag_file) CALL SYSTEM ('export ID_TO_ERASE=opt00; find estimatori/ -name *$ID_TO_ERASE* -exec rm -f {} \\; find posizioni/ -name *$ID_TO_ERASE* -exec rm -f {} \\')
 		END IF
 		p0=partenza+b*direzione
 
@@ -1182,10 +1177,10 @@ MODULE variational_opt
 				END DO
 				IF (mpi_myrank==0) THEN
 					PRINT * , 'VAR_OPT: Ho migliorato la precisione del gradiente. La direzione da seguire é '
-					IF (flag_output) WRITE (7, *), 'VAR_OPT: Ho migliorato la precisione del gradiente. La direzione da seguire é ' 
+					IF (flag_output) WRITE (7, *) 'VAR_OPT: Ho migliorato la precisione del gradiente. La direzione da seguire é ' 
 					DO i = 1, N, 1
 						PRINT * , i, ' - ', f0(1,i)/step, ' +- ', f0(2,i)/step
-						IF (flag_output) WRITE (7, *), i, ' - ', f0(1,i)/step, ' +- ', f0(2,i)/step
+						IF (flag_output) WRITE (7, *) i, ' - ', f0(1,i)/step, ' +- ', f0(2,i)/step
 					END DO
 				END IF
 				migliora_gradiente=.FALSE.
@@ -1198,10 +1193,10 @@ MODULE variational_opt
 			
 			IF (mpi_myrank==0) THEN
 				PRINT * , 'VAR_OPT: Ho calcolato il gradiente. La direzione da seguire é '
-				IF (flag_output) WRITE (7, *), 'VAR_OPT: Ho calcolato il gradiente. La direzione da seguire é '
+				IF (flag_output) WRITE (7, *) 'VAR_OPT: Ho calcolato il gradiente. La direzione da seguire é '
 				DO i = 1, N, 1
 					PRINT * , i, ' - ', f0(1,i)/step, ' +- ', f0(2,i)/step
-					IF (flag_output) WRITE (7, *), i, ' - ', f0(1,i)/step, ' +- ', f0(2,i)/step
+					IF (flag_output) WRITE (7, *) i, ' - ', f0(1,i)/step, ' +- ', f0(2,i)/step
 				END DO
 			END IF
 			g_old=g
@@ -1214,8 +1209,8 @@ MODULE variational_opt
 				PRINT * , 'VAR_OPT: ho calcolato la nuova direzione'
 				PRINT * , direzione
 				IF (flag_output) THEN
-					WRITE (7, *) , 'VAR_OPT: ho calcolato la nuova direzione'
-					WRITE (7, *) , direzione
+					WRITE (7, *) 'VAR_OPT: ho calcolato la nuova direzione'
+					WRITE (7, *) direzione
 				END IF
 			END IF
 			IF (.NOT. gradiente_nullo) THEN
@@ -1229,8 +1224,8 @@ MODULE variational_opt
 					PRINT * , 'VAR_OPT: il nuovo punto per il minimo provvisorio é '
 					PRINT * , p0
 					IF (flag_output) THEN
-						WRITE (7, *) , 'VAR_OPT: il nuovo punto per il minimo provvisorio é '
-						WRITE (7, *) , p0
+						WRITE (7, *) 'VAR_OPT: il nuovo punto per il minimo provvisorio é '
+						WRITE (7, *) p0
 					END IF
 				END IF
 				contatore=contatore+1
@@ -1242,7 +1237,7 @@ MODULE variational_opt
 		
 		IF (mpi_myrank==0) THEN
 			PRINT * , 'VAR_OPT: Conjugate Gradient - sono stati necessari ', contatore, ' passi'
-			IF (flag_output) WRITE (7, *), 'VAR_OPT: Conjugate Gradient - sono stati necessari ', contatore, ' passi'
+			IF (flag_output) WRITE (7, *) 'VAR_OPT: Conjugate Gradient - sono stati necessari ', contatore, ' passi'
 		END IF
 
 	END SUBROUTINE conj_grad
@@ -1294,7 +1289,7 @@ MODULE variational_opt
       WO_MIN_cont=0
 		AV_P=0.d0
 		contatore=0
-      WRITE (istring, '(I4.4)'), contatore
+      WRITE (istring, '(I4.4)') contatore
       id='SR'//istring
       minE_AV=(/ HUGE(0.d0), 0.d0 /)
 		
@@ -1306,7 +1301,7 @@ MODULE variational_opt
 			OPEN (UNIT=8, FILE='ottimizzazione/SR_energies.dat', STATUS='OLD')
 			IO=0
 			DO WHILE (IO>=0)
-				READ (8, *, IOSTAT = IO), dummy(1:3)
+				READ (8, *, IOSTAT = IO) dummy(1:3)
 				IF (IO>=0) dummy(4)=dummy(1) 
 			END DO
 			cont_step=dummy(4)
@@ -1328,7 +1323,7 @@ MODULE variational_opt
 				CALL inizializza_dati_mc()
 				CALL inizializza_walkers('opt_Rp')
 				CALL inizializza_dati_funzione_onda()
-				IF (mpi_myrank==0) WRITE (istring, '(I4.4)'), contatore
+				IF (mpi_myrank==0) WRITE (istring, '(I4.4)') contatore
 				IF (mpi_myrank==0) CALL stampa_file_Rp('reticolo/SR_Rp-'//istring//'.d')
             IF (((Jee_kind=='spl').OR.(Jee_kind=='spp')).AND.(opt_A_Jee.OR.opt_F_Jee)) THEN
                IF (mpi_myrank==0) THEN
@@ -1375,7 +1370,7 @@ MODULE variational_opt
 			CALL inizializza_dati_mc()
 			CALL inizializza_walkers('opt_Rp')
 			CALL inizializza_dati_funzione_onda()
-			IF (mpi_myrank==0) WRITE (istring, '(I4.4)'), contatore
+			IF (mpi_myrank==0) WRITE (istring, '(I4.4)') contatore
          IF (((Jee_kind=='spl').OR.(Jee_kind=='spp')).AND.(opt_A_Jee.OR.opt_F_Jee)) THEN
             IF (mpi_myrank==0) THEN
                CALL MSPL_print_on_file(SPL=Jsplee, DERIV=0, FILENAME='ottimizzazione/splines/Jsplee'//istring//'.d',&
@@ -1427,17 +1422,16 @@ MODULE variational_opt
          !IF (mpi_myrank==0) PRINT *, "> > > DISTANZA pp = ", DSQRT(DOT_PRODUCT(p0(1:3)-p0(4:6),p0(1:3)-p0(4:6)))
          
 			contatore=contatore+1
-         WRITE (istring, '(I4.4)'), contatore
+         WRITE (istring, '(I4.4)') contatore
          id='SR'//istring
 			CALL SR_campiona_wf_attuale(id,p0,N,energia,accettabile)
-         IF (mpi_myrank==0) WRITE (8, *), cont_step, energia(1:2)
+         IF (mpi_myrank==0) WRITE (8, *) cont_step, energia(1:2)
 			IF (mpi_myrank==0) CLOSE (8)
 			IF (mpi_myrank==0) OPEN (UNIT=8, FILE='ottimizzazione/SR_energies.dat', STATUS='OLD', POSITION='APPEND')
-			IF (mpi_myrank==0) WRITE (9, *), p0
+			IF (mpi_myrank==0) WRITE (9, *) p0
 			IF (mpi_myrank==0) CLOSE (9)
 			IF (mpi_myrank==0) OPEN (UNIT=9, FILE='ottimizzazione/SR_var_parameters.dat', STATUS='OLD', POSITION='APPEND')
-			IF ((.NOT. accettabile).AND.(mpi_myrank==0)) STOP 'Campionamento non accettabile &
-			  [ module_variational_opt.f90 > stochastic_reconfiguration ]'
+			IF ((.NOT. accettabile).AND.(mpi_myrank==0)) STOP 'Campionamento non accettabile [ module_variational_opt.f90 > stochastic_reconfiguration ]'
 
          !salvo le ultime 5 energie
 			DO i = 5, 2, -1
@@ -1450,7 +1444,7 @@ MODULE variational_opt
 				p0_minimo(1:N)=p0(1:N)
 				flag_trovato_minimo=.TRUE.
 				IF (mpi_myrank==0) PRINT * , 'VAR_OPT: Trovato un nuovo minimo assoluto.'
-				IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: Trovato un nuovo minimo assoluto.'
+				IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *) 'VAR_OPT: Trovato un nuovo minimo assoluto.'
 				IF (stampa_dati_funzione_onda) THEN
                CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
 					CALL inizializza_dati_fisici()
@@ -1473,16 +1467,16 @@ MODULE variational_opt
          !Stampo il numero effettivo di parametri variazionali
          IF (num_par_var_eff/=num_par_var) THEN
             IF (mpi_myrank==0) PRINT * , 'VAR_OPT: Numero parametri variazionali effettivi: ', num_par_var_eff
-            IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), &
+            IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *) &
                'VAR_OPT: Numero parametri variazionali effettivi: ', num_par_var_eff
          END IF
 
          !regolo il beta
          IF (SR_adaptative_beta.AND.(AV_cont>1)) THEN
-            f_SR_beta=f_SR_beta*(0.9d0+MIN(REAL(AV_cont),5.d0)*0.1d0)
+            f_SR_beta=f_SR_beta*(0.9d0+MIN(DBLE(AV_cont),5.d0)*0.1d0)
             IF (mpi_myrank==0) PRINT '(1X,A33,I2.2,A1)', "VAR_OPT: [BETA] aumento beta del ",MIN(AV_cont-1,5)*10,"%"
             IF ((flag_output).AND.(mpi_myrank==0)) THEN
-               WRITE (7,'(1X,A33,I2.2,A1)'), "VAR_OPT: [BETA] aumento beta del ",MIN(AV_cont-1,5)*5,"%"
+               WRITE (7,'(1X,A33,I2.2,A1)') "VAR_OPT: [BETA] aumento beta del ",MIN(AV_cont-1,5)*5,"%"
             END IF
          END IF
 
@@ -1496,6 +1490,12 @@ MODULE variational_opt
          !   CALL lin_molt_lagr(num_par_var_eff,num_par_var_eff-num_coord_Rp,num_coord_Rp,dp)
          CASE("LagrDynam")
             CALL lagrangian_dynamic_forces(num_par_var_eff,num_coord_L,num_coord_Rp,dp)
+            IF (mpi_myrank==0 .and. opt_rp) THEN
+                WRITE (istring, '(I4.4)') contatore - 1
+                CALL stampa_file_vettores3D('reticolo/LagrDyn_Frp-'//istring//'.d', &
+                RESHAPE(dp(num_par_var-num_coord_rp+1 : num_par_var),(/ 3, num_coord_rp/3 /)), num_coord_rp/3)
+                WRITE (istring, '(I4.4)') contatore
+            END IF
          !CASE("fast_SR__")
          !   !Determino il beta ottimale usando il principio variazionale stimando la E successiva tramite un'espansione
          !   !IF (mpi_myrank==0) OPEN(UNIT=666,FILE="ottimizzazione/SR_beta."//istring,STATUS='UNKNOWN',POSITION='ASIS')
@@ -1522,7 +1522,7 @@ MODULE variational_opt
          !                (.NOT.SR_change_bound) ) .AND. (DABS(DOT_PRODUCT(dpnext,Oi))<SR_maxdeltaPsi) ) THEN
          !                  Hnext=( H+DOT_PRODUCT(dpnext,HOi) )/( 1.d0+DOT_PRODUCT(dpnext,Oi) )
          !                  SRtarget=Hnext
-         !                  !WRITE(UNIT=666, FMT=*), var_change,f_SR_beta,SVD_MIN,lambda,Hnext,SRtarget
+         !                  !WRITE(UNIT=666, FMT=*) var_change,f_SR_beta,SVD_MIN,lambda,Hnext,SRtarget
          !                  IF (SRtarget<SRtargetmin) THEN
          !                     SRtargetmin=SRtarget
          !                     dp=dpnext
@@ -1596,23 +1596,23 @@ MODULE variational_opt
          !      IF (mpi_myrank==0) THEN
          !         PRINT *, "VAR_OPT: [fSR] usato fSR per determinare i parametri SR ottimali. Numero configurazioni:", &
          !          INT2(SRopt_count)
-         !         IF (flag_output) WRITE(UNIT=7, FMT=*), &
+         !         IF (flag_output) WRITE(UNIT=7, FMT=*) &
          !            "VAR_OPT: [fSR] usato fSR per determinare i parametri SR ottimali. Numero configurazioni:", &
          !            INT2(SRopt_count)
          !         PRINT *, "VAR_OPT: [BETA] regolato beta tramite metodo di proiezione: ", REAL(f_SR_beta*SR_beta,4)
-         !         IF (flag_output) WRITE(UNIT=7, FMT=*), &
+         !         IF (flag_output) WRITE(UNIT=7, FMT=*) &
          !            "VAR_OPT: [BETA] regolato beta tramite metodo di proiezione: ", REAL(f_SR_beta*SR_beta,4)
          !         PRINT *, "VAR_OPT: [SVD_MIN] regolato SVD_MIN tramite metodo di proiezione: ", REAL(SVD_MIN,4)
-         !         IF (flag_output) WRITE(UNIT=7, FMT=*), &
+         !         IF (flag_output) WRITE(UNIT=7, FMT=*) &
          !            "VAR_OPT: [SVD_MIN] regolato SVD_MIN tramite metodo di proiezione: ", REAL(SVD_MIN,4)
          !         PRINT *, "VAR_OPT: [lambda3] regolato lambda3 tramite metodo di proiezione: ", REAL(lambda3,4)
-         !         IF (flag_output) WRITE(UNIT=7, FMT=*), &
+         !         IF (flag_output) WRITE(UNIT=7, FMT=*) &
          !            "VAR_OPT: [lambda3] regolato lambda3 tramite metodo di proiezione: ", REAL(lambda3,4)
          !      END IF
          !   ELSE
          !      IF (mpi_myrank==0) PRINT *, "VAR_OPT: [fSR] nessuna configurazione ottimale trovata,",&
          !        " quindi uso i parametri dati in input"
-         !      IF (flag_output) WRITE(UNIT=7, FMT=*), &
+         !      IF (flag_output) WRITE(UNIT=7, FMT=*) &
          !         "VAR_OPT: [fSR] nessuna configurazione ottimale trovata, quindi uso i parametri dati in input"
          !      IF (mpi_myrank==0) dp=dp
          !      CALL MPI_BCAST(dp,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
@@ -1629,8 +1629,8 @@ MODULE variational_opt
          CASE DEFAULT
             IF (mpi_myrank==0) PRINT *, "Errore: SR_kind non accettabile"
             IF (mpi_myrank==0) PRINT *, "[module_variational_opt.f90 > stochastic_reconfiguration]"
-            IF (flag_output) WRITE(UNIT=7, FMT=*), "Errore: SR_kind non accettabile"
-            IF (flag_output) WRITE(UNIT=7, FMT=*),"[module_variational_opt.f90 > stochastic_reconfiguration]"
+            IF (flag_output) WRITE(UNIT=7, FMT=*) "Errore: SR_kind non accettabile"
+            IF (flag_output) WRITE(UNIT=7, FMT=*) "[module_variational_opt.f90 > stochastic_reconfiguration]"
             CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
             STOP
          END SELECT
@@ -1661,7 +1661,7 @@ MODULE variational_opt
 			   		loop_stop(1)=.TRUE.
 			   	END IF
 			   	IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [PS] cambio lambda di', flambda
-			   	IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [PS] cambio lambda di', flambda
+			   	IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *) 'VAR_OPT: [PS] cambio lambda di', flambda
 			   END IF
 			   IF ((SR_lambda_Rp).AND.(contatore>2).AND.(num_coord_Rp>0)) THEN       !parametri Rp
 			   	flambda_Rp=(1.d0+0.1d0*DOT_PRODUCT(vec_app(N-num_coord_Rp+1:N),vec_app_old(N-num_coord_Rp+1:N)))
@@ -1673,7 +1673,7 @@ MODULE variational_opt
 			   		loop_stop(1)=.TRUE.
 			   	END IF
 			   	IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [PS] cambio lambda_Rp di', flambda_Rp
-			   	IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [PS] cambio lambda_Rp di', flambda_Rp
+			   	IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *) 'VAR_OPT: [PS] cambio lambda_Rp di', flambda_Rp
 			   END IF
 			   vec_app_old=vec_app
 			   
@@ -1690,7 +1690,7 @@ MODULE variational_opt
 			   		loop_stop(2)=.TRUE.
 			   	END IF
 			   	IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [DIST3] cambio lambda di', flambda
-			   	IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [DIST3] cambio lambda di', flambda
+			   	IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *) 'VAR_OPT: [DIST3] cambio lambda di', flambda
 			   END IF
 			   IF ((SR_lambda_Rp).AND.(contatore>3).AND.(num_coord_Rp>0)) THEN       !parametri Rp
 			   	dist_poss=SUM(old_step_Rp(1:3))
@@ -1704,7 +1704,7 @@ MODULE variational_opt
 			   		loop_stop(2)=.TRUE.
 			   	END IF
 			   	IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [DIST3] cambio lambda_Rp di', flambda_Rp
-			   	IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [DIST3] cambio lambda_Rp di', flambda_Rp
+			   	IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *) 'VAR_OPT: [DIST3] cambio lambda_Rp di', flambda_Rp
 			   END IF
 			   
 			   IF ((SR_lambda).AND.(contatore>5).AND.(N-num_coord_Rp>0)) THEN          !parametri variazionali wf
@@ -1719,7 +1719,7 @@ MODULE variational_opt
 			   		loop_stop(3)=.TRUE.
 			   	END IF
 			   	IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [DIST5] cambio lambda di', flambda
-			   	IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [DIST5] cambio lambda di', flambda
+			   	IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *) 'VAR_OPT: [DIST5] cambio lambda di', flambda
 			   END IF
 			   IF ((SR_lambda_Rp).AND.(contatore>5).AND.(num_coord_Rp>0)) THEN       !parametri Rp
 			   	dist_poss_5=SUM(old_step_Rp(1:5))
@@ -1733,7 +1733,7 @@ MODULE variational_opt
 			   		loop_stop(3)=.TRUE.
 			   	END IF
 			   	IF (mpi_myrank==0) PRINT * , 'VAR_OPT: [DIST5] cambio lambda_Rp di', flambda_Rp
-			   	IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *), 'VAR_OPT: [DIST5] cambio lambda_Rp di', flambda_Rp
+			   	IF ((flag_output).AND.(mpi_myrank==0)) WRITE (7, *) 'VAR_OPT: [DIST5] cambio lambda_Rp di', flambda_Rp
 			   END IF
 
             !limito lambda fra min_lambda e max_lambda
@@ -1756,7 +1756,7 @@ MODULE variational_opt
                IF (mpi_myrank==0) THEN
                   PRINT *, &
                      "VAR_OPT: [change_bound] Cambio dei parametri sarebbe troppo grande, lo riduco di ", lambda2
-                  IF (flag_output) WRITE(UNIT=7, FMT=*), &
+                  IF (flag_output) WRITE(UNIT=7, FMT=*) &
                      "VAR_OPT: [change_bound] Cambio dei parametri sarebbe troppo grande, lo riduco di ", lambda2
                END IF
             END IF
@@ -1770,10 +1770,12 @@ MODULE variational_opt
                IF (mpi_myrank==0) THEN
                   PRINT *, &
                      "VAR_OPT: [change_bound] Cambio dei parametri sarebbe troppo piccolo, lo aumento di ", lambda2
-                  IF (flag_output) WRITE(UNIT=7, FMT=*), &
+                  IF (flag_output) WRITE(UNIT=7, FMT=*) &
                      "VAR_OPT: [change_bound] Cambio dei parametri sarebbe troppo piccolo, lo aumento di ", lambda2
                END IF
             END IF
+         END IF
+         IF (SR_change_bound_Rp) THEN
             !setto il lambda_Rp in modo che il cambio delle posizioni protoniche non sia maggiore di SR_max_change%
             IF ( lambda_Rp*lambda2_Rp > DSQRT(((0.01d0*SR_max_change)**2)*&
                  DOT_PRODUCT(p0(N-num_coord_Rp+1:N),p0(N-num_coord_Rp+1:N))/&
@@ -1784,7 +1786,7 @@ MODULE variational_opt
                IF (mpi_myrank==0) THEN
                   PRINT *, &
                      "VAR_OPT: [change_bound] Cambio delle posizioni protoniche troppo grande, lo riduco di ", lambda2_Rp
-                  IF (flag_output) WRITE(UNIT=7, FMT=*), &
+                  IF (flag_output) WRITE(UNIT=7, FMT=*) &
                      "VAR_OPT: [change_bound] Cambio delle posizioni protoniche troppo grande, lo riduco di ", lambda2_Rp
                END IF
             END IF
@@ -1798,7 +1800,7 @@ MODULE variational_opt
                IF (mpi_myrank==0) THEN
                   PRINT *, &
                      "VAR_OPT: [change_bound] Cambio delle posizioni protoniche troppo piccolo, lo aumento di ", lambda2_Rp
-                  IF (flag_output) WRITE(UNIT=7, FMT=*), &
+                  IF (flag_output) WRITE(UNIT=7, FMT=*) &
                      "VAR_OPT: [change_bound] Cambio delle posizioni protoniche troppo piccolo, lo aumento di ", lambda2_Rp
                END IF
             END IF
@@ -1827,24 +1829,20 @@ MODULE variational_opt
          !Stampo alcune informazioni riguardo SR
          IF (mpi_myrank==0) THEN
             PRINT '(5X,A92)', "- - - - - - - - - - - - - - - - - - - - - -"//&
-               " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
-            PRINT '(5X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X,'//&
-               'A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1)',&
+              " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
+            PRINT '(5X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X, A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1)', &
               "|","beta","|","SVD_MIN","|","lambda3","|","lambda2","|","lambda","|","lambda2_Rp","|","lambda_Rp","|"
-            PRINT '(5X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1,'//&
-               '1X,E10.4,1X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1)', &
+            PRINT '(5X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1, 1X,E10.4,1X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1)', &
                "|",f_SR_beta*SR_beta,"|",SVD_MIN,"|",lambda3,"|",lambda2,"|",lambda,"|",lambda2_Rp,"|",lambda_Rp,"|"
             PRINT '(5X,A92)', "- - - - - - - - - - - - - - - - - - - - - -"//&
                " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
-            WRITE(7, '(5X,A92)'), "- - - - - - - - - - - - - - - - - - - - - - -"//&
+            WRITE(7, '(5X,A92)') "- - - - - - - - - - - - - - - - - - - - - - -"//&
                " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
-            WRITE(7, '(5X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1,'//&
-               '1X,A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1)'), &
+            WRITE(7, '(5X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1, 1X,A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1,1X,A10,1X,A1)') &
               "|","beta","|","SVD_MIN","|","lambda3","|","lambda2","|","lambda","|","lambda2_Rp","|","lambda_Rp","|"
-            WRITE(7, '(5X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1,'//&
-               '1X,E10.4,1X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1)'),&
+            WRITE(7, '(5X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1, 1X,E10.4,1X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1,1X,E10.4,1X,A1)') &
                "|",f_SR_beta*SR_beta,"|",SVD_MIN,"|",lambda3,"|",lambda2,"|",lambda,"|",lambda2_Rp,"|",lambda_Rp,"|"
-            WRITE(7, '(5X,A92)'), "- - - - - - - - - - - - - - - - - - - - - - -"//&
+            WRITE(7, '(5X,A92)') "- - - - - - - - - - - - - - - - - - - - - - -"//&
                " - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"
          END IF
 
@@ -1852,13 +1850,13 @@ MODULE variational_opt
          IF (mpi_myrank==0) THEN
             PRINT '(14X,A38,F5.1,A9)', "> > >   VAR_OPT: Cambio dei parametri ",&
                DSQRT(DOT_PRODUCT(dp,dp)/DOT_PRODUCT(p0,p0))*100.d0,"%   < < <"
-            IF (flag_output) WRITE(UNIT=7, FMT='(14X,A38,F5.1,A9)'), "> > >   VAR_OPT: Cambio dei parametri ",&
+            IF (flag_output) WRITE(UNIT=7, FMT='(14X,A38,F5.1,A9)') "> > >   VAR_OPT: Cambio dei parametri ",&
                DSQRT(DOT_PRODUCT(dp,dp)/DOT_PRODUCT(p0,p0))*100.d0,"%   < < <"
             IF (N-num_coord_Rp>0) THEN
                PRINT '(14X,A38,F5.1,A9)', "> > >          Parametri variazionali ",&
                   DSQRT(DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp))/&
                   DOT_PRODUCT(p0(1:N-num_coord_Rp),p0(1:N-num_coord_Rp)))*100.d0,"%   < < <"
-               IF (flag_output) WRITE(UNIT=7, FMT='(14X,A38,F5.1,A9)'), &
+               IF (flag_output) WRITE(UNIT=7, FMT='(14X,A38,F5.1,A9)') &
                   "> > >          Parametri variazionali ",&
                   DSQRT(DOT_PRODUCT(dp(1:N-num_coord_Rp),dp(1:N-num_coord_Rp))/&
                   DOT_PRODUCT(p0(1:N-num_coord_Rp),p0(1:N-num_coord_Rp)))*100.d0,"%   < < <"
@@ -1867,7 +1865,7 @@ MODULE variational_opt
                PRINT '(14X,A38,F5.1,A9)', "> > >            Posizioni protoniche ",&
                   DSQRT(DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N))/&
                   DOT_PRODUCT(p0(N-num_coord_Rp+1:N),p0(N-num_coord_Rp+1:N)))*100.d0,"%   < < <"
-               IF (flag_output) WRITE(UNIT=7, FMT='(14X,A38,F5.1,A9)'), &
+               IF (flag_output) WRITE(UNIT=7, FMT='(14X,A38,F5.1,A9)') &
                   "> > >            Posizioni protoniche ",&
                   DSQRT(DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N))/&
                   DOT_PRODUCT(p0(N-num_coord_Rp+1:N),p0(N-num_coord_Rp+1:N)))*100.d0,"%   < < <"
@@ -1881,15 +1879,15 @@ MODULE variational_opt
          ELSE
             WO_MIN_cont=WO_MIN_cont+1
          END IF
-         IF (WO_MIN_cont>SR_num_max_WO_MIN) flag_loop=.FALSE.
+         IF (WO_MIN_cont>SR_num_max_WO_MIN .AND. SR_num_max_WO_MIN>=0) flag_loop=.FALSE.
          IF (mpi_myrank==0) THEN
             IF (WO_MIN_cont<=SR_num_max_WO_MIN) THEN
                PRINT *, "VAR_OPT: [LOOP] WO_MIN_count = ", INT2(WO_MIN_cont)
-               WRITE(UNIT=7, FMT=*), "VAR_OPT: [LOOP] WO_MIN_count = ", INT2(WO_MIN_cont)
+               WRITE(UNIT=7, FMT=*) "VAR_OPT: [LOOP] WO_MIN_count = ", INT2(WO_MIN_cont)
             END IF
             IF (WO_MIN_cont>SR_num_max_WO_MIN) THEN
                PRINT *, "VAR_OPT: [LOOP] Raggiunto il limite di SR-steps senza nuovo minimo. FINE SR. "
-               WRITE(UNIT=7, FMT=*), "VAR_OPT: [LOOP] Raggiunto il limite di SR-steps senza nuovo minimo. FINE SR. "
+               WRITE(UNIT=7, FMT=*) "VAR_OPT: [LOOP] Raggiunto il limite di SR-steps senza nuovo minimo. FINE SR. "
             END IF
          END IF
 
@@ -1903,7 +1901,11 @@ MODULE variational_opt
             END IF
 
             !aggiorno i parametri variazionali
-				p0=p0+dp
+            p0=p0+dp
+
+            IF ( opt_rp ) THEN
+                call costrizione_rp(p0(num_par_var-num_coord_rp+1 : num_par_var))
+            END IF
 
             !Se L e' stato cambiato, faccio in modo che il volume rimanga invariato
             IF (opt_L) THEN
@@ -1931,7 +1933,7 @@ MODULE variational_opt
                   AV_cont=1
                   WO_MIN_cont=0
                   IF (mpi_myrank==0) PRINT *, "VAR_OPT: [AV] Nuovo minimo assoluto, resetto l'AVErage."
-                  IF (flag_output.AND.(mpi_myrank==0)) WRITE(UNIT=7, FMT=*), &
+                  IF (flag_output.AND.(mpi_myrank==0)) WRITE(UNIT=7, FMT=*) &
                      "VAR_OPT: [AV] Nuovo minimo assoluto, resetto l'AVErage."
 
                !altrimenti, se l'energia e' rimasta la stessa, accumulo i valori in AV_P
@@ -1942,7 +1944,7 @@ MODULE variational_opt
                ELSE
                   IF (mpi_myrank==0) THEN
                      PRINT *,"VAR_OPT: [AV] Energia troppo alta, non la considero per l'AVerage"
-                     WRITE (7, *), "VAR_OPT: [AV] Energia troppo alta, non considero la configurazione per l'AVerage"
+                     WRITE (7, *) "VAR_OPT: [AV] Energia troppo alta, non considero la configurazione per l'AVerage"
                   END IF
                END IF
 				END IF
@@ -1964,7 +1966,7 @@ MODULE variational_opt
 			   	CALL inizializza_dati_funzione_onda()
 			   	CALL setta_parametri(p0,N)
 			   	IF (mpi_myrank==0) CALL stampa_file_dati_funzione_onda('ottimizzazione/SR_wf.d')
-			   	IF (mpi_myrank==0) WRITE (istring, '(I4.4)'), contatore
+			   	IF (mpi_myrank==0) WRITE (istring, '(I4.4)') contatore
 			   	IF ((mpi_myrank==0).AND.(opt_Rp)) CALL stampa_file_Rp('reticolo/SR_Rp-'//istring//'.d')
                IF (((Jee_kind=='spl').OR.(Jee_kind=='spp')).AND.(opt_A_Jee.OR.opt_F_Jee)) THEN
                   IF (mpi_myrank==0) THEN
@@ -2009,8 +2011,8 @@ MODULE variational_opt
 			   	IF (mpi_myrank==0) PRINT *, 'VAR_OPT: [AV] salvato file AV_wf.d, considerando gli ultimi ', INT2(AV_cont), 'punti.'
                IF (mpi_myrank==0) PRINT *, '          --  minE_AV=',minE_AV(1), "+-", minE_AV(2)
 			   	IF ((flag_output).AND.(mpi_myrank==0)) THEN
-			   		WRITE (7, *), 'VAR_OPT: [AV] salvato file AV_wf.d, considerando gli ultimi ', INT2(AV_cont), 'punti.'
-                  WRITE (7, *), '          --  minE_AV=',minE_AV(1), "+-", minE_AV(2)
+			   		WRITE (7, *) 'VAR_OPT: [AV] salvato file AV_wf.d, considerando gli ultimi ', INT2(AV_cont), 'punti.'
+                  			WRITE (7, *) '          --  minE_AV=',minE_AV(1), "+-", minE_AV(2)
 			   	END IF
 			   	IF ( opt_Rp ) THEN
 			   		IF (mpi_myrank==0) CALL stampa_file_Rp('reticolo/AV_Rp.d')
@@ -2034,7 +2036,9 @@ MODULE variational_opt
 			   END IF
 
          END IF !(se flag_loop==T)
-			
+
+			IF (SR_num_max_WO_MIN<0) flag_loop=.FALSE.			
+
 			CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
 		END DO
 		
@@ -2171,7 +2175,7 @@ MODULE variational_opt
    !      PRINT *, "VAR_OPT: usato lo sviluppo al secondo ordine della funzione onda. Cambio in dp=",&
    !         DSQRT(DOT_PRODUCT(dp-dp0,dp-dp0))/DSQRT(DOT_PRODUCT(dp0,dp0))
 	!		IF (flag_output) THEN
-	!		   WRITE (7, *), "VAR_OPT: usato lo sviluppo al secondo ordine della funzione onda. Cambio in dp=",&
+	!		   WRITE (7, *) "VAR_OPT: usato lo sviluppo al secondo ordine della funzione onda. Cambio in dp=",&
    !            DSQRT(DOT_PRODUCT(dp-dp0,dp-dp0))/DSQRT(DOT_PRODUCT(dp0,dp0))
    !      END IF
    !   END IF
@@ -2212,14 +2216,13 @@ MODULE variational_opt
 		DO WHILE ((DABS(fa(1)-fb(1))<0.25d0*liv_precisione))
 			IF (mpi_myrank==0) THEN
 				PRINT * , 'VAR_OPT: bracket - first step era tropo piccolo, l ho raddoppiato'
-				IF (flag_output) WRITE (7, *), 'VAR_OPT: bracket - first step era tropo piccolo, l ho raddoppiato'
+				IF (flag_output) WRITE (7, *) 'VAR_OPT: bracket - first step era tropo piccolo, l ho raddoppiato'
 			END IF
 			b=b+first_step
 			rb=r0+b*dir
 			CALL controlla_punto(rb)
 			CALL calcola_energia(idb,rb,N,fb(1:2),accettabile)
-			IF (.NOT. accettabile) STOP 'Problema accettabilitá-risoluzione 1 &
-			  [ module_variational_opt.f90 > bracket_min_multidim ]'
+			IF (.NOT. accettabile) STOP 'Problema accettabilitá-risoluzione 1[ module_variational_opt.f90 > bracket_min_multidim ]'
 		END DO
 		flag_too_accurate=.FALSE.
 		IF (DABS(fa(1)-fb(1))<liv_precisione) flag_too_accurate=.TRUE.
@@ -2263,14 +2266,13 @@ MODULE variational_opt
 			DO WHILE (DABS(fa(1)-fb(1))<0.5d0*liv_precisione)
 				IF (mpi_myrank==0) THEN
 					PRINT * , 'VAR_OPT: bracket - first step era tropo piccolo, l ho raddoppiato'
-					IF (flag_output) WRITE (7, *), 'VAR_OPT: bracket - first step era tropo piccolo, l ho raddoppiato'
+					IF (flag_output) WRITE (7, *) 'VAR_OPT: bracket - first step era tropo piccolo, l ho raddoppiato'
 				END IF
 				a=a-first_step
 				ra=r0+a*dir
 				CALL controlla_punto(ra)
 				CALL calcola_energia(ida,ra,N,fa(1:2),accettabile)
-				IF (.NOT. accettabile) STOP 'Problema accettabilitá-risoluzione 2 &
-				  [ module_variational_opt.f90 > bracket_min_multidim ]'
+				IF (.NOT. accettabile) STOP 'Problema accettabilitá-risoluzione 2[ module_variational_opt.f90 > bracket_min_multidim ]'
 			END DO
 			flag_too_accurate=.FALSE.
 			IF (DABS(fa(1)-fb(1))<liv_precisione) flag_too_accurate=.TRUE.
@@ -2346,15 +2348,14 @@ MODULE variational_opt
 			DO WHILE (DABS(fb(1)-fc(1))<0.25d0*liv_precisione)
 				IF (mpi_myrank==0) THEN
 					PRINT * , 'VAR_OPT: bracket - first step era tropo piccolo, l ho raddoppiato'
-					IF (flag_output) WRITE (7, *), 'VAR_OPT: bracket - first step era tropo piccolo, l ho raddoppiato'
+					IF (flag_output) WRITE (7, *) 'VAR_OPT: bracket - first step era tropo piccolo, l ho raddoppiato'
 				END IF
 				!first_step=2.d0*first_step
 				c=c+first_step
 				rc=r0+c*dir
 				CALL controlla_punto(rc)
 				CALL calcola_energia(idc,rc,N,fc(1:2),accettabile)
-				IF (.NOT. accettabile) STOP 'Problema accettabilitá-risoluzione 3 &
-				  [ module_variational_opt.f90 > bracket_min_multidim ]'
+				IF (.NOT. accettabile) STOP 'Problema accettabilitá-risoluzione 3 [ module_variational_opt.f90 > bracket_min_multidim ]'
 			END DO
 			flag_too_accurate=.FALSE.
 			IF (DABS(fb(1)-fc(1))<liv_precisione) flag_too_accurate=.TRUE.
@@ -2414,9 +2415,7 @@ MODULE variational_opt
 		IF (mpi_myrank==0) THEN
 			DO num_val_en = 1, 10, 1                    !elimino i dati ormai inutili
 				id='b'//CHAR(MOD(num_val_en,10)+48)
-				IF ((id/=ida) .AND. (id/=idb) .AND. (id/=idc)) CALL SYSTEM ("export ID_TO_ERASE=opt'//id//'; &
-				  find estimatori/ -name '*'$ID_TO_ERASE'*' -exec rm -f '{}' \; &
-				  find posizioni/ -name '*'$ID_TO_ERASE'*' -exec rm -f '{}' \")
+				IF ((id/=ida) .AND. (id/=idb) .AND. (id/=idc)) CALL SYSTEM ('export ID_TO_ERASE=opt'//id//'; find estimatori/ -name *$ID_TO_ERASE* -exec rm -f {} \\; find posizioni/ -name *$ID_TO_ERASE* -exec rm -f {} \\')
 			END DO
 		END IF
 
@@ -2425,9 +2424,9 @@ MODULE variational_opt
 			PRINT * , '         punti:   ', a, b ,c
 			PRINT * , '         energie: ', fa(1), fb(1), fc(1)
 			IF (flag_output) THEN
-				WRITE (7, *), 'VAR_OPT: Ho eseguito il bracket con ', INT(contatore), ' passi.',' I tre punti sono '
-				WRITE (7, *), '         punti:   ', a, b ,c
-				WRITE (7, *), '         energie: ', fa(1), fb(1), fc(1)
+				WRITE (7, *) 'VAR_OPT: Ho eseguito il bracket con ', INT(contatore), ' passi.',' I tre punti sono '
+				WRITE (7, *) '         punti:   ', a, b ,c
+				WRITE (7, *) '         energie: ', fa(1), fb(1), fc(1)
 			END IF
 		END IF
 				
@@ -2476,7 +2475,7 @@ MODULE variational_opt
 		DO WHILE ((DABS(fa(1)-fb(1))<0.25d0*liv_precisione).AND.(.NOT. flag_border))
 			IF (mpi_myrank==0) THEN
 				PRINT * , 'VAR_OPT: bracket - first step era tropo piccolo, l ho raddoppiato'
-				IF (flag_output) WRITE (7, *), 'VAR_OPT: bracket - first step era tropo piccolo, l ho raddoppiato'
+				IF (flag_output) WRITE (7, *) 'VAR_OPT: bracket - first step era tropo piccolo, l ho raddoppiato'
 			END IF
 			b=b+first_step
 			rb=r0+b*dir
@@ -2486,8 +2485,7 @@ MODULE variational_opt
 			IF (b_app/=b) flag_border=.TRUE.
 			rb=r0+b*dir
 			CALL calcola_energia(idb,rb,N,fb(1:2),accettabile)
-			IF (.NOT. accettabile) STOP 'Problema accettabilitá-risoluzione 1 &
-			  [ module_variational_opt.f90 > bracket_min_multidim ]'
+			IF (.NOT. accettabile) STOP 'Problema accettabilitá-risoluzione 1[ module_variational_opt.f90 > bracket_min_multidim ]'
 		END DO
 		flag_too_accurate=.FALSE.
 		IF (DABS(fa(1)-fb(1))<liv_precisione) flag_too_accurate=.TRUE.
@@ -2544,7 +2542,7 @@ MODULE variational_opt
 			DO WHILE ((DABS(fa(1)-fb(1))<0.5d0*liv_precisione) .AND. (.NOT. flag_border))
 				IF (mpi_myrank==0) THEN
 					PRINT * , 'VAR_OPT: bracket - first step era tropo piccolo, l ho raddoppiato'
-					IF (flag_output) WRITE (7, *), 'VAR_OPT: bracket - first step era tropo piccolo, l ho raddoppiato'
+					IF (flag_output) WRITE (7, *) 'VAR_OPT: bracket - first step era tropo piccolo, l ho raddoppiato'
 				END IF
 				!first_step=2.d0*first_step
 				a=a-first_step
@@ -2555,8 +2553,7 @@ MODULE variational_opt
 				IF (b_app/=a) flag_border=.TRUE.
 				ra=r0+a*dir
 				CALL calcola_energia(ida,ra,N,fa(1:2),accettabile)
-				IF (.NOT. accettabile) STOP 'Problema accettabilitá-risoluzione 2 &
-				  [ module_variational_opt.f90 > bracket_min_multidim ]'
+				IF (.NOT. accettabile) STOP 'Problema accettabilitá-risoluzione 2[ module_variational_opt.f90 > bracket_min_multidim ]'
 			END DO
 			flag_too_accurate=.FALSE.
 			IF (DABS(fa(1)-fb(1))<liv_precisione) flag_too_accurate=.TRUE.
@@ -2664,7 +2661,7 @@ MODULE variational_opt
 			DO WHILE ((DABS(fb(1)-fc(1))<0.25d0*liv_precisione).AND.(.NOT. flag_border))
 				IF (mpi_myrank==0) THEN
 					PRINT * , 'VAR_OPT: bracket - first step era tropo piccolo, l ho raddoppiato'
-					IF (flag_output) WRITE (7, *), 'VAR_OPT: bracket - first step era tropo piccolo, l ho raddoppiato'
+					IF (flag_output) WRITE (7, *) 'VAR_OPT: bracket - first step era tropo piccolo, l ho raddoppiato'
 				END IF
 				!first_step=2.d0*first_step
 				c=c+first_step
@@ -2675,8 +2672,7 @@ MODULE variational_opt
 				IF (b_app/=c) flag_border=.TRUE.
 				rc=r0+c*dir
 				CALL calcola_energia(idc,rc,N,fc(1:2),accettabile)
-				IF (.NOT. accettabile) STOP 'Problema accettabilitá-risoluzione 3 &
-				  [ module_variational_opt.f90 > bracket_min_multidim ]'
+				IF (.NOT. accettabile) STOP 'Problema accettabilitá-risoluzione 3 [ module_variational_opt.f90 > bracket_min_multidim ]'
 			END DO
 			flag_too_accurate=.FALSE.
 			IF (DABS(fb(1)-fc(1))<liv_precisione) flag_too_accurate=.TRUE.
@@ -2760,9 +2756,7 @@ MODULE variational_opt
 		IF (mpi_myrank==0) THEN
 			DO num_val_en = 1, 10, 1                    !elimino i dati ormai inutili
 				id='b'//CHAR(MOD(num_val_en,10)+48)
-				IF ((id/=ida) .AND. (id/=idb) .AND. (id/=idc)) CALL SYSTEM ("export ID_TO_ERASE=opt'//id//'; &
-				  find estimatori/ -name '*'$ID_TO_ERASE'*' -exec rm -f '{}' \; &
-				  find posizioni/ -name '*'$ID_TO_ERASE'*' -exec rm -f '{}' \")
+				IF ((id/=ida) .AND. (id/=idb) .AND. (id/=idc)) CALL SYSTEM ('export ID_TO_ERASE=opt'//id//'; find estimatori/ -name *$ID_TO_ERASE* -exec rm -f {} \\; find posizioni/ -name *$ID_TO_ERASE* -exec rm -f {} \\')
 			END DO
 		END IF
 
@@ -2771,9 +2765,9 @@ MODULE variational_opt
 			PRINT * , '         punti:   ', a, b ,c
 			PRINT * , '         energie: ', fa(1), fb(1), fc(1)
 			IF (flag_output) THEN
-				WRITE (7, *) , 'VAR_OPT: Ho eseguito il bracket con ', INT(contatore), ' passi.',' I tre punti sono '
-				WRITE (7, *) , '         punti:   ', a, b ,c
-				WRITE (7, *) , '         energie: ', fa(1), fb(1), fc(1)
+				WRITE (7, *) 'VAR_OPT: Ho eseguito il bracket con ', INT(contatore), ' passi.',' I tre punti sono '
+				WRITE (7, *) '         punti:   ', a, b ,c
+				WRITE (7, *) '         energie: ', fa(1), fb(1), fc(1)
 			END IF
 		END IF
 		
@@ -2886,28 +2880,75 @@ MODULE variational_opt
 				PRINT * , 'VAR_OPT: Parabgold Search (a,b,c) - ', contatore
 				PRINT * , '         ', a, b, c
 				IF (flag_output) THEN
-					WRITE (7, *), 'VAR_OPT: Parabgold Search (a,b,c) - ', contatore
-					WRITE (7, *), '         ', a, b, c
+					WRITE (7, *) 'VAR_OPT: Parabgold Search (a,b,c) - ', contatore
+					WRITE (7, *) '         ', a, b, c
 				END IF
 			END IF
 		END DO
 		IF (mpi_myrank==0) THEN
 			DO i = 1, 10, 1                    !elimino i dati ormai inutili
 				id='p'//CHAR(MOD(i,10)+48)
-				IF (id/=idb) CALL SYSTEM ("export ID_TO_ERASE=opt'//id//'; &
-				  find estimatori/ -name '*'$ID_TO_ERASE'*' -exec rm -f '{}' \; &
-				  find posizioni/ -name '*'$ID_TO_ERASE'*' -exec rm -f '{}' \")
+				IF (id/=idb) CALL SYSTEM ('export ID_TO_ERASE=opt'//id//'; find estimatori/ -name *$ID_TO_ERASE* -exec rm -f {} \\; find posizioni/ -name *$ID_TO_ERASE* -exec rm -f {} \\')
 			END DO
-			IF (idb/='b') CALL SYSTEM ("export ID_TO_ERASE=optb; &
-			  find estimatori/ -name '*'$ID_TO_ERASE'*' -exec rm -f '{}' \; &
-			  find posizioni/ -name '*'$ID_TO_ERASE'*' -exec rm -f '{}' \")
+			IF (idb/='b') CALL SYSTEM ('export ID_TO_ERASE=optb; find estimatori/ -name *$ID_TO_ERASE* -exec rm -f {} \\; find posizioni/ -name *$ID_TO_ERASE* -exec rm -f {} \\')
 		END IF
 		IF (mpi_myrank==0) THEN
 			PRINT * , 'VAR_OPT: Parabgold Search - sono stati necessari ', contatore, ' passi'
-			IF (flag_output) WRITE (7, *), 'VAR_OPT: Parabgold Search - sono stati necessari ', contatore, ' passi'
+			IF (flag_output) WRITE (7, *) 'VAR_OPT: Parabgold Search - sono stati necessari ', contatore, ' passi'
 		END IF
 
 	END SUBROUTINE parabgold_search_multidim
+
+    SUBROUTINE costrizione_rp(nuovi_rp)
+        IMPLICIT NONE
+        REAL (KIND=8), INTENT(INOUT) :: nuovi_rp(1:num_coord_rp)
+
+        REAL (KIND=8)                :: rp_rshaped(3,num_coord_rp/3)
+        REAL (KIND=8), ALLOCATABLE   :: h2coms(:,:), h2vecs(:,:)
+        INTEGER                      :: itp, nump, numph
+
+        nump = num_coord_rp/3
+        numph = nump/2
+        rp_rshaped = RESHAPE(nuovi_rp, (/3,nump/))
+
+        SELECT CASE (costri_rp)
+        CASE ('ring__')
+            rp_rshaped(3,:) = 0.d0  !prevent movement in z dir
+            DO itp=1,nump
+                rp_rshaped(1:2,itp) = costri_rp_param * rp_rshaped(1:2, itp) / &
+                sqrt(dot_product(rp_rshaped(1:2, itp), rp_rshaped(1:2, itp)))
+            ENDDO
+
+        CASE ('h2ring')
+            ALLOCATE(h2coms(3, num_coord_rp/6), h2vecs(3, num_coord_rp/6))
+            h2coms = 0.5d0 * (rp_rshaped(:,1:numph) + rp_rshaped(:,numph+1:nump))
+            h2vecs = rp_rshaped(:, 1:numph) - h2coms
+            h2coms(3,:) = 0.d0  !prevent movement in z dir
+            DO itp=1,numph
+                h2coms(1:2,itp) = costri_rp_param * h2coms(1:2, itp) / &
+                sqrt(dot_product(h2coms(1:2, itp), h2coms(1:2, itp)))
+                rp_rshaped(:,itp) = h2coms(:, itp) + h2vecs(:, itp)
+                rp_rshaped(:,itp+numph) = h2coms(:, itp) - h2vecs(:, itp)
+            ENDDO
+
+        CASE ('hprism')
+            ALLOCATE(h2coms(3, num_coord_rp/6), h2vecs(3, num_coord_rp/6))
+            h2coms = 0.5d0 * (rp_rshaped(:,1:numph) + rp_rshaped(:,numph+1:nump))
+            h2vecs = rp_rshaped(:, 1:numph) - h2coms
+            h2vecs(1:2,:) = 0.d0 !prevent movement in xy dir for relative hvecs
+            h2coms(3,:) = 0.d0  !prevent movement in z dir for com
+            DO itp=1,numph
+                h2coms(1:2,itp) = costri_rp_param * h2coms(1:2, itp) / &
+                sqrt(dot_product(h2coms(1:2, itp), h2coms(1:2, itp)))
+                rp_rshaped(:,itp) = h2coms(:, itp) + h2vecs(:, itp)
+                rp_rshaped(:,itp+numph) = h2coms(:, itp) - h2vecs(:, itp)
+            ENDDO
+
+        END SELECT
+
+        nuovi_rp = RESHAPE(rp_rshaped, (/3*nump/))
+
+    END SUBROUTINE
 
 	SUBROUTINE controlla_punto(nuovi_parametri)
 		USE funzione_onda
@@ -3089,8 +3130,13 @@ MODULE variational_opt
 				IF (nuovi_parametri(cont)<0.d0) nuovi_parametri(cont)=0.d0
 				cont=cont+1
 			END SELECT
+
 		END IF
-		
+
+		IF ( opt_rp ) THEN
+		    call costrizione_rp(nuovi_parametri(num_par_var-num_coord_rp+1 : num_par_var))
+		END IF
+
 	END SUBROUTINE controlla_punto
 
 	SUBROUTINE controlla_punto_e_parametro(P_old,P_new,a,dir)
@@ -3319,7 +3365,7 @@ MODULE variational_opt
 				cont=cont+1
 			END SELECT
 		END IF
-		
+
 	END SUBROUTINE controlla_punto_e_parametro
 
 	SUBROUTINE estrai_medie_SR()

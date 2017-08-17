@@ -39,7 +39,7 @@ MODULE VMC
 		IF (mpi_myrank==0) THEN
 			PRINT * , ' vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv ---> ', codice
 			IF (flag_output) THEN
-				WRITE (7, *), ' vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv ---> ', codice
+				WRITE (7, *) ' vvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvv ---> ', codice
 				CLOSE (7)
 				OPEN (UNIT=7, FILE='output.d', STATUS='OLD', POSITION='APPEND')
 			END IF
@@ -57,20 +57,20 @@ MODULE VMC
 			PRINT * , 'VMC: Ho inizializzato i dati fisici e i dati della simulazione MC.'
 			PRINT * , 'N_part=', N_part, '       r_s=', r_s
 			IF (flag_output) THEN
-				WRITE (7, *) , 'VMC: Ho inizializzato i dati fisici e i dati della simulazione MC.'
-				WRITE (7, *) , 'N_part=', N_part, '       r_s=', r_s
+				WRITE (7, *) 'VMC: Ho inizializzato i dati fisici e i dati della simulazione MC.'
+				WRITE (7, *) 'N_part=', N_part, '       r_s=', r_s
 			END IF
 			PRINT * , 'L=', L, '   [bohr]'
-			IF (flag_output) WRITE (7, '(1X,A2,3(3X,F12.8),3X,A6)'), 'L=', L, '[bohr]'
+			IF (flag_output) WRITE (7, '(1X,A2,3(3X,F12.8),3X,A6)') 'L=', L, '[bohr]'
 			PRINT * , 'Tipo di reticolo: ', crystal_cell, '       Molecolare? ', flag_molecular
-			IF (flag_output) WRITE (7, *), 'Tipo di reticolo: ', crystal_cell, '       Molecolare? ', flag_molecular
+			IF (flag_output) WRITE (7, *) 'Tipo di reticolo: ', crystal_cell, '       Molecolare? ', flag_molecular
 		END IF
 		
 		!PRINT * , '111: ', mpi_myrank
 		
 		!verifico che si possa continuare dai dati precedenti
 		IF (flag_continua) THEN
-			WRITE (istring, '(I4.4)'), mpi_myrank
+			WRITE (istring, '(I4.4)') mpi_myrank
 			IF (flag_elettroni) THEN
 				INQUIRE(FILE='posizioni/fine'//codice_simulazione//'_e_'//istring//'.pos',EXIST=flag_file_pos)
 				IF (.NOT. flag_file_pos) CALL change_flag_continua(.FALSE.)
@@ -91,7 +91,7 @@ MODULE VMC
 			IF (.NOT. flag_continua) THEN
 				IF (verbose_mode) THEN
 					PRINT * , 'VMC: Non é possibilie continuare dai dati precedenti'
-					IF (flag_output) WRITE (7, *), 'VMC: Non é possibilie continuare dai dati precedenti'
+					IF (flag_output) WRITE (7, *) 'VMC: Non é possibilie continuare dai dati precedenti'
 				END IF
 			END IF
 		END IF
@@ -102,7 +102,7 @@ MODULE VMC
 			CALL RANDOM_SEED(size = j)
 			ALLOCATE(seed(j))
 			OPEN (UNIT=77, FILE='posizioni/seed_and_step'//codice_simulazione//'.dat', STATUS='UNKNOWN')
-			READ (77, *), dum_nprocs
+			READ (77, *) dum_nprocs
 			IF (mpi_myrank==0) THEN
 				flag_scrivi=.TRUE.
 			ELSE
@@ -113,19 +113,16 @@ MODULE VMC
 					DO i = 0, mpi_myrank-1, 1
 						READ (77, *)
 					END DO
-					READ (77, *), dum_myrank, seed, step_e_, step_se_, step_p_
-					IF (dum_myrank/=mpi_myrank) STOP 'Errore nel leggere da seed_and_step.dat &
-					  [ module_VMC.f90 > inizializza_VMC ]'
+					READ (77, *) dum_myrank, seed, step_e_, step_se_, step_p_
+					IF (dum_myrank/=mpi_myrank) STOP 'Errore nel leggere da seed_and_step.dat [ module_VMC.f90 > inizializza_VMC ]'
 					IF (mpi_myrank<mpi_nprocs-1) THEN
 						CALL MPI_SEND(flag_scrivi,1,MPI_LOGICAL,mpi_myrank+1,10+j,MPI_COMM_WORLD,mpi_ierr)
-						IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_SEND &
-						  [ module_VMC.f90 > inizializza_VMC ]'
+						IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_SEND [ module_VMC.f90 > inizializza_VMC ]'
 					END IF
 				END IF
 				IF (mpi_myrank==j+1 .AND. j<mpi_nprocs) THEN
 					CALL MPI_RECV(flag_scrivi,1,MPI_LOGICAL,mpi_myrank-1,10+j,MPI_COMM_WORLD,status,mpi_ierr)
-					IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_RECV &
-					  [ module_VMC.f90 > inizializza_VMC ]'
+					IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_RECV [ module_VMC.f90 > inizializza_VMC ]'
 				END IF
 			END DO
 			DO j = dum_nprocs, mpi_nprocs-1, 1
@@ -147,15 +144,15 @@ MODULE VMC
 			CALL change_step((step_p_-step_p)/step_p,'p__')
 			IF (verbose_mode .AND. flag_elettroni) THEN
 				PRINT * , 'VMC: da file, step_e=', step_e
-				IF (flag_output) WRITE (7, *), 'VMC: da file, step_e=', step_e
+				IF (flag_output) WRITE (7, *) 'VMC: da file, step_e=', step_e
 			END IF
 			IF (verbose_mode .AND. flag_shadow) THEN
 				PRINT * , 'VMC: da file, step_se=', step_se
-				IF (flag_output) WRITE (7, *), 'VMC: da file, step_se=', step_se
+				IF (flag_output) WRITE (7, *) 'VMC: da file, step_se=', step_se
 			END IF
 			IF (verbose_mode .AND. flag_protoni) THEN
 				PRINT * , 'VMC: da file, step_p=', step_p
-				IF (flag_output) WRITE (7, *), 'VMC: da file, step_p=', step_p
+				IF (flag_output) WRITE (7, *) 'VMC: da file, step_p=', step_p
 			END IF
 			CALL RANDOM_SEED(PUT=seed)
 			DEALLOCATE(seed)
@@ -164,14 +161,14 @@ MODULE VMC
 		CALL inizializza_walkers(codice_simulazione)
 		IF (verbose_mode) THEN
 			PRINT * , 'VMC: Ho inizializzato i walkers'
-			IF (flag_output) WRITE (7, *), 'VMC: Ho inizializzato i walkers'
+			IF (flag_output) WRITE (7, *) 'VMC: Ho inizializzato i walkers'
 		END IF
 		IF (flag_posizioni .AND. flag_disk) CALL salva_posizione_walkers('posizioni/inizio'//codice_simulazione)
 		
 		CALL inizializza_funzione_onda()
 		IF (verbose_mode) THEN
 			PRINT * , 'VMC: Ho inizializzato la funzione d onda'
-			IF (flag_output) WRITE (7, *), 'VMC: Ho inizializzato la funzione d onda'
+			IF (flag_output) WRITE (7, *) 'VMC: Ho inizializzato la funzione d onda'
 		END IF
 		IF (verbose_mode .AND. flag_TABC) THEN
 			cont_i1=0
@@ -182,11 +179,11 @@ MODULE VMC
 			DO WHILE ( N_mc_relax_TABC/(10**cont_i2)>0 )
 				cont_i2=cont_i2+1
 			END DO
-			WRITE (istring1, '(I8.8)'), cont_i1
-			WRITE (istring2, '(I8.8)'), cont_i2
+			WRITE (istring1, '(I8.8)') cont_i1
+			WRITE (istring2, '(I8.8)') cont_i2
 			PRINT '(A31,1X,I'//istring1//'.1,5X,A22,1X,I'//istring2//'.1)', &
 			  'VMC: Utilizzo TABC con N_TABC=', N_TABC, 'rilassando di N_relax=', N_mc_relax_TABC
-			IF (flag_output) WRITE (7, '(A31,1X,I'//istring1//'.1,5X,A22,1X,I'//istring2//'.1)'), &
+			IF (flag_output) WRITE (7, '(A31,1X,I'//istring1//'.1,5X,A22,1X,I'//istring2//'.1)') &
 			  'VMC: Utilizzo TABC con N_TABC=', N_TABC, 'rilassando di N_relax=', N_mc_relax_TABC
 		END IF
 		IF ( verbose_mode .AND. flag_traccia_coppie_mol_ss ) THEN
@@ -198,19 +195,19 @@ MODULE VMC
 			DO WHILE ( N_mc_relax_traccia_coppie/(10**cont_i2)>0 )
 				cont_i2=cont_i2+1
 			END DO
-			WRITE (istring1, '(I8.8)'), cont_i1
-			WRITE (istring2, '(I8.8)'), cont_i2
+			WRITE (istring1, '(I8.8)') cont_i1
+			WRITE (istring2, '(I8.8)') cont_i2
 			IF ( N_mc_relax_traccia_coppie>0 ) THEN
 				PRINT '(1X,A52,1X,I'//istring1//'.1,5X,A22,1X,I'//istring2//'.1)', &
 				  'VMC: Ritraccio le coppie molecolari ss ogni mc_step=', N_ritraccia_coppie, &
 				  'rilassando di N_relax=', N_mc_relax_traccia_coppie
-				IF (flag_output) WRITE (7, '(1X,A52,1X,I'//istring1//'.1,5X,A22,1X,I'//istring2//'.1)'), &
+				IF (flag_output) WRITE (7, '(1X,A52,1X,I'//istring1//'.1,5X,A22,1X,I'//istring2//'.1)') &
 				  'VMC: Ritraccio le coppie molecolari ss ogni mc_step=', N_ritraccia_coppie, &
 				  'rilassando di N_relax=', N_mc_relax_traccia_coppie
 			ELSE
 				PRINT * , 'VMC: Ritraccio le coppie molecolari ss ogni mc_step=', N_ritraccia_coppie, &
 				  ' senza rilassare'
-				IF (flag_output) WRITE (7, *), 'VMC: Ritraccio le coppie molecolari ss ogni mc_step=', N_ritraccia_coppie, &
+				IF (flag_output) WRITE (7, *) 'VMC: Ritraccio le coppie molecolari ss ogni mc_step=', N_ritraccia_coppie, &
 				  ' senza rilassare'
 			END IF
 		END IF
@@ -256,7 +253,7 @@ MODULE VMC
 		END IF
 		IF (verbose_mode) THEN
 			PRINT * , 'VMC: Ho allocato gli array degli estimatori'
-			IF (flag_output) WRITE (7, *), 'VMC: Ho allocato gli array degli estimatori'
+			IF (flag_output) WRITE (7, *) 'VMC: Ho allocato gli array degli estimatori'
 		END IF
 		
 		iniz_VMC=.TRUE.
@@ -272,7 +269,7 @@ MODULE VMC
 		USE funzione_onda
 		IMPLICIT NONE
 		REAL (KIND=8), PARAMETER :: STEP_MIN=-0.0000001d0
-		INTEGER, PARAMETER :: num_ok=10, num_min=1
+		INTEGER (KIND=8), PARAMETER :: num_ok=10, num_min=1
 		LOGICAL :: accettazione, eseguito_correttamente_e, eseguito_correttamente_se, eseguito_correttamente_ese
 		LOGICAL:: mpi_success
 		CHARACTER (LEN=3) :: tipo_mossa
@@ -284,8 +281,7 @@ MODULE VMC
 		REAL (KIND=8) :: AV_step_e, AV_step_se
 		LOGICAL, INTENT(OUT) :: success
 		
-		IF (.NOT. iniz_VMC) STOP 'Prima di valutare lo step ideale devi inizializzare il VMC &
-		  [ module_VMC.f90 > valuta_step_mc ]'
+		IF (.NOT. iniz_VMC) STOP 'Prima di valutare lo step ideale devi inizializzare il VMC [ module_VMC.f90 > valuta_step_mc ]'
 		
 		!CALL sampling(.FALSE.,500_8)
 		
@@ -504,33 +500,33 @@ MODULE VMC
 		IF ( trimer_steps ) THEN
 			IF (verbose_mode .AND. eseguito_correttamente_e .AND. flag_elettroni) THEN
 				PRINT * , 'VMC: Ho calibrato lo step_tre con successo: ', step_partenza_e, ' ---> ', step_e
-				IF (flag_output) WRITE (7, *), 'VMC: Ho calibrato lo step_tre con successo: ', step_partenza_e, ' ---> ', step_e
+				IF (flag_output) WRITE (7, *) 'VMC: Ho calibrato lo step_tre con successo: ', step_partenza_e, ' ---> ', step_e
 			ELSE IF (verbose_mode .AND. (.NOT. eseguito_correttamente_e)) THEN
 				PRINT * , 'VMC: Ho calibrato lo step_tre (circa): ', step_partenza_e, ' ---> ', step_e
-				IF (flag_output) WRITE (7, *), 'VMC: Ho calibrato lo step_tre (circa): ', step_partenza_e, ' ---> ', step_e
+				IF (flag_output) WRITE (7, *) 'VMC: Ho calibrato lo step_tre (circa): ', step_partenza_e, ' ---> ', step_e
 			END IF
 		ELSE
 			IF (verbose_mode .AND. eseguito_correttamente_e .AND. flag_elettroni) THEN
 				PRINT * , 'VMC: Ho calibrato lo step_e con successo: ', step_partenza_e, ' ---> ', step_e
-				IF (flag_output) WRITE (7, *), 'VMC: Ho calibrato lo step_e con successo: ', step_partenza_e, ' ---> ', step_e
+				IF (flag_output) WRITE (7, *) 'VMC: Ho calibrato lo step_e con successo: ', step_partenza_e, ' ---> ', step_e
 			ELSE IF (verbose_mode .AND. (.NOT. eseguito_correttamente_e)) THEN
 				PRINT * , 'VMC: Ho calibrato lo step_e (circa): ', step_partenza_e, ' ---> ', step_e
-				IF (flag_output) WRITE (7, *), 'VMC: Ho calibrato lo step_e (circa): ', step_partenza_e, ' ---> ', step_e
+				IF (flag_output) WRITE (7, *) 'VMC: Ho calibrato lo step_e (circa): ', step_partenza_e, ' ---> ', step_e
 			END IF
 		END IF
 		IF (verbose_mode .AND. eseguito_correttamente_se .AND. flag_shadow) THEN
 			PRINT * , 'VMC: Ho calibrato lo step_se con successo: ', step_partenza_se, ' ---> ', step_se
-			IF (flag_output) WRITE (7, *), 'VMC: Ho calibrato lo step_se con successo: ', step_partenza_se, ' ---> ', step_se
+			IF (flag_output) WRITE (7, *) 'VMC: Ho calibrato lo step_se con successo: ', step_partenza_se, ' ---> ', step_se
 		ELSE IF (verbose_mode .AND. (.NOT. eseguito_correttamente_se) .AND. flag_shadow) THEN
 			PRINT * , 'VMC: Ho calibrato lo step_se (circa): ', step_partenza_se, ' ---> ', step_se
-			IF (flag_output) WRITE (7, *), 'VMC: Ho calibrato lo step_se (circa): ', step_partenza_se, ' ---> ', step_se
+			IF (flag_output) WRITE (7, *) 'VMC: Ho calibrato lo step_se (circa): ', step_partenza_se, ' ---> ', step_se
 		END IF
 		IF (verbose_mode .AND. eseguito_correttamente_ese .AND. flag_shadow) THEN
 			PRINT * , 'VMC: Ho calibrato bene entrambi gli step'
-			IF (flag_output) WRITE (7, *), 'VMC: Ho calibrato bene entrambi gli step'
+			IF (flag_output) WRITE (7, *) 'VMC: Ho calibrato bene entrambi gli step'
 		ELSE IF (verbose_mode .AND. (.NOT. eseguito_correttamente_se) .AND. flag_shadow) THEN
 			PRINT * , 'VMC: I due step non sono stati calibrati bene'
-			IF (flag_output) WRITE (7, *), 'VMC: I due step non sono stati calibrati bene'
+			IF (flag_output) WRITE (7, *) 'VMC: I due step non sono stati calibrati bene'
 		END IF
 		
 		END IF cont
@@ -572,8 +568,7 @@ MODULE VMC
 		INTEGER (KIND=8) :: cont_e(1:2), cont_se1(1:2), cont_se2(1:2)
 		REAL (KIND=8) :: eta
 				
-		IF (.NOT. iniz_VMC) STOP 'Prima di eseguire il sampling devi inizializzare il VMC &
-		  [ module_VMC.f90 > mosse_a_vuoto ]'
+		IF (.NOT. iniz_VMC) STOP 'Prima di eseguire il sampling devi inizializzare il VMC [ module_VMC.f90 > mosse_a_vuoto ]'
 		
 		cont_e=0
 		cont_se1=0
@@ -594,7 +589,7 @@ MODULE VMC
 			IF ((mpi_myrank==0).AND.(val_estimatori).AND.(verbose_mode)) &
 			  PRINT * , ' PROGRESS:   |0%       |20%      |40%      |60%      |80%      |100%'
 			IF ((mpi_myrank==0).AND.(val_estimatori).AND.(verbose_mode)) &
-			  WRITE (*, FMT='(A15)', ADVANCE='NO') , '              |'
+			  WRITE (*, FMT='(A15)', ADVANCE='NO') '              |'
 					
 			SELECT CASE (howtomove)
 			CASE ('allp')
@@ -657,20 +652,20 @@ MODULE VMC
 						IF (val_estimatori) CALL conferma_estimatori(i)
 					END IF
 					IF (MOD(i,N_mc/50)==0 .AND. (mpi_myrank==0).AND.(val_estimatori).AND.(verbose_mode) .AND. (i<N_mc)) THEN
-						WRITE (*, FMT='(A1)', ADVANCE='NO'), '='
+						WRITE (*, FMT='(A1)', ADVANCE='NO') '='
 					END IF
 				END DO
 				IF (val_estimatori) THEN
-					IF ((mpi_myrank==0).AND.(val_estimatori).AND.(verbose_mode)) WRITE (*, FMT='(A1)', ADVANCE='YES'), '|'
+					IF ((mpi_myrank==0).AND.(val_estimatori).AND.(verbose_mode)) WRITE (*, FMT='(A1)', ADVANCE='YES') '|'
 					IF (verbose_mode) THEN
 						PRINT * , 'VMC: Ho eseguito un campionamento MC con accettazione ', 100.*REAL(acc,4)/REAL(num_sampling,4), '%'
-						IF (flag_output) WRITE (7, *), 'VMC: Ho eseguito un campionamento MC con accettazione ', &
+						IF (flag_output) WRITE (7, *) 'VMC: Ho eseguito un campionamento MC con accettazione ', &
 						                   100.*REAL(acc,4)/REAL(num_sampling,4), '%'
 					END IF
 				ELSE
 					IF (verbose_mode) THEN
 						PRINT * , 'VMC: Ho eseguito ', num_sampling ,' mosse a vuoto con metodo allp'
-						IF (flag_output) WRITE (7, *), 'VMC: Ho eseguito ', num_sampling ,' mosse a vuoto con metodo allp'
+						IF (flag_output) WRITE (7, *) 'VMC: Ho eseguito ', num_sampling ,' mosse a vuoto con metodo allp'
 					END IF
 				END IF
 			CASE ('1ppt')
@@ -780,30 +775,30 @@ MODULE VMC
 					END DO
 					IF (val_estimatori) CALL calcola_nuovi_estimatori(i)
 					IF (MOD(i,N_mc/50)==0 .AND. ((mpi_myrank==0).AND.(val_estimatori).AND.(verbose_mode)) .AND. (i<N_mc)) THEN
-						WRITE (*, FMT='(A1)', ADVANCE='NO'), '='
+						WRITE (*, FMT='(A1)', ADVANCE='NO') '='
 					END IF
 				END DO
 				IF (verbose_mode .AND. (val_estimatori)) THEN
-					IF ((mpi_myrank==0).AND.(val_estimatori)) WRITE (*, FMT='(A1)', ADVANCE='YES'), '|'
+					IF ((mpi_myrank==0).AND.(val_estimatori)) WRITE (*, FMT='(A1)', ADVANCE='YES') '|'
 					PRINT * , 'VMC: Ho eseguito un campionamento MC 1ppt su ', mpi_nprocs,'processori per ',N_mc, &
 					  'mosse ognuno, con accettazione ', &
 				 	  100.*REAL(acc,4)/REAL(N_mc*N_1ppt,4), '%'
-					IF (flag_output) WRITE (7, *), 'VMC: Ho eseguito un campionamento MC 1ppt su ', mpi_nprocs, &
+					IF (flag_output) WRITE (7, *) 'VMC: Ho eseguito un campionamento MC 1ppt su ', mpi_nprocs, &
 					  'processori per ',N_mc, 'mosse ognuno, con accettazione ', 100.*REAL(acc,4)/REAL(N_mc*N_1ppt,4), '%'
 				ELSE IF (verbose_mode .AND. (.NOT. val_estimatori)) THEN
 					PRINT * , 'VMC: Ho eseguito ', N_blank ,' per ', N_1ppt, ' mosse a vuoto con metodo ', howtomove
-					IF (flag_output) WRITE (7, *), 'VMC: Ho eseguito ', N_blank ,' per ', N_1ppt, &
+					IF (flag_output) WRITE (7, *) 'VMC: Ho eseguito ', N_blank ,' per ', N_1ppt, &
 					  ' mosse a vuoto con metodo ', howtomove
 				END IF
 				IF (verbose_mode .AND. val_estimatori) THEN
 					PRINT * , 'VMC: accettazione e: ', 100.*REAL(cont_e(2))/REAL(cont_e(1))
-					IF (flag_output) WRITE (7, *), 'VMC: accettazione e: ', 100.*REAL(cont_e(2))/REAL(cont_e(1))
+					IF (flag_output) WRITE (7, *) 'VMC: accettazione e: ', 100.*REAL(cont_e(2))/REAL(cont_e(1))
 					IF (verbose_mode .AND. flag_shadow) THEN
 						PRINT * , 'VMC: accettazione se1: ', 100.*REAL(cont_se1(2))/REAL(cont_se1(1))
 						PRINT * , 'VMC: accettazione se2: ', 100.*REAL(cont_se2(2))/REAL(cont_se2(1))
 						IF (flag_output) THEN
-							WRITE (7, *), 'VMC: accettazione se1: ', 100.*REAL(cont_se1(2))/REAL(cont_se1(1))
-							WRITE (7, *), 'VMC: accettazione se2: ', 100.*REAL(cont_se2(2))/REAL(cont_se2(1))
+							WRITE (7, *) 'VMC: accettazione se1: ', 100.*REAL(cont_se1(2))/REAL(cont_se1(1))
+							WRITE (7, *) 'VMC: accettazione se2: ', 100.*REAL(cont_se2(2))/REAL(cont_se2(1))
 						END IF
 					END IF
 				END IF
@@ -822,8 +817,7 @@ MODULE VMC
 		INTEGER :: m, n
 		INTEGER (KIND=8), INTENT(IN) :: i
 		INTEGER :: j
-		IF (.NOT. iniz_VMC) STOP 'Prima di valutare gli estimatori devi inizializzare il VMC &
-		  [ module_VMC.f90 > calcola_nuovi_estimatori ]'
+		IF (.NOT. iniz_VMC) STOP 'Prima di valutare gli estimatori devi inizializzare il VMC [ module_VMC.f90 > calcola_nuovi_estimatori ]'
 		
       !CALL calcola_grad_lapl_psi(i)
 		CALL valuta_estimatori(i)
@@ -870,8 +864,7 @@ MODULE VMC
 		USE variational_calculations
 		IMPLICIT NONE
 		INTEGER (KIND=8), INTENT(IN) :: i
-		IF (.NOT. iniz_VMC) STOP 'Prima di valutare gli estimatori devi inizializzare il VMC &
-		  [ module_VMC.f90 > conferma_estimatori ]'
+		IF (.NOT. iniz_VMC) STOP 'Prima di valutare gli estimatori devi inizializzare il VMC [ module_VMC.f90 > conferma_estimatori ]'
 		
       !CALL conferma_grad_lapl_psi(i)
 		CALL mantieni_stessi_estimatori(i)
@@ -914,8 +907,7 @@ MODULE VMC
 		INTEGER (KIND=8) :: i
 		REAL (KIND=8) :: x(1:N_hist), gr_sum(1:N_hist)
 				
-		IF (.NOT. iniz_VMC) STOP 'Prima di salvare i dati devi inizializzare il VMC &
-		  [ module_VMC.f90 > conferma_estimatori ]'
+		IF (.NOT. iniz_VMC) STOP 'Prima di salvare i dati devi inizializzare il VMC [ module_VMC.f90 > conferma_estimatori ]'
 				
 		IF (mpi_myrank==0) THEN
 			flag_scrivi=.TRUE.
@@ -930,20 +922,18 @@ MODULE VMC
 				IF (mpi_myrank==j .AND. flag_scrivi) THEN
 					IF (mpi_myrank<mpi_nprocs-1) THEN
 						CALL MPI_SEND(flag_scrivi,1,MPI_LOGICAL,mpi_myrank+1,10+j,MPI_COMM_WORLD,mpi_ierr)
-						IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_SEND &
-						  [ module_VMC.f90 > trascrivi_dati ]'
+						IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_SEND [ module_VMC.f90 > trascrivi_dati ]'
 					END IF
 				END IF
 				IF (mpi_myrank==j+1 .AND. j<mpi_nprocs) THEN
 					CALL MPI_RECV(flag_scrivi,1,MPI_LOGICAL,mpi_myrank-1,10+j,MPI_COMM_WORLD,status,mpi_ierr)
-					IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_RECV &
-					  [ module_VMC.f90 > trascrivi_dati ]'
+					IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_RECV [ module_VMC.f90 > trascrivi_dati ]'
 				END IF
 			END DO
 			CALL trascrivi_estimatori(codice_simulazione)
 			IF (mpi_myrank==0) THEN
 				PRINT * , 'VMC: Ho trascritto i dati'
-				IF (flag_output) WRITE (7, *), 'VMC: Ho trascritto i dati'
+				IF (flag_output) WRITE (7, *) 'VMC: Ho trascritto i dati'
 			END IF
 			IF (flag_gradiente) CALL trascrivi_dati_per_gradiente()
 			IF (flag_derivate_var) CALL trascrivi_dati_per_derivate_variazionali()
@@ -1018,20 +1008,20 @@ MODULE VMC
 				!	IF (flag_E_kin) THEN
 				!		CALL calcola_estimatori('estimatori/E_kin'//codice_simulazione,media,errore)
 				!		PRINT * , '   --->   E_kin=', media, '+-', errore
-				!		IF (flag_output) WRITE (7, *), '   --->   E_kin=', media, '+-', errore
+				!		IF (flag_output) WRITE (7, *) '   --->   E_kin=', media, '+-', errore
 				!		CALL calcola_estimatori('estimatori/E_JF'//codice_simulazione,media,errore)
 				!		PRINT * , '   --->   E_JF= ', media, '+-', errore
-				!		IF (flag_output) WRITE (7, *), '   --->   E_JF= ', media, '+-', errore
+				!		IF (flag_output) WRITE (7, *) '   --->   E_JF= ', media, '+-', errore
 				!	END IF
 				!	IF (flag_E_pot) THEN
 				!		CALL calcola_estimatori('estimatori/E_pot'//codice_simulazione,media,errore)
 				!		PRINT * , '   --->   E_pot=', media, '+-', errore
-				!		IF (flag_output) WRITE (7, *), '   --->   E_pot=', media, '+-', errore
+				!		IF (flag_output) WRITE (7, *) '   --->   E_pot=', media, '+-', errore
 				!	END IF
 				!	IF (flag_E_tot) THEN
 				!		CALL calcola_estimatori('estimatori/E_tot'//codice_simulazione,media,errore)
 				!		PRINT * , '   --->   E_tot=', media, '+-', errore
-				!		IF (flag_output) WRITE (7, *), '   --->   E_tot=', media, '+-', errore
+				!		IF (flag_output) WRITE (7, *) '   --->   E_tot=', media, '+-', errore
 				!	END IF
 				!	END IF
 				!ELSE
@@ -1039,20 +1029,20 @@ MODULE VMC
 					IF (flag_E_kin) THEN
 						CALL calcola_estimatori('estimatori/E_kin'//codice_simulazione,media,errore,'estimatori/w'//codice_simulazione)
 						PRINT * , '   --->   E_kin=', media, '+-', errore
-						IF (flag_output) WRITE (7, *), '   --->   E_kin=', media, '+-', errore
+						IF (flag_output) WRITE (7, *) '   --->   E_kin=', media, '+-', errore
 						CALL calcola_estimatori('estimatori/E_JF'//codice_simulazione,media,errore,'estimatori/w'//codice_simulazione)
 						PRINT * , '   --->   E_JF= ', media, '+-', errore
-						IF (flag_output) WRITE (7, *), '   --->   E_JF= ', media, '+-', errore
+						IF (flag_output) WRITE (7, *) '   --->   E_JF= ', media, '+-', errore
 					END IF
 					IF (flag_E_pot) THEN
 						CALL calcola_estimatori('estimatori/E_pot'//codice_simulazione,media,errore,'estimatori/w'//codice_simulazione)
 						PRINT * , '   --->   E_pot=', media, '+-', errore
-						IF (flag_output) WRITE (7, *), '   --->   E_pot=', media, '+-', errore
+						IF (flag_output) WRITE (7, *) '   --->   E_pot=', media, '+-', errore
 					END IF
 					IF (flag_E_tot) THEN
 						CALL calcola_estimatori('estimatori/E_tot'//codice_simulazione,media,errore,'estimatori/w'//codice_simulazione)
 						PRINT * , '   --->   E_tot=', media, '+-', errore
-						IF (flag_output) WRITE (7, *), '   --->   E_tot=', media, '+-', errore
+						IF (flag_output) WRITE (7, *) '   --->   E_tot=', media, '+-', errore
 						variance_efficiency=errore*errore
 					END IF
 					END IF
@@ -1063,24 +1053,24 @@ MODULE VMC
 				!		CALL calcola_estimatore_da_RAM(estimatore,E_kin,N_mc)
 				!		IF (mpi_myrank==0) THEN
 				!			PRINT * , '   --->   E_kin=', estimatore(1), '+-', estimatore(2)
-				!			IF (flag_output) WRITE (7, *), '   --->   E_kin=', estimatore(1), '+-', estimatore(2)
+				!			IF (flag_output) WRITE (7, *) '   --->   E_kin=', estimatore(1), '+-', estimatore(2)
 				!		END IF
 				!		CALL calcola_estimatore_da_RAM(estimatore,E_JF,N_mc)
 				!		IF (mpi_myrank==0) THEN
 				!			PRINT * , '   --->   E_JF= ', estimatore(1), '+-', estimatore(2)
-				!			IF (flag_output) WRITE (7, *), '   --->   E_JF= ', estimatore(1), '+-', estimatore(2)
+				!			IF (flag_output) WRITE (7, *) '   --->   E_JF= ', estimatore(1), '+-', estimatore(2)
 				!		END IF
 				!	END IF
 				!	IF (flag_E_pot) THEN
 				!		CALL calcola_estimatore_da_RAM(estimatore,E_pot,N_mc)
 				!		IF (mpi_myrank==0) PRINT * , '   --->   E_pot=', estimatore(1), '+-', estimatore(2)
-				!		IF (flag_output) WRITE (7, *), '   --->   E_pot=', estimatore(1), '+-', estimatore(2)
+				!		IF (flag_output) WRITE (7, *) '   --->   E_pot=', estimatore(1), '+-', estimatore(2)
 				!	END IF
 				!	IF (flag_E_tot) THEN
 				!		CALL calcola_estimatore_da_RAM(estimatore,E_tot,N_mc)
 				!		IF (mpi_myrank==0) THEN
 				!			PRINT * , '   --->   E_tot=', estimatore(1), '+-', estimatore(2)
-				!			IF (flag_output) WRITE (7, *), '   --->   E_tot=', estimatore(1), '+-', estimatore(2)
+				!			IF (flag_output) WRITE (7, *) '   --->   E_tot=', estimatore(1), '+-', estimatore(2)
 				!		END IF
 				!	END IF
 				!ELSE
@@ -1088,26 +1078,26 @@ MODULE VMC
 						CALL calcola_estimatore_da_RAM(estimatore,E_kin,N_mc,w)
 						IF (mpi_myrank==0) THEN
 							PRINT * , '   --->   E_kin=', estimatore(1), '+-', estimatore(2)
-							IF (flag_output) WRITE (7, *), '   --->   E_kin=', estimatore(1), '+-', estimatore(2)
+							IF (flag_output) WRITE (7, *) '   --->   E_kin=', estimatore(1), '+-', estimatore(2)
 						END IF
 						CALL calcola_estimatore_da_RAM(estimatore,E_JF,N_mc,w)
 						IF (mpi_myrank==0) THEN
 							PRINT * , '   --->   E_JF= ', estimatore(1), '+-', estimatore(2)
-							IF (flag_output) WRITE (7, *), '   --->   E_JF= ', estimatore(1), '+-', estimatore(2)
+							IF (flag_output) WRITE (7, *) '   --->   E_JF= ', estimatore(1), '+-', estimatore(2)
 						END IF
 					END IF
 					IF (flag_E_pot) THEN
 						CALL calcola_estimatore_da_RAM(estimatore,E_pot,N_mc,w)
 						IF (mpi_myrank==0) THEN
 							PRINT * , '   --->   E_pot=', estimatore(1), '+-', estimatore(2)
-							IF (flag_output) WRITE (7, *), '   --->   E_pot=', estimatore(1), '+-', estimatore(2)
+							IF (flag_output) WRITE (7, *) '   --->   E_pot=', estimatore(1), '+-', estimatore(2)
 						END IF
 					END IF
 					IF (flag_E_tot) THEN
 						CALL calcola_estimatore_da_RAM(estimatore,E_tot,N_mc,w)
 						IF (mpi_myrank==0) THEN
 							PRINT * , '   --->   E_tot=', estimatore(1), '+-', estimatore(2)
-							IF (flag_output) WRITE (7, *), '   --->   E_tot=', estimatore(1), '+-', estimatore(2)
+							IF (flag_output) WRITE (7, *) '   --->   E_tot=', estimatore(1), '+-', estimatore(2)
 						END IF
 						variance_efficiency=estimatore(2)*estimatore(2)
 					END IF
@@ -1120,20 +1110,20 @@ MODULE VMC
 				!	IF (flag_E_kin) THEN
 				!		CALL calcola_estimatori_quick(quick_error,'estimatori/E_kin'//codice_simulazione,media,errore)
 				!		PRINT * , '   --->   E_kin=', media, '+-', errore
-				!		IF (flag_output) WRITE (7, *), '   --->   E_kin=', media, '+-', errore
+				!		IF (flag_output) WRITE (7, *) '   --->   E_kin=', media, '+-', errore
 				!		CALL calcola_estimatori_quick(quick_error,'estimatori/E_JF'//codice_simulazione,media,errore)
 				!		PRINT * , '   --->   E_JF= ', media, '+-', errore
-				!		IF (flag_output) WRITE (7, *), '   --->   E_JF= ', media, '+-', errore
+				!		IF (flag_output) WRITE (7, *) '   --->   E_JF= ', media, '+-', errore
 				!	END IF
 				!	IF (flag_E_pot) THEN
 				!		CALL calcola_estimatori_quick(quick_error,'estimatori/E_pot'//codice_simulazione,media,errore)
 				!		PRINT * , '   --->   E_pot=', media, '+-', errore
-				!		IF (flag_output) WRITE (7, *), '   --->   E_pot=', media, '+-', errore
+				!		IF (flag_output) WRITE (7, *) '   --->   E_pot=', media, '+-', errore
 				!	END IF
 				!	IF (flag_E_tot) THEN
 				!		CALL calcola_estimatori_quick(quick_error,'estimatori/E_tot'//codice_simulazione,media,errore)
 				!		PRINT * , '   --->   E_tot=', media, '+-', errore
-				!		IF (flag_output) WRITE (7, *), '   --->   E_tot=', media, '+-', errore
+				!		IF (flag_output) WRITE (7, *) '   --->   E_tot=', media, '+-', errore
 				!	END IF
 				!	END IF
 				!ELSE
@@ -1142,23 +1132,23 @@ MODULE VMC
 						CALL calcola_estimatori_quick(quick_error,'estimatori/E_kin'//codice_simulazione,media,errore, &
 						  'estimatori/w'//codice_simulazione)
 						PRINT * , '   --->   E_kin=', media, '+-', errore
-						IF (flag_output) WRITE (7, *), '   --->   E_kin=', media, '+-', errore
+						IF (flag_output) WRITE (7, *) '   --->   E_kin=', media, '+-', errore
 						CALL calcola_estimatori_quick(quick_error,'estimatori/E_JF'//codice_simulazione,media,errore, &
 						  'estimatori/w'//codice_simulazione)
 						PRINT * , '   --->   E_JF= ', media, '+-', errore
-						IF (flag_output) WRITE (7, *), '   --->   E_JF= ', media, '+-', errore
+						IF (flag_output) WRITE (7, *) '   --->   E_JF= ', media, '+-', errore
 					END IF
 					IF (flag_E_pot) THEN
 						CALL calcola_estimatori_quick(quick_error,'estimatori/E_pot'//codice_simulazione,media,errore, &
 						  'estimatori/w'//codice_simulazione)
 						PRINT * , '   --->   E_pot=', media, '+-', errore
-						IF (flag_output) WRITE (7, *), '   --->   E_pot=', media, '+-', errore
+						IF (flag_output) WRITE (7, *) '   --->   E_pot=', media, '+-', errore
 					END IF
 					IF (flag_E_tot) THEN
 						CALL calcola_estimatori_quick(quick_error,'estimatori/E_tot'//codice_simulazione,media,errore, &
 						  'estimatori/w'//codice_simulazione)
 						PRINT * , '   --->   E_tot=', media, '+-', errore
-						IF (flag_output) WRITE (7, *), '   --->   E_tot=', media, '+-', errore
+						IF (flag_output) WRITE (7, *) '   --->   E_tot=', media, '+-', errore
 						variance_efficiency=errore*errore
 					END IF
 					END IF
@@ -1169,24 +1159,24 @@ MODULE VMC
 				!		CALL calcola_estimatore_da_RAM_quick(quick_error,estimatore,E_kin,N_mc)
 				!		IF (mpi_myrank==0) THEN
 				!			PRINT * , '   --->   E_kin=', estimatore(1), '+-', estimatore(2)
-				!			IF (flag_output) WRITE (7, *), '   --->   E_kin=', estimatore(1), '+-', estimatore(2)
+				!			IF (flag_output) WRITE (7, *) '   --->   E_kin=', estimatore(1), '+-', estimatore(2)
 				!		END IF
 				!		CALL calcola_estimatore_da_RAM_quick(quick_error,estimatore,E_JF,N_mc)
 				!		IF (mpi_myrank==0) THEN
 				!			PRINT * , '   --->   E_JF= ', estimatore(1), '+-', estimatore(2)
-				!			IF (flag_output) WRITE (7, *), '   --->   E_JF= ', estimatore(1), '+-', estimatore(2)
+				!			IF (flag_output) WRITE (7, *) '   --->   E_JF= ', estimatore(1), '+-', estimatore(2)
 				!		END IF
 				!	END IF
 				!	IF (flag_E_pot) THEN
 				!		CALL calcola_estimatore_da_RAM_quick(quick_error,estimatore,E_pot,N_mc)
 				!		IF (mpi_myrank==0) PRINT * , '   --->   E_pot=', estimatore(1), '+-', estimatore(2)
-				!		IF (flag_output) WRITE (7, *), '   --->   E_pot=', estimatore(1), '+-', estimatore(2)
+				!		IF (flag_output) WRITE (7, *) '   --->   E_pot=', estimatore(1), '+-', estimatore(2)
 				!	END IF
 				!	IF (flag_E_tot) THEN
 				!		CALL calcola_estimatore_da_RAM_quick(quick_error,estimatore,E_tot,N_mc)
 				!		IF (mpi_myrank==0) THEN
 				!			PRINT * , '   --->   E_tot=', estimatore(1), '+-', estimatore(2)
-				!			IF (flag_output) WRITE (7, *), '   --->   E_tot=', estimatore(1), '+-', estimatore(2)
+				!			IF (flag_output) WRITE (7, *) '   --->   E_tot=', estimatore(1), '+-', estimatore(2)
 				!		END IF
 				!	END IF
 				!ELSE
@@ -1194,26 +1184,26 @@ MODULE VMC
 						CALL calcola_estimatore_da_RAM_quick(quick_error,estimatore,E_kin,N_mc,w)
 						IF (mpi_myrank==0) THEN
 							PRINT * , '   --->   E_kin=', estimatore(1), '+-', estimatore(2)
-							IF (flag_output) WRITE (7, *), '   --->   E_kin=', estimatore(1), '+-', estimatore(2)
+							IF (flag_output) WRITE (7, *) '   --->   E_kin=', estimatore(1), '+-', estimatore(2)
 						END IF
 						CALL calcola_estimatore_da_RAM_quick(quick_error,estimatore,E_JF,N_mc,w)
 						IF (mpi_myrank==0) THEN
 							PRINT * , '   --->   E_JF= ', estimatore(1), '+-', estimatore(2)
-							IF (flag_output) WRITE (7, *), '   --->   E_JF= ', estimatore(1), '+-', estimatore(2)
+							IF (flag_output) WRITE (7, *) '   --->   E_JF= ', estimatore(1), '+-', estimatore(2)
 						END IF
 					END IF
 					IF (flag_E_pot) THEN
 						CALL calcola_estimatore_da_RAM_quick(quick_error,estimatore,E_pot,N_mc,w)
 						IF (mpi_myrank==0) THEN
 							PRINT * , '   --->   E_pot=', estimatore(1), '+-', estimatore(2)
-							IF (flag_output) WRITE (7, *), '   --->   E_pot=', estimatore(1), '+-', estimatore(2)
+							IF (flag_output) WRITE (7, *) '   --->   E_pot=', estimatore(1), '+-', estimatore(2)
 						END IF
 					END IF
 					IF (flag_E_tot) THEN
 						CALL calcola_estimatore_da_RAM_quick(quick_error,estimatore,E_tot,N_mc,w)
 						IF (mpi_myrank==0) THEN
 							PRINT * , '   --->   E_tot=', estimatore(1), '+-', estimatore(2)
-							IF (flag_output) WRITE (7, *), '   --->   E_tot=', estimatore(1), '+-', estimatore(2)
+							IF (flag_output) WRITE (7, *) '   --->   E_tot=', estimatore(1), '+-', estimatore(2)
 						END IF
 						variance_efficiency=estimatore(2)*estimatore(2)
 					END IF
@@ -1238,14 +1228,13 @@ MODULE VMC
 							CALL calcola_estimatori('estimatori/E_tot'//codice_simulazione,media,errore)
 							IF (mpi_myrank==0) THEN
 								PRINT * , 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
-								IF (flag_output) WRITE (7, *), 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
+								IF (flag_output) WRITE (7, *) 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
 							END IF
 							E_tot_out(1:2)=(/media,errore/)
 						END IF
 						CALL MPI_BCAST(E_tot_out(1:2),2,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
 					ELSE
-						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag &
-						  [ module_VMC.f90 > restituisci_risultati ]'
+						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag [ module_VMC.f90 > restituisci_risultati ]'
 					END IF
 				ELSE
 					IF (flag_E_tot) THEN
@@ -1253,14 +1242,13 @@ MODULE VMC
 							CALL calcola_estimatori('estimatori/E_tot'//codice_simulazione,media,errore,'estimatori/w'//codice_simulazione)
 							IF (mpi_myrank==0) THEN
 								PRINT * , 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
-								IF (flag_output) WRITE (7, *), 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
+								IF (flag_output) WRITE (7, *) 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
 							END IF
 							E_tot_out(1:2)=(/media,errore/)
 						END IF
 						CALL MPI_BCAST(E_tot_out(1:2),2,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
 					ELSE
-						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag &
-						  [ module_VMC.f90 > restituisci_risultati ]'
+						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag [ module_VMC.f90 > restituisci_risultati ]'
 					END IF
 				END IF
 			ELSE
@@ -1269,22 +1257,20 @@ MODULE VMC
 						CALL calcola_estimatore_da_RAM(E_tot_out,E_tot,N_mc)
 						IF (mpi_myrank==0) THEN
 							PRINT * , 'Ho calcolato l energia --->   E_tot=', E_tot_out(1), '+-', E_tot_out(2)
-							IF (flag_output) WRITE (7, *), 'Ho calcolato l energia --->   E_tot=', E_tot_out(1), '+-', E_tot_out(2)
+							IF (flag_output) WRITE (7, *) 'Ho calcolato l energia --->   E_tot=', E_tot_out(1), '+-', E_tot_out(2)
 						END IF
 					ELSE
-						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag &
-						  [ module_VMC.f90 > restituisci_risultati ]'
+						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag [ module_VMC.f90 > restituisci_risultati ]'
 					END IF
 				ELSE
 					IF (flag_E_tot) THEN
 						CALL calcola_estimatore_da_RAM(E_tot_out,E_tot,N_mc,w)
 						IF (mpi_myrank==0) THEN
 							PRINT * , 'Ho calcolato l energia --->   E_tot=', E_tot_out(1), '+-', E_tot_out(2)
-							IF (flag_output) WRITE (7, *), 'Ho calcolato l energia --->   E_tot=', E_tot_out(1), '+-', E_tot_out(2)
+							IF (flag_output) WRITE (7, *) 'Ho calcolato l energia --->   E_tot=', E_tot_out(1), '+-', E_tot_out(2)
 						END IF
 					ELSE
-						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag &
-						  [ module_VMC.f90 > restituisci_risultati ]'
+						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag [ module_VMC.f90 > restituisci_risultati ]'
 					END IF
 				END IF
 			END IF
@@ -1296,14 +1282,13 @@ MODULE VMC
 							CALL calcola_estimatori_quick(quick_error,'estimatori/E_tot'//codice_simulazione,media,errore)
 							IF (mpi_myrank==0) THEN
 								PRINT * , 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
-								IF (flag_output) WRITE (7, *), 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
+								IF (flag_output) WRITE (7, *) 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
 							END IF
 							E_tot_out(1:2)=(/media,errore/)
 						END IF
 						CALL MPI_BCAST(E_tot_out(1:2),2,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
 					ELSE
-						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag &
-						  [ module_VMC.f90 > restituisci_risultati ]'
+						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag [ module_VMC.f90 > restituisci_risultati ]'
 					END IF
 				ELSE
 					IF (flag_E_tot) THEN
@@ -1312,14 +1297,13 @@ MODULE VMC
 							  'estimatori/w'//codice_simulazione)
 							IF (mpi_myrank==0) THEN
 								PRINT * , 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
-								IF (flag_output) WRITE (7, *), 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
+								IF (flag_output) WRITE (7, *) 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
 							END IF
 							E_tot_out(1:2)=(/media,errore/)
 						END IF
 						CALL MPI_BCAST(E_tot_out(1:2),2,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
 					ELSE
-						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag &
-						  [ module_VMC.f90 > restituisci_risultati ]'
+						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag [ module_VMC.f90 > restituisci_risultati ]'
 					END IF
 				END IF
 			ELSE
@@ -1328,22 +1312,20 @@ MODULE VMC
 						CALL calcola_estimatore_da_RAM_quick(quick_error,E_tot_out,E_tot,N_mc)
 						IF (mpi_myrank==0) THEN
 							PRINT * , 'Ho calcolato l energia --->   E_tot=', E_tot_out(1), '+-', E_tot_out(2)
-							IF (flag_output) WRITE (7, *), 'Ho calcolato l energia --->   E_tot=', E_tot_out(1), '+-', E_tot_out(2)
+							IF (flag_output) WRITE (7, *) 'Ho calcolato l energia --->   E_tot=', E_tot_out(1), '+-', E_tot_out(2)
 						END IF
 					ELSE
-						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag &
-						  [ module_VMC.f90 > restituisci_risultati ]'
+						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag [ module_VMC.f90 > restituisci_risultati ]'
 					END IF
 				ELSE
 					IF (flag_E_tot) THEN
 						CALL calcola_estimatore_da_RAM_quick(quick_error,E_tot_out,E_tot,N_mc,w)
 						IF (mpi_myrank==0) THEN
 							PRINT * , 'Ho calcolato l energia --->   E_tot=', E_tot_out(1), '+-', E_tot_out(2)
-							IF (flag_output) WRITE (7, *), 'Ho calcolato l energia --->   E_tot=', E_tot_out(1), '+-', E_tot_out(2)
+							IF (flag_output) WRITE (7, *) 'Ho calcolato l energia --->   E_tot=', E_tot_out(1), '+-', E_tot_out(2)
 						END IF
 					ELSE
-						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag &
-						  [ module_VMC.f90 > restituisci_risultati ]'
+						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag [ module_VMC.f90 > restituisci_risultati ]'
 					END IF
 				END IF
 			END IF
@@ -1370,11 +1352,11 @@ MODULE VMC
 							CALL calcola_estimatori('estimatori/E_tot'//codice_simulazione,media,errore)
 							IF (mpi_myrank==0) THEN
 								PRINT * , 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
-								IF (flag_output) WRITE (7, *), 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
+								IF (flag_output) WRITE (7, *) 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
 							END IF
 							E_tot_out(1:2,0)=(/media,errore/)
 							DO i = 1, num_wf, 1
-								WRITE (codice_numerico, '(I4.4)'), i
+								WRITE (codice_numerico, '(I4.4)') i
 								CALL calcola_estimatori_differenza('estimatori/gradiente/E_tot'//codice_numerico,'estimatori/E_tot'//codice_simulazione, &
 								  media,errore,'estimatori/gradiente/w'//codice_numerico)
 								E_tot_out(1:2,i)=(/media,errore/)
@@ -1382,8 +1364,7 @@ MODULE VMC
 						END IF
 						CALL MPI_BCAST(E_tot_out(1:2,0:num_wf),2*(num_wf+1),MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
 					ELSE
-						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag &
-						  [ module_VMC.f90 > restituisci_risultati ]'
+						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag [ module_VMC.f90 > restituisci_risultati ]'
 					END IF
 				ELSE
 					IF (flag_E_tot) THEN
@@ -1391,11 +1372,11 @@ MODULE VMC
 							CALL calcola_estimatori('estimatori/E_tot'//codice_simulazione,media,errore,'estimatori/w'//codice_simulazione)
 							IF (mpi_myrank==0) THEN
 								PRINT * , 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
-								IF (flag_output) WRITE (7, *), 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
+								IF (flag_output) WRITE (7, *) 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
 							END IF
 							E_tot_out(1:2,0)=(/media,errore/)
 							DO i = 1, num_wf, 1
-								WRITE (codice_numerico, '(I4.4)'), i
+								WRITE (codice_numerico, '(I4.4)') i
 								CALL calcola_estimatori_differenza('estimatori/gradiente/E_tot'//codice_numerico,'estimatori/E_tot'//codice_simulazione, &
 								  media,errore,'estimatori/gradiente/w'//codice_numerico,'estimatori/w'//codice_simulazione)
 								E_tot_out(1:2,i)=(/media,errore/)
@@ -1403,8 +1384,7 @@ MODULE VMC
 						END IF
 						CALL MPI_BCAST(E_tot_out(1:2,0:num_wf),2*(num_wf+1),MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
 					ELSE
-						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag &
-						  [ module_VMC.f90 > restituisci_risultati ]'
+						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag [ module_VMC.f90 > restituisci_risultati ]'
 					END IF
 				END IF
 			ELSE
@@ -1413,7 +1393,7 @@ MODULE VMC
 						CALL calcola_estimatore_da_RAM(E_tot_out(1:2,0),E_tot,N_mc)
 						IF (mpi_myrank==0) THEN
 							PRINT * , 'Ho calcolato l energia --->   E_tot=', E_tot_out(1,0), '+-', E_tot_out(2,0)
-							IF (flag_output) WRITE (7, *), 'Ho calcolato l energia --->   E_tot=', E_tot_out(1,0), '+-', E_tot_out(2,0)
+							IF (flag_output) WRITE (7, *) 'Ho calcolato l energia --->   E_tot=', E_tot_out(1,0), '+-', E_tot_out(2,0)
 						END IF
 						DO i_mc = 1, N_mc, 1
 							dummy1(i_mc)=E_tot(i_mc)
@@ -1427,15 +1407,14 @@ MODULE VMC
 							CALL calcola_estimatore_differenza_da_RAM(E_tot_out(1:2,i),dummy1,dummy2,dummy3,dummy4,N_mc)
 						END DO
 					ELSE
-						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag &
-						  [ module_VMC.f90 > restituisci_risultati ]'
+						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag [ module_VMC.f90 > restituisci_risultati ]'
 					END IF
 				ELSE
 					IF (flag_E_tot) THEN
 						CALL calcola_estimatore_da_RAM(E_tot_out(1:2,0),E_tot,N_mc,w)
 						IF (mpi_myrank==0) THEN
 							PRINT * , 'Ho calcolato l energia --->   E_tot=', E_tot_out(1,0), '+-', E_tot_out(2,0)
-							IF (flag_output) WRITE (7, *), 'Ho calcolato l energia --->   E_tot=', E_tot_out(1,0), '+-', E_tot_out(2,0)
+							IF (flag_output) WRITE (7, *) 'Ho calcolato l energia --->   E_tot=', E_tot_out(1,0), '+-', E_tot_out(2,0)
 						END IF
 						DO i_mc = 1, N_mc, 1
 							dummy1(i_mc)=w(i_mc)*E_tot(i_mc)
@@ -1449,8 +1428,7 @@ MODULE VMC
 							CALL calcola_estimatore_differenza_da_RAM(E_tot_out(1:2,i),dummy1,dummy2,dummy3,dummy4,N_mc)
 						END DO
 						ELSE
-							STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag &
-							  [ module_VMC.f90 > restituisci_risultati ]'
+							STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag [ module_VMC.f90 > restituisci_risultati ]'
 					END IF
 				END IF
 			END IF
@@ -1462,11 +1440,11 @@ MODULE VMC
 							CALL calcola_estimatori_quick(quick_error,'estimatori/E_tot'//codice_simulazione,media,errore)
 							IF (mpi_myrank==0) THEN
 								PRINT * , 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
-								IF (flag_output) WRITE (7, *), 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
+								IF (flag_output) WRITE (7, *) 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
 							END IF
 							E_tot_out(1:2,0)=(/media,errore/)
 							DO i = 1, num_wf, 1
-								WRITE (codice_numerico, '(I4.4)'), i
+								WRITE (codice_numerico, '(I4.4)') i
 								CALL calcola_estimatori_differenza_quick(quick_error,'estimatori/gradiente/E_tot'//codice_numerico, &
 								  'estimatori/E_tot'//codice_simulazione,media,errore,'estimatori/gradiente/w'//codice_numerico)
 								E_tot_out(1:2,i)=(/media,errore/)
@@ -1474,8 +1452,7 @@ MODULE VMC
 						END IF
 						CALL MPI_BCAST(E_tot_out(1:2,0:num_wf),2*(num_wf+1),MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
 					ELSE
-						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag &
-						  [ module_VMC.f90 > restituisci_risultati ]'
+						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag [ module_VMC.f90 > restituisci_risultati ]'
 					END IF
 				ELSE
 					IF (flag_E_tot) THEN
@@ -1484,11 +1461,11 @@ MODULE VMC
 							  'estimatori/w'//codice_simulazione)
 							IF (mpi_myrank==0) THEN
 								PRINT * , 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
-								IF (flag_output) WRITE (7, *), 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
+								IF (flag_output) WRITE (7, *) 'Ho calcolato l energia --->   E_tot=', media, '+-', errore
 							END IF
 							E_tot_out(1:2,0)=(/media,errore/)
 							DO i = 1, num_wf, 1
-								WRITE (codice_numerico, '(I4.4)'), i
+								WRITE (codice_numerico, '(I4.4)') i
 								CALL calcola_estimatori_differenza_quick(quick_error,'estimatori/gradiente/E_tot'//codice_numerico, &
 								  'estimatori/E_tot'//codice_simulazione, media,errore,'estimatori/gradiente/w'//codice_numerico, &
 								  'estimatori/w'//codice_simulazione)
@@ -1497,8 +1474,7 @@ MODULE VMC
 						END IF
 						CALL MPI_BCAST(E_tot_out(1:2,0:num_wf),2*(num_wf+1),MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
 					ELSE
-						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag &
-						  [ module_VMC.f90 > restituisci_risultati ]'
+						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag [ module_VMC.f90 > restituisci_risultati ]'
 					END IF
 				END IF
 			ELSE
@@ -1507,7 +1483,7 @@ MODULE VMC
 						CALL calcola_estimatore_da_RAM_quick(quick_error,E_tot_out(1:2,0),E_tot,N_mc)
 						IF (mpi_myrank==0) THEN
 							PRINT * , 'Ho calcolato l energia --->   E_tot=', E_tot_out(1,0), '+-', E_tot_out(2,0)
-							IF (flag_output) WRITE (7, *), 'Ho calcolato l energia --->   E_tot=', E_tot_out(1,0), '+-', E_tot_out(2,0)
+							IF (flag_output) WRITE (7, *) 'Ho calcolato l energia --->   E_tot=', E_tot_out(1,0), '+-', E_tot_out(2,0)
 						END IF
 						DO i_mc = 1, N_mc, 1
 							dummy1(i_mc)=E_tot(i_mc)
@@ -1521,15 +1497,14 @@ MODULE VMC
 							CALL calcola_estimatore_differenza_da_RAM_quick(quick_error,E_tot_out(1:2,i),dummy1,dummy2,dummy3,dummy4,N_mc)
 						END DO
 					ELSE
-						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag &
-						  [ module_VMC.f90 > restituisci_risultati ]'
+						STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag [ module_VMC.f90 > restituisci_risultati ]'
 					END IF
 				ELSE
 					IF (flag_E_tot) THEN
 						CALL calcola_estimatore_da_RAM_quick(quick_error,E_tot_out(1:2,0),E_tot,N_mc,w)
 						IF (mpi_myrank==0) THEN
 							PRINT * , 'Ho calcolato l energia --->   E_tot=', E_tot_out(1,0), '+-', E_tot_out(2,0)
-							IF (flag_output) WRITE (7, *), 'Ho calcolato l energia --->   E_tot=', E_tot_out(1,0), '+-', E_tot_out(2,0)
+							IF (flag_output) WRITE (7, *) 'Ho calcolato l energia --->   E_tot=', E_tot_out(1,0), '+-', E_tot_out(2,0)
 						END IF
 						DO i_mc = 1, N_mc, 1
 							dummy1(i_mc)=w(i_mc)*E_tot(i_mc)
@@ -1543,8 +1518,7 @@ MODULE VMC
 							CALL calcola_estimatore_differenza_da_RAM_quick(quick_error,E_tot_out(1:2,i),dummy1,dummy2,dummy3,dummy4,N_mc)
 						END DO
 						ELSE
-							STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag &
-							  [ module_VMC.f90 > restituisci_risultati ]'
+							STOP 'Hai richiesto il calcolo dell energia ma non hai settato bene le flag [ module_VMC.f90 > restituisci_risultati ]'
 					END IF
 				END IF
 			END IF
@@ -1562,8 +1536,7 @@ MODULE VMC
 		INTEGER, ALLOCATABLE :: seed(:)
 		REAL (KIND=8) :: dum_step1, dum_step2, dum_step3
 		
-		IF (.NOT. iniz_VMC) STOP 'Prima di chiudere devi inizializzare il VMC &
-		  [ module_VMC.f90 > chiudi_VMC ]'
+		IF (.NOT. iniz_VMC) STOP 'Prima di chiudere devi inizializzare il VMC [ module_VMC.f90 > chiudi_VMC ]'
 		
 		IF (flag_disk) THEN
 			CALL RANDOM_SEED(size = j)
@@ -1572,8 +1545,8 @@ MODULE VMC
 			OPEN (UNIT=77, FILE='posizioni/seed_and_step'//codice_simulazione//'.dat', STATUS='UNKNOWN')
 			IF (mpi_myrank==0) THEN
 				flag_scrivi=.TRUE.
-				WRITE (77, *), mpi_nprocs
-				WRITE (77, *), mpi_myrank, seed, step_e, step_se, step_p
+				WRITE (77, *) mpi_nprocs
+				WRITE (77, *) mpi_myrank, seed, step_e, step_se, step_p
 			ELSE
 				flag_scrivi=.FALSE.
 			END IF
@@ -1589,7 +1562,7 @@ MODULE VMC
 					CALL MPI_RECV(dum_step1,1,MPI_DOUBLE_PRECISION,i,10+i+100,MPI_COMM_WORLD,status,mpi_ierr)
 					CALL MPI_RECV(dum_step2,1,MPI_DOUBLE_PRECISION,i,10+i+200,MPI_COMM_WORLD,status,mpi_ierr)
 					CALL MPI_RECV(dum_step3,1,MPI_DOUBLE_PRECISION,i,10+i+300,MPI_COMM_WORLD,status,mpi_ierr)
-					WRITE (77, *), i, seed, dum_step1, dum_step2, dum_step3
+					WRITE (77, *) i, seed, dum_step1, dum_step2, dum_step3
 				END IF
 			END DO
 					
@@ -1618,13 +1591,13 @@ MODULE VMC
 		
 		IF (verbose_mode) THEN
 			PRINT * , 'VMC: Ho chiuso il VMC'
-			IF (flag_output) WRITE (7, *), 'VMC: Ho chiuso il VMC'
+			IF (flag_output) WRITE (7, *) 'VMC: Ho chiuso il VMC'
 		END IF
 				
 		IF (mpi_myrank==0) THEN
 			PRINT * , '^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^'
 			IF (flag_output) THEN
-				WRITE (7, *), '^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^'
+				WRITE (7, *) '^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^'
 				CLOSE (7)
 				OPEN (UNIT=7, FILE='output.d', STATUS='OLD', POSITION='APPEND')
 			END IF
