@@ -11,6 +11,7 @@ opt_Kse=T
 opt_Jsesp=T
 opt_SDse=F
 opt_rp=F
+opt_L=F
 /
 
 !It specifies which part of the wave function is optimized with Stochastic Reconfiguration

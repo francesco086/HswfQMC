@@ -1,7 +1,7 @@
 &dati_funzione_onda
-SDe_kind='bat'        !Electronic Slater Determinant: 'pw_'=simple plane waves, 'lda'=DFT orbitals (to be specifies), 'prf'=diagonalized nuclear field Hamiltonian (dnfH), 'fre'=dnfH without interactions, 'atm'/'atp'=exp(-r*C_atm) with or without PC, 'bat'=bi-atomic, '1sb'=dynamic e-p backflow with 1s orbitals, 'spb'=dynamic e-p backflow with spline orbital, 'hl_'=Heitler-London (only for 2 electrons), 'gss/gsp'=gaussian centered on proton position, 'no_'=no SD
-Jee_kind='spp'        !Electron-Electron Jastrow: 'yuk'/'yup'=Yukawa with or without PC, 'spl'/'spp'=spline with or without PC, inizialized to fit the Yukawa Jastrow, 'no_'=no Jee
-Jep_kind='spp'        !Electronic-Proton Jastrow: 'yuk'/'yup'=Yukawa, 'spl'/'spp'=spline with or without PC, 'atm'/'atp'=exp(-F*r), 'no_'=no Jep
+SDe_kind='pw_'        !Electronic Slater Determinant: 'pw_'=simple plane waves, 'lda'=DFT orbitals (to be specifies), 'prf'=diagonalized nuclear field Hamiltonian (dnfH), 'fre'=dnfH without interactions, 'atm'/'atp'=exp(-r*C_atm) with or without PC, 'bat'=bi-atomic, '1sb'=dynamic e-p backflow with 1s orbitals, 'spb'=dynamic e-p backflow with spline orbital, 'hl_'=Heitler-London (only for 2 electrons), 'gss/gsp'=gaussian centered on proton position, 'no_'=no SD
+Jee_kind='yuk'        !Electron-Electron Jastrow: 'yuk'/'yup'=Yukawa with or without PC, 'spl'/'spp'=spline with or without PC, inizialized to fit the Yukawa Jastrow, 'no_'=no Jee
+Jep_kind='yuk'        !Electronic-Proton Jastrow: 'yuk'/'yup'=Yukawa, 'spl'/'spp'=spline with or without PC, 'atm'/'atp'=exp(-F*r), 'no_'=no Jep
 Jpp_kind='no_'        !Proton-Proton Jastrow: 'no_'=no Jpp
 SDse_kind='no_'       !eShadow Slater Determinant: 'pw_'=simple plane waves, 'pw2'=plane waves squared(for sign problem), 'lda'=DFT orbitals, 'no_'=no SD, 'gem'=geminal of gaussians, 'gss'=gaussians centered on the protons, 'atm'/'atp'=exp(-r)
 Jse_kind='no_'        !eShadow-eShadow Jastro: 'yuk'/'yup'=Yukawa, 'pot'=effective potential (DEPRECATED), 'no_'=no Jse
@@ -53,7 +53,7 @@ B_se=-1.4                         !(DEPRECATED)
 D_se=-0.7                         !(DEPRECATED) For the bounding in the Jse
 C_sesp=1.                         !(DEPRECATED)
 lda_path='orbitals'               !Path to the file (or files, with TABC) that specifies the DFT orbitals generated with Quantum Espresso
-kf_coeff_dnfH=1.                  !cut-off for SDe_kind='prf'
+kf_coeff_dnfH=1.                  !(DEPRECATED)
 flag_usa_coeff_dnfH=.FALSE.       !(DEPRECATED)
 /
 

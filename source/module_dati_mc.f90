@@ -7,6 +7,7 @@ MODULE dati_mc
 	LOGICAL, PROTECTED, SAVE :: flag_E_kin, flag_E_pot, flag_E_tot, flag_gr, flag_posizioni, flag_continua
 	LOGICAL, PROTECTED, SAVE :: flag_TABC, flag_elettroni, flag_protoni, flag_shadow, flag_mpi, flag_normalizza_pos
 	LOGICAL, PROTECTED, SAVE :: flag_disk, flag_random_file, flag_write_parallel, flag_somme_ewald, trimer_steps
+   LOGICAL, PROTECTED, SAVE :: shadow_constr_domain
 	LOGICAL, PROTECTED, SAVE :: stampa_dati_funzione_onda
 	CHARACTER(LEN=4), SAVE :: howtomove, propmove
 	CHARACTER(LEN=7), SAVE :: what_to_do
@@ -16,11 +17,13 @@ MODULE dati_mc
 	REAL (KIND=8), PROTECTED, SAVE :: step_e, step_p, step_se
 	REAL (KIND=8), PROTECTED, SAVE :: alpha_ewald, accuracy_energy_opt
 	LOGICAL, PROTECTED, SAVE :: opt_c_eff_dnfH, opt_A_Jee, opt_F_Jee, opt_A_Jep, opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp
-	LOGICAL, PROTECTED, SAVE :: opt_rp, opt_SDse, opt_SDe, opt_orbital, opt_dynamic_backflow
+	LOGICAL, PROTECTED, SAVE :: opt_rp, opt_SDse, opt_SDe, opt_orbital, opt_dynamic_backflow, opt_L
 	REAL (KIND=8), SAVE :: time_VMC_start
-   LOGICAL, PROTECTED, SAVE :: SR_adaptative_beta, fSR, SR_lambda, SR_lambda_Rp
+   CHARACTER (LEN=9) :: SR_kind
+   LOGICAL, PROTECTED, SAVE :: SR_adaptative_beta, SR_lambda, SR_lambda_Rp
    LOGICAL, PROTECTED, SAVE :: SR_change_bound
-   REAL(KIND=8), SAVE :: SR_beta, SR_beta_Rp, max_lambda, SR_max_change, SR_min_change, SR_max_SVD_MIN
+   REAL(KIND=8), SAVE :: SR_beta, SR_beta_Rp, SR_max_change, SR_min_change, SR_max_SVD_MIN, SR_maxdeltaPsi
+   REAL(KIND=8), SAVE :: lambda_init, min_lambda, max_lambda, lambda_Rp_init, min_lambda_Rp, max_lambda_Rp
    INTEGER, PROTECTED, SAVE :: SR_num_max_WO_MIN
 	
 	CONTAINS
@@ -30,7 +33,7 @@ MODULE dati_mc
 		USE dati_fisici
 		IMPLICIT NONE
 		NAMELIST /dati_mc/ N_mc, N_blank, N_1ppt, flag_TABC, N_TABC, N_mc_relax_TABC, step_e, step_se, step_p, &
- 		  acceptance_rate, flag_continua, howtomove, propmove, trimer_steps, flag_elettroni, &
+ 		  acceptance_rate, flag_continua, howtomove, propmove, trimer_steps, shadow_constr_domain, flag_elettroni, &
 		  flag_protoni, flag_shadow, flag_E_tot, flag_E_kin, flag_E_pot, flag_somme_ewald, alpha_ewald, &
 		  num_k_ewald, flag_gr, N_hist, flag_posizioni, flag_normalizza_pos, N_AV, flag_mpi, what_to_do, &
 		  stampa_dati_funzione_onda, path_dati_funzione_onda, accuracy_energy_opt, &
@@ -38,11 +41,12 @@ MODULE dati_mc
 		  quick_error, flag_random_file, random_seed_path
 		
 		NAMELIST /dati_ottimizzazione/ opt_SDe, opt_orbital, opt_dynamic_backflow, opt_A_Jee, opt_F_Jee, opt_A_Jep, &
-         opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp, opt_SDse, opt_c_eff_dnfH, opt_rp
+         opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp, opt_SDse, opt_c_eff_dnfH, opt_rp, opt_L
 
-      NAMELIST /dati_SR/ SR_num_max_WO_MIN, SR_beta, SR_beta_Rp, fSR, SR_max_SVD_MIN, &
+      NAMELIST /dati_SR/ SR_kind, SR_num_max_WO_MIN, SR_beta, SR_beta_Rp, SR_maxdeltaPsi, SR_max_SVD_MIN, &
          SR_change_bound, SR_min_change, SR_max_change, SR_adaptative_beta, &
-         SR_lambda, max_lambda, SR_lambda_Rp
+         SR_lambda, lambda_init, min_lambda, max_lambda, &
+         SR_lambda_Rp, lambda_Rp_init, min_lambda_Rp, max_lambda_Rp
 		
 		CALL CPU_TIME(time_VMC_start)
 		
@@ -105,10 +109,7 @@ MODULE dati_mc
 			mpi_nprocs=1
 			mpi_myrank=0
 		END IF
-		IF ((mpi_nprocs>1400).AND.(flag_random_file)) THEN
-			STOP 'Il file random_seed.d contiene dati per al massimo 1400 processori &
-					  [ module_dati.f90 > inizializza_MPI ]'
-		END IF
+		
 	END SUBROUTINE inizializza_MPI
 !-----------------------------------------------------------------------
 

@@ -3,9 +3,11 @@ mODULE calcola_accettazione
 	LOGICAL, PARAMETER, PRIVATE :: verbose_mode=.FALSE.
 	LOGICAL, SAVE, PRIVATE :: iniz_calcola_accettazione=.FALSE.
 	COMPLEX (KIND=8), ALLOCATABLE, SAVE, PROTECTED :: SDe_up_new(:,:), SDe_up_old(:,:), ISDe_up_new(:,:), ISDe_up_old(:,:)
-	INTEGER, ALLOCATABLE, SAVE, PROTECTED :: pvte_up_new(:), pvte_up_old(:)
+	!INTEGER, ALLOCATABLE, SAVE, PROTECTED :: pvte_up_new(:), pvte_up_old(:)
+	INTEGER, ALLOCATABLE, SAVE :: pvte_up_new(:), pvte_up_old(:)
 	COMPLEX (KIND=8), ALLOCATABLE, SAVE, PROTECTED :: SDe_dw_new(:,:), SDe_dw_old(:,:), ISDe_dw_new(:,:), ISDe_dw_old(:,:)
-	INTEGER, ALLOCATABLE, SAVE, PROTECTED :: pvte_dw_new(:), pvte_dw_old(:)
+	!INTEGER, ALLOCATABLE, SAVE, PROTECTED :: pvte_dw_new(:), pvte_dw_old(:)
+	INTEGER, ALLOCATABLE, SAVE :: pvte_dw_new(:), pvte_dw_old(:)
 	COMPLEX (KIND=8), SAVE, PROTECTED ::  detSDe_up_new, detSDe_up_old, detSDe_dw_new, detSDe_dw_old
 	REAL (KIND=8), ALLOCATABLE, SAVE, PROTECTED :: u_ee_new(:,:), u_ee_old(:,:), u_ep_new(:,:), u_ep_old(:,:)
 	REAL (KIND=8), SAVE, PROTECTED :: Uee_new, Uee_old, Uep_new, Uep_old
@@ -67,11 +69,11 @@ mODULE calcola_accettazione
 		IF (.NOT. iniz_walkers) STOP 'Prima devi inizializzare i walkers &
 		  [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
 		
-		CALL inizializza_momenta(H_N_part, num_k_ewald, L, mpi_myrank)
+		CALL inizializza_momenta(mpi_myrank)
 		CALL inizializza_dati_funzione_onda()
 				
 		IF (flag_TABC) THEN
-			CALL applica_twist(H_N_part, L)
+			CALL applica_twist()
 			IF ((SDe_kind=='prf').OR.(SDe_kind=='fre')) CALL applica_twist_dnfH()
 		END IF
 						
@@ -143,7 +145,8 @@ mODULE calcola_accettazione
 			pvtse2_dw_new=0.d0
 			pvtse2_dw_old=0.d0
 		END IF
-		IF ((Kse_kind=='gss').OR.(Kse_kind=='gsc').OR.(Kse_kind=='gsp')) THEN
+		IF ((Kse_kind=='gss').OR.(Kse_kind=='gsc').OR.(Kse_kind=='gsp')&
+          .OR.(Kse_kind=='atm').OR.(Kse_kind=='atc')) THEN
 			ALLOCATE(u_ese1_new(1:N_part), u_ese1_old(1:N_part))
 			u_ese1_new=0.d0
 			u_ese1_old=0.d0
@@ -187,13 +190,6 @@ mODULE calcola_accettazione
 			ALLOCATE(pvtgdse2_dw_new(1:H_N_part), pvtgdse2_dw_old(1:H_N_part))
 			pvtgdse2_dw_new=0.d0
 			pvtgdse2_dw_old=0.d0
-		ELSE IF ((Kse_kind=='atm').OR.(Kse_kind=='atc')) THEN
-			ALLOCATE(u_ese1_new(1:N_part), u_ese1_old(1:N_part))
-			u_ese1_new=0.d0
-			u_ese1_old=0.d0
-			ALLOCATE(u_ese2_new(1:N_part), u_ese2_old(1:N_part))
-			u_ese2_new=0.d0
-			u_ese2_old=0.d0
 		END IF
 		IF (Jse_kind/='no_') THEN
 			IF ((Jse_kind/='no_') .AND. (Jse_kind/='bou') .AND. (Jse_kind/='pot')) THEN
@@ -205,7 +201,7 @@ mODULE calcola_accettazione
 				u_se2_old=0.d0
 			END IF
 			IF ((Jse_kind=='bou') .OR. (Jse_kind=='ppb')) THEN
-				STOP 'Jse_kin=bou e ppt ancora da implementare &
+				STOP 'Jse_kind=bou e ppt ancora da implementare &
 				  [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
 				!ALLOCATE(partner_se1(1:N_part),partner_se2(1:N_part))
 				!ALLOCATE(b_se1_new(1:N_part,1:N_part), b_se1_old(1:N_part,1:N_part))
@@ -216,6 +212,8 @@ mODULE calcola_accettazione
 				!b_se2_old=0.d0
 			END IF
 			IF ( Jse_kind=='pot' ) THEN
+				STOP 'Jse_kind=pot deprecated &
+				  [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
 				ALLOCATE(u_POT_se1_new(1:H_N_part), u_POT_se1_old(1:H_N_part))
 				u_POT_se1_new=0.d0
 				u_POT_se1_old=0.d0
@@ -236,6 +234,8 @@ mODULE calcola_accettazione
 			u_sesp2_new=0.d0
 			u_sesp2_old=0.d0
 		ELSE IF (Jsesp_kind=='gsd') THEN
+				STOP 'Jsesp_kind=gsd deprecated &
+				  [ module_calcola_accettazione.f90 > inizializza_funzione_onda ]'
 			ALLOCATE(GDsp1_up_new(1:H_N_part,1:H_N_part), GDsp1_up_old(1:H_N_part,1:H_N_part))
 			GDsp1_up_new=0.d0
 			GDsp1_up_old=0.d0
@@ -434,6 +434,22 @@ mODULE calcola_accettazione
 				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E DOWN. INFO=', info
 				STOP
 			END IF
+		CASE ('bap')
+         CALL attiva_pc()
+			CALL valuta_SD_bat(-1,'up',rijpc_ep_old(0,:,:),H_N_part, &
+			  SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,SDe_up_new,detSDe_up_new)
+			CALL valuta_SD_bat(-1,'dw',rijpc_ep_old(0,:,:),H_N_part, &
+			  SDe_dw_old,detSDe_dw_old,ISDe_dw_old,pvte_dw_old,SDe_dw_new,detSDe_dw_new)
+			CALL ZGETRI( H_N_part, ISDe_up_old, H_N_part, pvte_up_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E UP. INFO=', info
+				STOP
+			END IF
+			CALL ZGETRI( H_N_part, ISDe_dw_old, H_N_part, pvte_dw_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA E DOWN. INFO=', info
+				STOP
+			END IF
       CASE ('1sb')
          CALL valuta_SD_1s_backflow(-1,'up',L,re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
             SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,ISDe_up_new,detSDe_up_new)
@@ -472,6 +488,43 @@ mODULE calcola_accettazione
          SDe_dw_old=1.d0
          detSDe_dw_old=1.d0
          ISDe_dw_old=1.d0
+      CASE('apo')
+         IF (N_part/=2) STOP "Non si puo' usare lo Slater di Antisymmetrical on Protons Orbitals &
+            con un numero di particelle diverso da 2&
+            [ module_calcola_accettazione.f90 > prima_valutazione_funzione_onda ]"
+         CALL valuta_SD_APO(rij_ep_old(0,1:2,1:2),re_old(1:3,1:2),rp_old(1:3,1:2),&
+            SDe_up_old,detSDe_up_old,ISDe_up_old,SDe_dw_old,detSDe_dw_old,ISDe_dw_old)
+		CASE ('gss')
+			CALL valuta_SD_gauss(-1,rij_ep_old(0,1:H_N_part,1:H_N_part),H_N_part, &
+			  SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,SDe_up_new,detSDe_up_new)
+			CALL valuta_SD_gauss(-1,rij_ep_old(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
+			  SDe_dw_old,detSDe_dw_old,ISDe_dw_old,pvte_dw_old,SDe_dw_new,detSDe_dw_new)
+			CALL ZGETRI( H_N_part, ISDe_up_old, H_N_part, pvte_up_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA SE1 UP. INFO=', info
+				STOP
+			END IF
+			CALL ZGETRI( H_N_part, ISDe_dw_old, H_N_part, pvte_dw_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA SE1 DOWN. INFO=', info
+				STOP
+			END IF
+		CASE ('gsp')
+			CALL attiva_pc()
+			CALL valuta_SD_gauss(-1,rijpc_ep_old(0,1:H_N_part,1:H_N_part),H_N_part, &
+			  SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,SDe_up_new,detSDe_up_new)
+			CALL valuta_SD_gauss(-1,rijpc_ep_old(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
+			  SDe_dw_old,detSDe_dw_old,ISDe_dw_old,pvte_dw_old,SDe_dw_new,detSDe_dw_new)
+			CALL ZGETRI( H_N_part, ISDe_up_old, H_N_part, pvte_up_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA SE1 UP. INFO=', info
+				STOP
+			END IF
+			CALL ZGETRI( H_N_part, ISDe_dw_old, H_N_part, pvte_dw_old, work, 3*H_N_part, info )
+			IF (info/=0) THEN
+				PRINT *, 'ERRORE NEL TROVARE LA MATRICE INVERSA SE1 DOWN. INFO=', info
+				STOP
+			END IF
 		CASE ('no_') 
 			detSDe_up_old=1.d0
 			detSDe_dw_old=1.d0
@@ -1263,6 +1316,12 @@ mODULE calcola_accettazione
 	  				  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,SDe_up_old,detSDe_up_old)
 	  				CALL valuta_SD_bat(num,'dw',rij_ep_new(0,:,:),H_N_part, &
 	  				  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+	  			CASE ('bap')
+					CALL calcola_nuove_distanze_pc(tipo,num,'e_p_')
+	  				CALL valuta_SD_bat(num,'up',rijpc_ep_new(0,:,:),H_N_part, &
+	  				  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,SDe_up_old,detSDe_up_old)
+	  				CALL valuta_SD_bat(num,'dw',rijpc_ep_new(0,:,:),H_N_part, &
+	  				  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
             CASE ('1sb')
                CALL valuta_SD_1s_backflow(num,'up',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
                   SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
@@ -1275,6 +1334,20 @@ mODULE calcola_accettazione
                   SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
             CASE ('hl_')
                CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
+            CASE ('apo')
+               CALL valuta_SD_APO(rij_ep_new(0,1:2,1:2),re_new(1:3,1:2),rp_new(1:3,1:2),&
+                  SDe_up_new,detSDe_up_new,ISDe_up_new,SDe_dw_new,detSDe_dw_new,ISDe_dw_new)
+				CASE ('gss')
+					CALL valuta_SD_gauss(num,rij_ep_new(0,1:H_N_part,1:H_N_part),H_N_part, &
+					  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,SDe_up_old,detSDe_up_old)
+					CALL valuta_SD_gauss(num,rij_ep_new(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
+					  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+				CASE ('gsp')
+					CALL calcola_nuove_distanze_pc(tipo,num,'e_p_')
+					CALL valuta_SD_gauss(num,rijpc_ep_new(0,1:H_N_part,1:H_N_part),H_N_part, &
+					  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,SDe_up_old,detSDe_up_old)
+					CALL valuta_SD_gauss(num,rijpc_ep_new(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
+					  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
 				CASE ('no_')
 					detSDe_up_new=1.d0
 					detSDe_dw_new=1.d0
@@ -1646,6 +1719,20 @@ mODULE calcola_accettazione
 						CALL valuta_SD_bat(num-H_N_part,'dw',rij_ep_new(0,:,:),H_N_part, &
 						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
 					END IF
+				CASE ('bap')
+					CALL calcola_nuove_distanze_pc(tipo,num,'e_p_')
+					IF (num==-1) THEN
+						CALL valuta_SD_bat(num,'up',rijpc_ep_new(0,:,:),H_N_part, &
+						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+						CALL valuta_SD_bat(num,'dw',rijpc_ep_new(0,:,:),H_N_part, &
+						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+					ELSE IF ((num>0) .AND. (num<=H_N_part)) THEN
+						CALL valuta_SD_bat(num,'up',rijpc_ep_new(0,:,:),H_N_part, &
+						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+					ELSE IF ((num>H_N_part) .AND. (num<=N_part)) THEN
+						CALL valuta_SD_bat(num-H_N_part,'dw',rijpc_ep_new(0,:,:),H_N_part, &
+						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+					END IF
             CASE ('1sb')
                IF (num==-1) THEN
                   CALL valuta_SD_1s_backflow(num,'up',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
@@ -1674,6 +1761,36 @@ mODULE calcola_accettazione
                END IF
             CASE('hl_')
                CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
+            CASE('apo')
+               CALL valuta_SD_APO(rij_ep_new(0,1:2,1:2),re_new(1:3,1:2),rp_new(1:3,1:2),&
+                  SDe_up_new,detSDe_up_new,ISDe_up_new,SDe_dw_new,detSDe_dw_new,ISDe_dw_new)
+				CASE ('gss')
+					IF (num==-1) THEN
+						CALL valuta_SD_gauss(num,rij_ep_new(0,1:H_N_part,1:H_N_part),H_N_part, &
+						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+						CALL valuta_SD_gauss(num,rij_ep_new(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
+						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+					ELSE IF ((num>0) .AND. (num<=H_N_part)) THEN
+						CALL valuta_SD_gauss(num,rij_ep_new(0,1:H_N_part,1:H_N_part),H_N_part, &
+						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+					ELSE IF ((num>H_N_part) .AND. (num<=N_part)) THEN
+						CALL valuta_SD_gauss(num-H_N_part,rij_ep_new(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
+						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+					END IF
+				CASE ('gsp')
+					CALL calcola_nuove_distanze_pc(tipo,num,'e_p_')
+					IF (num==-1) THEN
+						CALL valuta_SD_gauss(num,rijpc_ep_new(0,1:H_N_part,1:H_N_part),H_N_part, &
+						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+						CALL valuta_SD_gauss(num,rijpc_ep_new(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
+						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+					ELSE IF ((num>0) .AND. (num<=H_N_part)) THEN
+						CALL valuta_SD_gauss(num,rijpc_ep_new(0,1:H_N_part,1:H_N_part),H_N_part, &
+						  SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
+					ELSE IF ((num>H_N_part) .AND. (num<=N_part)) THEN
+						CALL valuta_SD_gauss(num-H_N_part,rijpc_ep_new(0,H_N_part+1:N_part,H_N_part+1:N_part),H_N_part, &
+						  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
+					END IF
 				CASE ('no_')
 					detSDe_up_new=1.d0
 					detSDe_dw_new=1.d0
@@ -2362,9 +2479,16 @@ mODULE calcola_accettazione
 			  DABS( ((detGDsp1_up_new/detGDsp1_up_old)*((detGDsp2_up_new)/(detGDsp2_up_old))* &
 			  (detGDsp1_dw_new/detGDsp1_dw_old)*((detGDsp2_dw_new)/(detGDsp2_dw_old))) ) ,8)
 		END IF
+
+      IF (shadow_constr_domain) THEN
+         IF ( (REALPART(detSDse1_up_new)*REALPART(detSDse1_up_old)<0.d0) .OR. &
+              (REALPART(detSDse1_dw_new)*REALPART(detSDse1_dw_old)<0.d0) .OR. &
+              (REALPART(detSDse2_up_new)*REALPART(detSDse2_up_old)<0.d0) .OR. &
+              (REALPART(detSDse2_dw_new)*REALPART(detSDse2_dw_old)<0.d0) ) THEN
+            prob_acc=-1.d0
+         END IF
+      END IF
 		
-		CALL RANDOM_NUMBER(random)
-				
 		!prob_acc=REAL( DEXP(-(Uee_new-Uee_old)-(Uep_new-Uep_old)-(Use1_new-Use1_old)-(Use2_new-Use2_old)-(Bse1_new-Bse1_old)- &
 		!  (Bse2_new-Bse2_old)-(Uese1_new-Uese1_old)-(Uese2_new-Uese2_old)-(Usesp1_new-Usesp1_old)-(Usesp2_new-Usesp2_old)) * &
 		!  ( (detSDe_up_new*DCONJG(detSDe_up_new)/(detSDe_up_old*DCONJG(detSDe_up_old)))* &
@@ -2424,6 +2548,8 @@ mODULE calcola_accettazione
 		!END IF
 		!END IF
 		
+		CALL RANDOM_NUMBER(random)
+
 		IF (prob_acc>random) THEN
 			accettazione=.TRUE.
 			!PRINT * , 'PROB_ACC=', prob_acc, '     random=', random, '     ACCETTATO'
@@ -2667,7 +2793,7 @@ mODULE calcola_accettazione
 		ELSE IF ((num>0) .AND. (num<=N_part)) THEN
 			SELECT CASE (tipo)
 			CASE ('e__')
-				IF ((SDe_kind/='no_').AND.(SDe_kind/='hl_')) THEN
+				IF ((SDe_kind/='no_').AND.(SDe_kind/='hl_').AND.(SDe_kind/='apo')) THEN
 					IF (num<=H_N_part) THEN
 						SDe_up_new(num,1:H_N_part)=SDe_up_old(num,1:H_N_part)
 						detSDe_up_new=detSDe_up_old
@@ -2679,6 +2805,13 @@ mODULE calcola_accettazione
                SDe_up_new=SDe_up_old
                ISDe_up_new=ISDe_up_old
                detSDe_up_new=detSDe_up_old
+            ELSE IF (SDe_kind=='apo') THEN
+					SDe_up_new=SDe_up_old
+					ISDe_up_new=ISDe_up_old
+					pvte_up_new=pvte_up_old
+					SDe_dw_new=SDe_dw_old
+					ISDe_dw_new=ISDe_dw_old
+					pvte_dw_new=pvte_dw_old
             END IF
 				IF (Jee_kind/='no_') THEN
 					u_ee_new(num,1:num-1)=u_ee_old(num,1:num-1)
@@ -2840,77 +2973,60 @@ mODULE calcola_accettazione
 					Uese2_new=Uese2_old
 				ELSE IF ((Kse_kind=='gsd').OR.(Kse_kind=='gdc').OR.(Kse_kind=='gdp')) THEN
 					!TO DO
+               STOP "NOT IMPLEMENTED YET (A16816735545)"
 				ELSE IF ((Kse_kind=='atm').OR.(Kse_kind=='atc')) THEN
 					!TO DO
+               STOP "NOT IMPLEMENTED YET (B15874563554)"
 				END IF
 				IF (SDse_kind/='no_') THEN
 					IF (num<=H_N_part) THEN
 						SDse1_up_new(num,1:H_N_part)=SDse1_up_old(num,1:H_N_part)
 						detSDse1_up_new=detSDse1_up_old
+						SDse2_up_new(num,1:H_N_part)=SDse2_up_old(num,1:H_N_part)
+						detSDse2_up_new=detSDse2_up_old
 					ELSE
 						SDse1_dw_new(num-H_N_part,1:H_N_part)=SDse1_dw_old(num-H_N_part,1:H_N_part)
 						detSDse1_dw_new=detSDse1_dw_old
+						SDse2_dw_new(num-H_N_part,1:H_N_part)=SDse2_dw_old(num-H_N_part,1:H_N_part)
+						detSDse2_dw_new=detSDse2_dw_old
 					END IF
 				END IF
 				IF ((Jse_kind/='no_') .AND. (Jse_kind/='bou') .AND. (Jse_kind/='pot')) THEN
 					u_se1_new(num,1:N_part)=u_se1_old(num,1:N_part)
 					u_se1_new(1:N_part,num)=u_se1_old(1:N_part,num)
 					Use1_new=Use1_old
-				END IF
-				IF ((Jse_kind=='bou').OR.(Jse_kind=='ppb')) THEN
-					!b_se1_new(num,1:N_part)=b_se1_old(num,1:N_part)
-					!b_se1_new(1:N_part,num)=b_se1_old(1:N_part,num)
-					!Bse1_new=Bse1_old
-				END IF
-				IF (Jse_kind=='pot') THEN
-					u_POT_se1_new(index_mol_num)=u_POT_se1_old(index_mol_num)
-					u_POT_se1_new(index_mol_num)=u_POT_se1_old(index_mol_num)
-					Use1_new=Use1_old
-				END IF
-				IF ((Jsesp_kind/='no_').AND.(Jsesp_kind/='gsd')) THEN
-					u_sesp1_new(num,1:N_part)=u_sesp1_old(num,1:N_part)
-					Usesp1_new=Usesp1_old
-				ELSE IF (Jsesp_kind=='gsd') THEN
-					IF (num<=H_N_part) THEN
-						GDsp1_up_new(num,1:H_N_part)=GDsp1_up_old(num,1:H_N_part)
-						detGDsp1_up_new=detGDsp1_up_old
-					ELSE
-						GDsp1_dw_new(num-H_N_part,1:H_N_part)=GDsp1_dw_old(num-H_N_part,1:H_N_part)
-						detGDsp1_dw_new=detGDsp1_dw_old
-					END IF
-				END IF
-				IF (SDse_kind/='no_') THEN
-					IF (num<=H_N_part) THEN
-						SDse2_up_new(num,1:H_N_part)=SDse2_up_old(num,1:H_N_part)
-						detSDse2_up_new=detSDse2_up_old
-					ELSE
-						SDse2_dw_new(num-H_N_part,1:H_N_part)=SDse2_dw_old(num-H_N_part,1:H_N_part)
-						detSDse2_dw_new=detSDse2_dw_old
-					END IF
-				END IF
-				IF ((Jse_kind/='no_') .AND. (Jse_kind/='bou') .AND. (Jse_kind/='pot')) THEN
 					u_se2_new(num,1:N_part)=u_se2_old(num,1:N_part)
 					u_se2_new(1:N_part,num)=u_se2_old(1:N_part,num)
 					Use2_new=Use2_old
 				END IF
 				IF ((Jse_kind=='bou').OR.(Jse_kind=='ppb')) THEN
-					!b_se2_new(num,1:N_part)=b_se2_old(num,1:N_part)
-					!b_se2_new(1:N_part,num)=b_se2_old(1:N_part,num)
-					!Bse2_new=Bse2_old
+					!b_se1_new(num,1:N_part)=b_se1_old(num,1:N_part)
+					!b_se1_new(1:N_part,num)=b_se1_old(1:N_part,num)
+					!Bse1_new=Bse1_old
+               STOP "NOT IMPLEMENTED YET (C35774536655)"
 				END IF
 				IF (Jse_kind=='pot') THEN
+					u_POT_se1_new(index_mol_num)=u_POT_se1_old(index_mol_num)
+					u_POT_se1_new(index_mol_num)=u_POT_se1_old(index_mol_num)
+					Use1_new=Use1_old
 					u_POT_se2_new(index_mol_num)=u_POT_se2_old(index_mol_num)
 					u_POT_se2_new(index_mol_num)=u_POT_se2_old(index_mol_num)
 					Use2_new=Use2_old
 				END IF
 				IF ((Jsesp_kind/='no_').AND.(Jsesp_kind/='gsd')) THEN
+					u_sesp1_new(num,1:N_part)=u_sesp1_old(num,1:N_part)
+					Usesp1_new=Usesp1_old
 					u_sesp2_new(num,1:N_part)=u_sesp2_old(num,1:N_part)
 					Usesp2_new=Usesp2_old
 				ELSE IF (Jsesp_kind=='gsd') THEN
 					IF (num<=H_N_part) THEN
+						GDsp1_up_new(num,1:H_N_part)=GDsp1_up_old(num,1:H_N_part)
+						detGDsp1_up_new=detGDsp1_up_old
 						GDsp2_up_new(num,1:H_N_part)=GDsp2_up_old(num,1:H_N_part)
 						detGDsp2_up_new=detGDsp2_up_old
 					ELSE
+						GDsp1_dw_new(num-H_N_part,1:H_N_part)=GDsp1_dw_old(num-H_N_part,1:H_N_part)
+						detGDsp1_dw_new=detGDsp1_dw_old
 						GDsp2_dw_new(num-H_N_part,1:H_N_part)=GDsp2_dw_old(num-H_N_part,1:H_N_part)
 						detGDsp2_dw_new=detGDsp2_dw_old
 					END IF
@@ -2984,6 +3100,13 @@ mODULE calcola_accettazione
                ELSE IF (SDe_kind=='hl_') THEN
                   SDe_up_old=SDe_up_new
                   ISDe_up_old=ISDe_up_new
+               ELSE IF (SDe_kind=='apo') THEN
+					   SDe_up_old=SDe_up_new
+					   ISDe_up_old=ISDe_up_new
+					   pvte_up_old=pvte_up_new
+					   SDe_dw_old=SDe_dw_new
+					   ISDe_dw_old=ISDe_dw_new
+					   pvte_dw_old=pvte_dw_new
                ELSE
 					   IF (num<=H_N_part) THEN
 					   	CALL aggiorna_matrice_inversa_C_1ppt(H_N_part,num,ISDe_up_old,detSDe_up_old,&
@@ -3375,7 +3498,7 @@ mODULE calcola_accettazione
 		END IF
 		
 		!Jsesp
-		IF ((tipo=='all') .OR. (tipo=='se_') .OR. (tipo=='se1') .OR. (tipo=='se2')) THEN
+		IF ((tipo=='all') .OR. (tipo=='se_') .OR. (tipo=='se1') .OR. (tipo=='se2') .OR. (tipo=='tre')) THEN
 			IF ((Jsesp_kind/='no_') .AND. (Jsesp_kind/='gsd')) THEN
 				IF ((tipo=='all') .OR. (tipo=='se_')) THEN
 					IF (num==-1) THEN
