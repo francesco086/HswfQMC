@@ -256,8 +256,7 @@ MODULE variational_calculations
 		IMPLICIT NONE
 		INTEGER (KIND=8), INTENT(IN) :: i_mc
 		INTEGER :: i
-		IF (.NOT.iniz_variational_calculations) STOP 'Prima di calcolare gli estimatori devi inizializzare &
-		  [ module_variational_calculations.f90 > calcola_estimatori_per_gradiente ]'
+		IF (.NOT.iniz_variational_calculations) STOP 'Prima di calcolare gli estimatori devi inizializzare [ module_variational_calculations.f90 > calcola_estimatori_per_gradiente ]'
 		
 		DO i = 1, num_wf, 1
 			CALL calcola_termini_funzione_onda_var(i,i_mc)
@@ -269,8 +268,7 @@ MODULE variational_calculations
 	SUBROUTINE calcola_estimatori_per_derivate_variazionali(i_mc)
 		IMPLICIT NONE
 		INTEGER (KIND=8), INTENT(IN) :: i_mc
-		IF (.NOT.iniz_variational_calculations) STOP 'Prima di calcolare gli estimatori devi inizializzare &
-		  [ module_variational_calculations.f90 > calcola_estimatori_per_gradiente ]'
+		IF (.NOT.iniz_variational_calculations) STOP 'Prima di calcolare gli estimatori devi inizializzare [ module_variational_calculations.f90 > calcola_estimatori_per_gradiente ]'
 		
 		CALL calcola_termini_derivate_variazionali(i_mc)
 		
@@ -280,8 +278,7 @@ MODULE variational_calculations
 		IMPLICIT NONE
 		INTEGER (KIND=8), INTENT(IN) :: i_mc
 		INTEGER :: i
-		IF (.NOT.iniz_variational_calculations) STOP 'Prima di calcolare gli estimatori devi inizializzare &
-		  [ module_variational_calculations.f90 > conferma_estimatori_per_gradiente ]'
+		IF (.NOT.iniz_variational_calculations) STOP 'Prima di calcolare gli estimatori devi inizializzare [ module_variational_calculations.f90 > conferma_estimatori_per_gradiente ]'
 		
 		DO i = 1, num_wf, 1
 			vwf_data(i)%w(i_mc)=vwf_data(i)%w(i_mc-1)
@@ -293,8 +290,7 @@ MODULE variational_calculations
 	SUBROUTINE conferma_estimatori_per_derivate_variazionali(i_mc)
 		IMPLICIT NONE
 		INTEGER (KIND=8), INTENT(IN) :: i_mc
-		IF (.NOT.iniz_variational_calculations) STOP 'Prima di calcolare gli estimatori devi inizializzare &
-		  [ module_variational_calculations.f90 > conferma_estimatori_per_gradiente ]'
+		IF (.NOT.iniz_variational_calculations) STOP 'Prima di calcolare gli estimatori devi inizializzare [ module_variational_calculations.f90 > conferma_estimatori_per_gradiente ]'
 		
 		O(1:num_par,i_mc)=O(1:num_par,i_mc-1)
 		
@@ -335,7 +331,7 @@ MODULE variational_calculations
 					END DO
 				END IF
 				DO i = 1, num_wf, 1
-					WRITE (codice_numerico, '(I4.4)'), i
+					WRITE (codice_numerico, '(I4.4)') i
 					CALL salva_vettore_dati_bin(vwf_data(i)%E_tot,N_mc,N_AV,flag_continua_rank,'estimatori/gradiente/E_tot'//codice_numerico)
 					IF (mpi_myrank==0) THEN
 						CALL salva_vettore_dati_dat_ridotto(vwf_data(i)%E_tot,N_mc,10000_8,'estimatori/gradiente/E_tot-sample'//codice_numerico)
@@ -347,14 +343,12 @@ MODULE variational_calculations
 				END DO
 				IF (mpi_myrank<mpi_nprocs-1) THEN
 					CALL MPI_SEND(flag_scrivi,1,MPI_LOGICAL,mpi_myrank+1,10+j,MPI_COMM_WORLD,mpi_ierr)
-					IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_SEND &
-					  [ module_variational_calculations.f90 > trascrivi_dati_per_gradiente ]'
+					IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_SEND [ module_variational_calculations.f90 > trascrivi_dati_per_gradiente ]'
 				END IF
 			END IF
 			IF (mpi_myrank==j+1 .AND. j<mpi_nprocs) THEN
 				CALL MPI_RECV(flag_scrivi,1,MPI_LOGICAL,mpi_myrank-1,10+j,MPI_COMM_WORLD,status,mpi_ierr)
-				IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_RECV &
-				  [ module_variational_calculations.f90 > trascrivi_dati_per_gradiente ]'
+				IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_RECV [ module_variational_calculations.f90 > trascrivi_dati_per_gradiente ]'
 			END IF
 		END DO
 		
@@ -394,8 +388,8 @@ MODULE variational_calculations
 								vec_save(i_mc)=O(i,i_mc)*O(j,i_mc)*w(i_mc)
 							END DO
 						END IF
-						WRITE (codice_numerico, '(I4.4)'), i
-						WRITE (codice_numerico2, '(I4.4)'), j
+						WRITE (codice_numerico, '(I4.4)') i
+						WRITE (codice_numerico2, '(I4.4)') j
 						CALL salva_vettore_dati_bin(vec_save(1:N_mc),N_mc,N_AV,flag_continua_rank, &
 						  'estimatori/gradiente/O_'//codice_numerico2//'-'//codice_numerico)
 					END DO
@@ -410,29 +404,27 @@ MODULE variational_calculations
 							vec_save(i_mc)=O(i,i_mc)*E_tot(i_mc)*w(i_mc)
 						END DO
 					END IF
-					WRITE (codice_numerico, '(I4.4)'), i
+					WRITE (codice_numerico, '(I4.4)') i
 					CALL salva_vettore_dati_bin(vec_save(1:N_mc),N_mc,N_AV,flag_continua_rank,'estimatori/gradiente/EO_'//codice_numerico)
 					IF (SDse_kind=='no_') THEN
-						WRITE (codice_numerico, '(I4.4)'), i
+						WRITE (codice_numerico, '(I4.4)') i
 						CALL salva_vettore_dati_bin(O(i,1:N_mc),N_mc,N_AV,flag_continua_rank,'estimatori/gradiente/O_'//codice_numerico)
 					ELSE
 						DO i_mc = 1, N_mc, 1
 							vec_save(i_mc)=O(i,i_mc)*w(i_mc)
 						END DO
-						WRITE (codice_numerico, '(I4.4)'), i
+						WRITE (codice_numerico, '(I4.4)') i
 						CALL salva_vettore_dati_bin(vec_save(1:N_mc),N_mc,N_AV,flag_continua_rank,'estimatori/gradiente/O_'//codice_numerico)
 					END IF
 				END DO
 				IF (mpi_myrank<mpi_nprocs-1) THEN
 					CALL MPI_SEND(flag_scrivi,1,MPI_LOGICAL,mpi_myrank+1,10+i_cpu,MPI_COMM_WORLD,mpi_ierr)
-					IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_SEND &
-					  [ module_variational_calculations.f90 > trascrivi_dati_per_derivate_variazionali ]'
+					IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_SEND [ module_variational_calculations.f90 > trascrivi_dati_per_derivate_variazionali ]'
 				END IF
 			END IF
 			IF (mpi_myrank==i_cpu+1 .AND. i_cpu<mpi_nprocs) THEN
 				CALL MPI_RECV(flag_scrivi,1,MPI_LOGICAL,mpi_myrank-1,10+i_cpu,MPI_COMM_WORLD,status,mpi_ierr)
-				IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_RECV &
-				  [ module_variational_calculations.f90 > trascrivi_dati_per_derivate_variazionali ]'
+				IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_RECV [ module_variational_calculations.f90 > trascrivi_dati_per_derivate_variazionali ]'
 			END IF
 		END DO
 		
@@ -446,8 +438,7 @@ MODULE variational_calculations
 		INTEGER :: info
 		COMPLEX (KIND=8) :: work(1:3*H_N_part)
 		
-		IF (.NOT.iniz_variational_calculations) STOP 'Prima di calcolare i termini delle funzioni d onda devi inizializzare &
-		  [ module_variational_calculations.f90 > calcola_termini_funzioni_onda_var ]'
+		IF (.NOT.iniz_variational_calculations) STOP 'Prima di calcolare i termini delle funzioni d onda devi inizializzare [ module_variational_calculations.f90 > calcola_termini_funzioni_onda_var ]'
 		
 		CALL setta_parametri(wf_parametri_var(1:num_par,i_wf),num_par)
 		
@@ -462,8 +453,7 @@ MODULE variational_calculations
 			vwf_data(i_wf)%detSDe_up=1.d0
 			vwf_data(i_wf)%detSDe_dw=1.d0
 		CASE DEFAULT
-			STOP 'Non hai selezionato un valore di SDe_kind accettabile &
-			  [ module_variational_calculations.f90 > calcola_termini_funzione_onda_var ]'
+			STOP 'Non hai selezionato un valore di SDe_kind accettabile [ module_variational_calculations.f90 > calcola_termini_funzione_onda_var ]'
 		END SELECT
         
 		SELECT CASE (Jee_kind)
@@ -478,8 +468,7 @@ MODULE variational_calculations
 		CASE ('no_') 
 			vwf_data(i_wf)%Uee=0.d0
 		CASE DEFAULT
-			STOP 'Non hai selezionato un valore di Jee_kind accettabile &
-			  [ module_variational_calculations.f90 > calcola_termini_funzione_onda_var ]'
+			STOP 'Non hai selezionato un valore di Jee_kind accettabile [ module_variational_calculations.f90 > calcola_termini_funzione_onda_var ]'
 		END SELECT
         
 		SELECT CASE (Jep_kind)
@@ -494,8 +483,7 @@ MODULE variational_calculations
 		CASE ('no_') 
 			vwf_data(i_wf)%Uep=0.d0
 		CASE DEFAULT
-			STOP 'Non hai selezionato un valore di Jep_kind accettabile &
-			  [ module_variational_calculations.f90 > calcola_termini_funzione_onda_var ]'
+			STOP 'Non hai selezionato un valore di Jep_kind accettabile [ module_variational_calculations.f90 > calcola_termini_funzione_onda_var ]'
 		END SELECT
         
 		SELECT CASE (SDse_kind)
@@ -530,8 +518,7 @@ MODULE variational_calculations
 			vwf_data(i_wf)%detSDse2_up=1.d0
 			vwf_data(i_wf)%detSDse2_dw=1.d0
 		CASE DEFAULT
-			STOP 'Non hai selezionato un valore di SDse_kind accettabile &
-			  [ module_variational_calculations.f90 > calcola_termini_funzione_onda_var ]'
+			STOP 'Non hai selezionato un valore di SDse_kind accettabile [ module_variational_calculations.f90 > calcola_termini_funzione_onda_var ]'
 		END SELECT
         
 		SELECT CASE (Jse_kind)
@@ -548,8 +535,7 @@ MODULE variational_calculations
 			vwf_data(i_wf)%Use1=0.d0
 			vwf_data(i_wf)%Use2=0.d0
 		CASE DEFAULT
-			STOP 'Non hai selezionato un valore di Jse_kind accettabile &
-			  [ module_variational_calculations.f90 > calcola_termini_funzione_onda_var ]'
+			STOP 'Non hai selezionato un valore di Jse_kind accettabile [ module_variational_calculations.f90 > calcola_termini_funzione_onda_var ]'
 		END SELECT
         
 		SELECT CASE (Kse_kind)
@@ -627,8 +613,7 @@ MODULE variational_calculations
 			vwf_data(i_wf)%detGDse2_up=1.d0
 			vwf_data(i_wf)%detGDse2_dw=1.d0
 		CASE DEFAULT
-			STOP 'Non hai selezionato un valore di Kse_kind accettabile &
-			  [ module_variational_calculations.f90 > calcola_termini_funzione_onda_var ]'
+			STOP 'Non hai selezionato un valore di Kse_kind accettabile [ module_variational_calculations.f90 > calcola_termini_funzione_onda_var ]'
 		END SELECT
         
 		SELECT CASE (Jsesp_kind)
@@ -683,8 +668,7 @@ MODULE variational_calculations
 			vwf_data(i_wf)%detGDsp2_up=1.d0
 			vwf_data(i_wf)%detGDsp2_dw=1.d0
 		CASE DEFAULT
-			STOP 'Non hai selezionato un valore di Jsesp_kind accettabile &
-			  [ module_variational_calculations.f90 > calcola_termini_funzione_onda_var ]'
+			STOP 'Non hai selezionato un valore di Jsesp_kind accettabile [ module_variational_calculations.f90 > calcola_termini_funzione_onda_var ]'
 		END SELECT
         
 		IF (verbose_mode) PRINT *, 'calcola_accettazione: Ho inizializzato la funzione d onda'
@@ -933,11 +917,9 @@ MODULE variational_calculations
 				CALL derivata_Jsese_POT(Onow(cont:cont+1))
 				cont=cont+2
 			CASE ('bou')
-				STOP 'Jsese bou non ancora implementato per lo SR &
-				[ module_variational_calculations.f90 > calcola_estimatori_per_derivate_variazionali ]'
+				STOP 'Jsese bou non ancora implementato per lo SR [ module_variational_calculations.f90 > calcola_estimatori_per_derivate_variazionali ]'
 			CASE ('ppb')
-				STOP 'Jsese ppb non ancora implementato per lo SR &
-				[ module_variational_calculations.f90 > calcola_estimatori_per_derivate_variazionali ]'
+				STOP 'Jsese ppb non ancora implementato per lo SR [ module_variational_calculations.f90 > calcola_estimatori_per_derivate_variazionali ]'
 			CASE ('yuk')
 				IF (split_Asese) THEN
 					IF (split_Fsese) THEN
@@ -980,8 +962,7 @@ MODULE variational_calculations
 		IF (opt_Jsesp) THEN
 			SELECT CASE (Jsesp_kind)
 			CASE ('pot')
-				STOP 'Jsesp pot non ancora implementato per lo SR &
-				[ module_variational_calculations.f90 > calcola_estimatori_per_derivate_variazionali ]'
+				STOP 'Jsesp pot non ancora implementato per lo SR [ module_variational_calculations.f90 > calcola_estimatori_per_derivate_variazionali ]'
 			CASE ('yuk')
 				IF (split_Asesp) THEN
 					IF (split_Fsesp) THEN
@@ -1154,8 +1135,7 @@ MODULE variational_calculations
 		REAL (KIND=8) :: dE_kin, dE_JF, dE_pot
 		REAL (KIND=8) :: Uep_, u_ep_(1:N_part,1:N_part)
 		
-		IF (.NOT.iniz_variational_calculations) STOP 'Prima di calcolare gli estimatori devi inizializzare &
-		  [ module_variational_calculations.f90 > calcola_estimatori_var ]'
+		IF (.NOT.iniz_variational_calculations) STOP 'Prima di calcolare gli estimatori devi inizializzare [ module_variational_calculations.f90 > calcola_estimatori_var ]'
 		
 		vwf_data(i_wf)%w(i_mc)=REAL( DEXP(-(vwf_data(i_wf)%Uee-Uee_old)-(vwf_data(i_wf)%Uep-Uep_old)- &
 		  (vwf_data(i_wf)%Use1-Use1_old)-(vwf_data(i_wf)%Use2-Use2_old)- &
@@ -1178,8 +1158,7 @@ MODULE variational_calculations
 		IMPLICIT NONE
 		INTEGER :: i
 		
-		IF (.NOT.iniz_variational_calculations) STOP 'Prima di chiudere il modulo devi inizializzarlo &
-		  [ module_variational_calculations.f90 > calcola_estimatori_var ]'
+		IF (.NOT.iniz_variational_calculations) STOP 'Prima di chiudere il modulo devi inizializzarlo [ module_variational_calculations.f90 > calcola_estimatori_var ]'
 		
 		IF (what_to_do=='congrad') THEN
 			DO i = 1, num_wf, 1

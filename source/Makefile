@@ -9,62 +9,47 @@ COMPUTER:=$(shell hostname)
 USERNAME:=$(shell whoami)
 IDENTIFIER:=$(USERNAME)@$(COMPUTER)
 
-#set the flags for the compiler 
-FFLAGS=-O3
-#standard: append _exe to the executable name
-EXEC1=$(EXEC2)_exe
-
-#quick compile compiling mode
-ifeq ($(QUICK_COMPILE),true)
-	FFLAGS=-O0
-	EXEC1=$(EXEC2)_qc
-endif
-
-#debug compiling mode
-ifeq ($(DEBUG),true)
-  	FFLAGS=-O0 -g -fbounds-check
-	EXEC1=$(EXEC2)_debug
-endif
-
-
-
-#set the libraries and machine-depending variables
-
 #stored settings for users generated with pilotHswfQMC setmakefile
 include makefile.users_settings
 
 #by hand
 ifeq ($(IDENTIFIER),username@hostname)    #insert your username and hostname
-	EXEC=             #Name of the executable. Standard is: EXEC=$(EXEC1)
-	LIBS=             #necessary library, BLAS AND LAPACK. Therefore usually: LIBS=-llapack -lblas
-	LDFLAGS=          #path to the libraries, if needed. With system libraries is empty.
-	FC=               #fortran compiler. Normally: FC=gfortran
+        EXEC=             #Name of the executable. Standard is: EXEC=$(EXEC1)
+        LIBS=             #necessary library, BLAS AND LAPACK. Therefore usually: LIBS=-llapack -lblas
+        LDFLAGS=          #path to the libraries, if needed. With system libraries is empty.
+        FC=               #fortran compiler. Normally: FC=gfortran
+        XL=               #IBM XL flag. Normally: XL=false
+endif
+
+#standard: append _exe to the executable name
+EXEC1=$(EXEC2)_exe
+
+#set the flags for the compiler
+
+ifeq ($(XL),true)
+	FFLAGS=-O5 -qstrict -qarch=qp -qtune=qp -qsimd=noauto -qessl -qmaxmem=-1 -qfree=f90 -qport=mod
+
+else
+	FFLAGS=-O3 -ffree-line-length-none -fbackslash
+	#quick compile compiling mode
+	ifeq ($(QUICK_COMPILE),true)
+		FFLAGS=-O0 -ffree-line-length-none -fbackslash
+		EXEC1=$(EXEC2)_qc
+	endif
+
+	#debug compiling mode
+	ifeq ($(DEBUG),true)
+		FFLAGS=-O0 -ffree-line-length-none -fbackslash -g -fbounds-check -ffpe-trap=zero,overflow,underflow,invalid -fbacktrace
+		EXEC1=$(EXEC2)_debug
+	endif
 endif
 
 
-#OLD SETTINGS
-#ifeq ($(COMPUTER),macbook)
-#	EXEC=$(EXEC1)_macbook
-#	# elenco librerie dinamiche (quelle che aggiungi tu a mano per l'eseguibile in questione
-#	# che non centrano con quelle di sistema statiche)
-#   LIBS=-lrefblas -llapack
-#	# questo è per includere il percorso locale dove hai le tue lapack o quantaltro compilato
-#	# correttamente; se c'è una versione di sistema delle lapack non serve esplicitarlo
-#   LDFLAGS=-L/Users/kenzo/lib/lapack-3.5.0/
-#   FC=mpif90-openmpi-gcc49
-#endif
-#ifeq ($(COMPUTER),login01.mogon)
-#	EXEC=$(EXEC1)
-#	FC=mpif90
-#    	LIBS=-lmylapack -lmyblas
-#    	LDFLAGS=-L/home/calcavec/lapack-3.4.2/
-#endif
-
+# Now make it
 
 # elenco degli oggetti da creare (c'è sempre l'oggetto del programma principale e gli oggetti
 # dei vari moduli)
 OBJECTS=main.o module_dft.o module_dati_fisici.o module_dati_mc.o module_dnfH.o module_stati_eccitati.o module_generic_tools.o module_lattice.o module_VMC.o module_estimatori.o module_momenta.o module_calcola_accettazione.o module_funzione_onda.o module_walkers.o module_variational_opt.o module_variational_calculations.o module_grad_lapl_psi.o module_fermi_k.o
-
 
 # crea tutti gli oggetti e li linka correttamente con le librerie; scrivere "make"
 all: $(OBJECTS)
@@ -115,7 +100,7 @@ module_dnfH.o: module_dati_fisici.o module_fermi_k.o module_walkers.o module_dnf
 	$(FC) $(FFLAGS) -c module_dnfH.f90 
 
 module_funzione_onda.o: module_dft.o module_momenta.o module_generic_tools.o module_dati_mc.o module_dati_fisici.o module_dnfH.o module_walkers.o module_funzione_onda.f90
-	$(FC) $(FFLAGS) $(LDFLAGS) -c module_funzione_onda.f90 $(LIBS)
+	$(FC) $(FFLAGS) $(LDFLAGS) -c module_funzione_onda.f90
 
 module_momenta.o: module_dati_fisici.o module_dati_mc.o module_fermi_k.o module_momenta.f90
 	$(FC) $(FFLAGS) -c module_momenta.f90 

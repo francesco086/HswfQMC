@@ -18,10 +18,12 @@ MODULE dati_mc
 	REAL (KIND=8), PROTECTED, SAVE :: alpha_ewald, accuracy_energy_opt
 	LOGICAL, PROTECTED, SAVE :: opt_c_eff_dnfH, opt_A_Jee, opt_F_Jee, opt_A_Jep, opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp
 	LOGICAL, PROTECTED, SAVE :: opt_rp, opt_SDse, opt_SDe, opt_orbital, opt_dynamic_backflow, opt_L
+	CHARACTER (LEN=6), SAVE  :: costri_rp
+	REAL (KIND=8), PROTECTED, SAVE :: costri_rp_param
 	REAL (KIND=8), SAVE :: time_VMC_start
    CHARACTER (LEN=9) :: SR_kind
    LOGICAL, PROTECTED, SAVE :: SR_adaptative_beta, SR_lambda, SR_lambda_Rp
-   LOGICAL, PROTECTED, SAVE :: SR_change_bound
+   LOGICAL, PROTECTED, SAVE :: SR_change_bound, SR_change_bound_Rp = .FALSE.
    REAL(KIND=8), SAVE :: SR_beta, SR_beta_Rp, SR_max_change, SR_min_change, SR_max_SVD_MIN, SR_maxdeltaPsi
    REAL(KIND=8), SAVE :: lambda_init, min_lambda, max_lambda, lambda_Rp_init, min_lambda_Rp, max_lambda_Rp
    INTEGER, PROTECTED, SAVE :: SR_num_max_WO_MIN
@@ -41,7 +43,7 @@ MODULE dati_mc
 		  quick_error, flag_random_file, random_seed_path
 		
 		NAMELIST /dati_ottimizzazione/ opt_SDe, opt_orbital, opt_dynamic_backflow, opt_A_Jee, opt_F_Jee, opt_A_Jep, &
-         opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp, opt_SDse, opt_c_eff_dnfH, opt_rp, opt_L
+         opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp, opt_SDse, opt_c_eff_dnfH, opt_rp, costri_rp, costri_rp_param, opt_L
 
       NAMELIST /dati_SR/ SR_kind, SR_num_max_WO_MIN, SR_beta, SR_beta_Rp, SR_maxdeltaPsi, SR_max_SVD_MIN, &
          SR_change_bound, SR_min_change, SR_max_change, SR_adaptative_beta, &
@@ -62,14 +64,13 @@ MODULE dati_mc
 		READ (2, NML=dati_SR)
 		CLOSE (2)
 		
-		IF (flag_continua .AND. (.NOT. flag_disk)) STOP 'Non puoi continuare se non hai scritto su disco i dati &
-		  [ module_dati.f90 > inizializza_dati_mc ]'
+		IF (flag_continua .AND. (.NOT. flag_disk)) STOP 'Non puoi continuare se non hai scritto su disco i dati [ module_dati.f90 > inizializza_dati_mc ]'
 		IF (alpha_ewald==-1.d0) alpha_ewald=5.d0/MIN(L(1),L(2),L(3))
 		IF ((iniz_MPI).AND.(N_mc>0)) THEN
 			N_mc=N_mc/mpi_nprocs
 		END IF
 		IF (N_mc<0) N_mc=-N_mc 
-		IF (N_AV<0) N_AV=MAX(-N_mc/N_AV,1)
+		IF (N_AV<0) N_AV=MAX(-N_mc/N_AV,1_8)
 		IF (N_1ppt<0) THEN
 			N_1ppt=CEILING(-(REAL(N_1ppt)/100.)*REAL(N_part))
 			IF (flag_shadow) N_1ppt=N_1ppt*3
@@ -93,17 +94,13 @@ MODULE dati_mc
 		CALL inizializza_dati_mc()
 		
 		IF (flag_mpi) THEN
-			IF (.NOT. iniz_dati_mc) STOP 'Non puoi inizializzare MPI senza prima leggere i dati iniziali &
-			  [ module_dati.f90 > inizializza_MPI ]'
+			IF (.NOT. iniz_dati_mc) STOP 'Non puoi inizializzare MPI senza prima leggere i dati iniziali [ module_dati.f90 > inizializza_MPI ]'
 			CALL MPI_INIT(mpi_ierr)
-			IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore nell inizializzazione di MPI &
-			  [ module_dati.f90 > inizializza_MPI ]'
+			IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore nell inizializzazione di MPI [ module_dati.f90 > inizializza_MPI ]'
 			CALL MPI_COMM_SIZE(MPI_COMM_WORLD, mpi_nprocs, mpi_ierr)
-			IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_COMM_SIZE &
-			  [ module_dati.f90 > inizializza_MPI ]'
+			IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_COMM_SIZE [ module_dati.f90 > inizializza_MPI ]'
 			CALL MPI_COMM_RANK(MPI_COMM_WORLD, mpi_myrank, mpi_ierr)
-			IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_COMM_RANK &
-			  [ module_dati.f90 > inizializza_MPI ]'
+			IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore in MPI_COMM_RANK [ module_dati.f90 > inizializza_MPI ]'
 			iniz_MPI=.TRUE.
 		ELSE
 			mpi_nprocs=1
@@ -168,11 +165,9 @@ MODULE dati_mc
 	SUBROUTINE termina_MPI()
 		IMPLICIT NONE
 		IF (flag_mpi) THEN
-			IF (.NOT. iniz_MPI) STOP 'Non puoi inizializzare MPI senza prima averlo inizializzato &
-			  [ module_dati.f90 > termina_MPI ]'
+			IF (.NOT. iniz_MPI) STOP 'Non puoi inizializzare MPI senza prima averlo inizializzato [ module_dati.f90 > termina_MPI ]'
 			CALL MPI_FINALIZE(mpi_ierr)
-			IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore nel finalizzare MPI &
-			  [ module_dati.f90 > termina_MPI ]'
+			IF (mpi_ierr/=MPI_SUCCESS) STOP 'Errore nel finalizzare MPI [ module_dati.f90 > termina_MPI ]'
 		END IF
 	END SUBROUTINE termina_MPI
 !-----------------------------------------------------------------------

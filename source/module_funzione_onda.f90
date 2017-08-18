@@ -71,17 +71,15 @@ MODULE funzione_onda
 		  Fsesp_ud_yuk, Ggaus, C_atm, N_ritraccia_coppie, N_mc_relax_traccia_coppie, A_POT_se, D_POT_se, Gsesp, c_se, &
 		  B_se, D_se, c_sesp, lda_path, kf_coeff_dnfH, flag_usa_coeff_dnfH
 		
-		IF (iniz_funzione_onda) STOP 'funzione_onda é giá inizializzato &
-		  [ module_funzione_onda.f90 > inizializza_dati_funzione_onda ]'
+		IF (iniz_funzione_onda) STOP 'funzione_onda é giá inizializza [ module_funzione_onda.f90 > inizializza_dati_funzione_onda ]'
 
       CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
 				
-		OPEN (2, FILE=path_dati_funzione_onda,STATUS='OLD')
+		OPEN (2, FILE=path_dati_funzione_onda,STATUS='OLD',DELIM='QUOTE')
 		READ (2,NML=dati_funzione_onda)
 		CLOSE (2)
 
-		IF (.NOT. iniz_walkers) STOP 'Non puoi inizializzare la funzione d onda prima di aver inizializzato i walkers &
-		  [ module_funzione_onda.f90 > inizializza_dati_funzione_onda ]'
+		IF (.NOT. iniz_walkers) STOP 'Non puoi inizializzare la funzione d onda prima di aver inizializzato i walkers [ module_funzione_onda.f90 > inizializza_dati_funzione_onda ]'
 		IF ( Jse_kind=='pot' ) THEN
 			flag_traccia_coppie=.TRUE.
 			CALL attiva_traccia_coppie_mol_ss()
@@ -89,8 +87,7 @@ MODULE funzione_onda
 			flag_traccia_coppie=.FALSE.
 		END IF
 												
-		IF (.NOT. iniz_dati_fisici) STOP 'Non puoi inizializzare la funzione d onda prima di aver letto i dati fisici &
-		  [ module_funzione_onda.f90 > inizializza_dati_funzione_onda ]'
+		IF (.NOT. iniz_dati_fisici) STOP 'Non puoi inizializzare la funzione d onda prima di aver letto i dati fisici [ module_funzione_onda.f90 > inizializza_dati_funzione_onda ]'
 				
 		IF ((SDe_kind=='lda').OR.(SDse_kind=='lda')) THEN
 			
@@ -108,8 +105,7 @@ MODULE funzione_onda
 					CALL SYSTEM ('ls -d  '//TRIM(lda_path_complete)//'/K* | wc -w > '//&
                   TRIM(lda_path_complete)//'/.numero_cartelle_K')
 					OPEN(UNIT=66, FILE=TRIM(lda_path_complete)//'/.numero_cartelle_K', STATUS='OLD', IOSTAT=ios)
-					IF ( ios /= 0 ) STOP "Errore ad aprire il file per determinare il numero di cartelle K &
-					  [inizializza_dati_funzione_onda.f90]"
+					IF ( ios /= 0 ) STOP "Errore ad aprire il file per determinare il numero di cartelle K [inizializza_dati_funzione_onda.f90]"
 					READ (UNIT=66, FMT=*, IOSTAT=ios) num_K_points
 					CLOSE (66)
 				END IF
@@ -130,9 +126,8 @@ MODULE funzione_onda
 				DO WHILE ( dummy1>pesi_K_points(i_twist+1) )
 					i_twist=i_twist+1
 				END DO
-				IF (i_twist>num_K_points) STOP 'Errore: i_twist é maggiore di num_K_points &
-				  [ module_funzione_onda.f90 > inizializza_dati_funzione_onda ]'
-				WRITE (istring, '(I4.4)'), i_twist
+				IF (i_twist>num_K_points) STOP 'Errore: i_twist é maggiore di num_K_point [ module_funzione_onda.f90 > inizializza_dati_funzione_onda ]'
+				WRITE (istring, '(I4.4)') i_twist
 				CALL leggi_N_pw(TRIM(lda_path_complete)//'/K0'//istring//'/gkvectors.xml',N_pw_lda)
 				ALLOCATE(k_pw_lda(0:3,1:N_pw_lda),fattori_orb_lda(1:H_N_part),fattori_pw_lda(1:N_pw_lda,1:H_N_part))
 				ALLOCATE(k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
@@ -149,12 +144,13 @@ MODULE funzione_onda
 					END DO
 				END DO
 			ELSE
-            lda_path_complete=TRIM(lda_path)//"/OUT.save/K00001"
+            			lda_path_complete=TRIM(lda_path)//"/OUT.save/K00001"
 				CALL leggi_N_pw(TRIM(lda_path_complete)//'/gkvectors.xml',N_pw_lda)
 				ALLOCATE(k_pw_lda(0:3,1:N_pw_lda),fattori_orb_lda(1:H_N_part),fattori_pw_lda(1:N_pw_lda,1:H_N_part))
 				ALLOCATE(k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
 				CALL leggi_evc_xml(H_N_part,N_pw_lda,TRIM(lda_path_complete)//'/evc.xml',fattori_pw_lda)
 				CALL leggi_gkvectors_xml(N_pw_lda,TRIM(lda_path_complete)//'/gkvectors.xml',k_pw_int_lda(1:3,1:N_pw_lda),twist_lda(1:3))
+
 				DO i = 1, 3, 1
 					twist_lda(i)=twist_lda(i)/r_s
 				END DO
@@ -214,11 +210,11 @@ MODULE funzione_onda
 				!INQUIRE(FILE=lda_path,EXIST=flag_file)
 				!IF (flag_file) THEN
 				!	OPEN (UNIT=18, FILE=lda_path, STATUS='OLD')
-				!	READ (18,*), c_eff_dnfH
+				!	READ (18,*) c_eff_dnfH
 				!	CLOSE(18)
 				!ELSE
 				!	!IF (mpi_myrank==0) PRINT * , 'funzione_onda: non essendo presente un file, setto c_eff random.'
-				!	!IF (flag_output) WRITE (7, *), 'funzione_onda: non essendo presente un file, setto c_eff random.'
+				!	!IF (flag_output) WRITE (7, *) 'funzione_onda: non essendo presente un file, setto c_eff random.'
 				!	ALLOCATE(dummy(1:2,1:N_pw_lda,1:N_pw_lda))
 				!	CALL RANDOM_NUMBER(dummy)
 				!	dummy=dummy-0.5d0
@@ -371,8 +367,7 @@ MODULE funzione_onda
 			n_kern_e=12     !minimo 2
 			eps_kern_e=MINVAL(L)/REAL(n_kern_e+1,8)
 			l2_kern_e=MINVAL(L)*0.5d0-eps_kern_e
-			IF (l2_kern_e<l1_kern_e) STOP 'l2_kern_e minore di l1_kern_e &
-			  [ module_funzione_onda.f90 > inizializza_dati_funzione_onda ]'
+			IF (l2_kern_e<l1_kern_e) STOP 'l2_kern_e minore di l1_kern_e [ module_funzione_onda.f90 > inizializza_dati_funzione_onda ]'
 			beta1_kern_e=-2.d0*alpha1_kern_e/((eps_kern_e**3)*n_kern_e*(n_kern_e-1)*(l2_kern_e**(n_kern_e-2)))
 			beta0_kern_e=alpha0_kern_e-alpha1_kern_e/eps_kern_e-beta1_kern_e*(l2_kern_e**n_kern_e)
 			!IF ( mpi_myrank==0 ) THEN
@@ -387,8 +382,7 @@ MODULE funzione_onda
 			alpha0_kern_e=C_kern_e*3.d0*MINVAL(L)/8.d0
 		END IF
 		
-		IF (verbose_mode) PRINT * , 'funzione_onda: Ho letto le informazioni riguardo la funzione d onda da usare da &
-		  file e ho inizializzato la funzione d onda'
+		IF (verbose_mode) PRINT * , 'funzione_onda: Ho letto le informazioni riguardo la funzione d onda da usare da file e ho inizializzato la funzione d onda'
 		
 		iniz_funzione_onda=.TRUE.
 				
@@ -415,8 +409,7 @@ MODULE funzione_onda
       CASE(2)
          Jeeyuk = (Aee_yuk*(-2.d0 + 2.d0* DEXP(Fee_yuk* y) - 2.d0* Fee_yuk* y - (Fee_yuk*y)**2))/(DEXP(Fee_yuk*y)*(y**3))
       CASE DEFAULT
-		   STOP 'La spline richiede una derivata di ordine superiore al 2, che non e stata implementata &
-		      [ module_funzione_onda.f90 > Jeeyuk ]'
+		   STOP 'La spline richiede una derivata di ordine superiore al 2, che non e stata implementata [ module_funzione_onda.f90 > Jeeyuk ]'
       END SELECT
    END FUNCTION Jeeyuk
 !-----------------------------------------------------------------------
@@ -440,8 +433,7 @@ MODULE funzione_onda
       CASE(2)
          Jeeyuk_ud = (Aee_yuk*(-2.d0 + 2.d0* DEXP(Fee_yuk* y) - 2.d0* Fee_yuk* y - (Fee_yuk*y)**2))/(DEXP(Fee_yuk*y)*(y**3))
       CASE DEFAULT
-		   STOP 'La spline richiede una derivata di ordine superiore al 2, che non e stata implementata &
-		      [ module_funzione_onda.f90 > Jeeyuk ]'
+		   STOP 'La spline richiede una derivata di ordine superiore al 2, che non e stata implementata [ module_funzione_onda.f90 > Jeeyuk ]'
       END SELECT
    END FUNCTION Jeeyuk_ud
 !-----------------------------------------------------------------------
@@ -465,8 +457,7 @@ MODULE funzione_onda
       CASE(2)
          Jepyuk = (Aep_yuk*(-2.d0 + 2.d0* DEXP(Fep_yuk* y) - 2.d0* Fep_yuk* y - (Fep_yuk*y)**2))/(DEXP(Fep_yuk*y)*(y**3))
       CASE DEFAULT
-		   STOP 'La spline richiede una derivata di ordine superiore al 2, che non e stata implementata &
-		      [ module_funzione_onda.f90 > Jeeyuk ]'
+		   STOP 'La spline richiede una derivata di ordine superiore al 2, che non e stata implementata [ module_funzione_onda.f90 > Jeeyuk ]'
       END SELECT
    END FUNCTION Jepyuk
 !-----------------------------------------------------------------------
@@ -490,8 +481,7 @@ MODULE funzione_onda
       CASE(2)
          Jepyuk_ud = (Aep_yuk*(-2.d0 + 2.d0* DEXP(Fep_yuk* y) - 2.d0* Fep_yuk* y - (Fep_yuk*y)**2))/(DEXP(Fep_yuk*y)*(y**3))
       CASE DEFAULT
-		   STOP 'La spline richiede una derivata di ordine superiore al 2, che non e stata implementata &
-		      [ module_funzione_onda.f90 > Jeeyuk ]'
+		   STOP 'La spline richiede una derivata di ordine superiore al 2, che non e stata implementata [ module_funzione_onda.f90 > Jeeyuk ]'
       END SELECT
    END FUNCTION Jepyuk_ud
 !-----------------------------------------------------------------------
@@ -525,10 +515,9 @@ MODULE funzione_onda
 		  Fsesp_ud_yuk, Ggaus, C_atm, N_ritraccia_coppie, N_mc_relax_traccia_coppie, A_POT_se, D_POT_se, Gsesp, c_se, &
 		  B_se, D_se, c_sesp, lda_path, kf_coeff_dnfH, flag_usa_coeff_dnfH
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > stampa_file_dati_funzione_onda ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzat [ module_funzione_onda.f90 > stampa_file_dati_funzione_onda ]'
 		
-		OPEN (2, FILE=nome_file,STATUS='UNKNOWN')
+		OPEN (2, FILE=nome_file,STATUS='UNKNOWN',DELIM='QUOTE')
 		IF (.NOT. split_Aee) Aee_ud_yuk=Aee_yuk
 		IF (.NOT. split_Aep) Aep_ud_yuk=Aep_yuk
 		IF (.NOT. split_Asese) Asese_ud_yuk=Asese_yuk
@@ -543,7 +532,7 @@ MODULE funzione_onda
 		
 		IF (((SDe_kind=='prf').OR.(SDe_kind=='fre')).AND.(flag_usa_coeff_dnfH)) THEN
 			OPEN (2, FILE=nome_file//'.c_eff_dnfH',STATUS='UNKNOWN')
-			WRITE (2, *), c_eff_dnfH
+			WRITE (2, *) c_eff_dnfH
 			CLOSE(2)
 		END IF
 
@@ -573,8 +562,7 @@ MODULE funzione_onda
 		REAL (KIND=8), INTENT(INOUT) :: nuovi_parametri(1:numero_parametri)
 		INTEGER :: cont, i, j, max_num_pw
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > setta_parametri ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato [ module_funzione_onda.f90 > setta_parametri ]'
 		
 		cont=1
 		
@@ -981,15 +969,13 @@ MODULE funzione_onda
 					C_atm=nuovi_parametri(cont)
 					cont=cont+1
 				CASE DEFAULT
-					STOP 'Non puoi minimizzare SDse se non contiene parametri variazionali &
-					  [ module_funzione_onda.f90 > setta_parametri ]'
+					STOP 'Non puoi minimizzare SDse se non contiene parametri variazionali [ module_funzione_onda.f90 > setta_parametri ]'
 				END SELECT
 			END IF
 		END IF
 		
 		IF ( opt_Rp ) THEN
-			IF (.NOT. iniz_walkers) STOP 'Prima di settare Rp devi aver inizializzato i walkers &
-			  [ module_funzione_onda.f90 > setta_parametri ]'
+			IF (.NOT. iniz_walkers) STOP 'Prima di settare Rp devi aver inizializzato i walkers [ module_funzione_onda.f90 > setta_parametri ]'
 			CALL setta_Rcrystal(nuovi_parametri(cont:cont+3*N_part-1))
          cont=cont+3*N_part
 		END IF
@@ -1003,57 +989,56 @@ MODULE funzione_onda
 		IMPLICIT NONE
 		INTEGER :: media_num_pw
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > stampa_parametri_variazionali ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzat [ module_funzione_onda.f90 > stampa_parametri_variazionali ]'
 				
 		IF (SDe_kind/='no_') THEN
 			SELECT CASE (SDe_kind)
 			CASE ('pw_')
 				PRINT * , '     SDe: ', SDe_kind
-				IF (flag_output) WRITE (7, *), '     SDe: ', SDe_kind
+				IF (flag_output) WRITE (7, *) '     SDe: ', SDe_kind
 			CASE ('lda')
 				!PRINT * , '     SDe: ', SDe_kind, '          Numero onde piane:', N_pw_lda
-				!IF (flag_output) WRITE (7, *), '     SDe: ', SDe_kind, '          Numero onde piane:', N_pw_lda
+				!IF (flag_output) WRITE (7, *) '     SDe: ', SDe_kind, '          Numero onde piane:', N_pw_lda
 				PRINT * , '     SDe: ', SDe_kind, '          Numero onde piane:', REAL(SUM(num_fpw_lda))/REAL(H_N_part)
-				IF (flag_output) WRITE (7, *), '     SDe: ', SDe_kind, '          Numero onde piane:', REAL(SUM(num_fpw_lda))/REAL(H_N_part)
+				IF (flag_output) WRITE (7, *) '     SDe: ', SDe_kind, '          Numero onde piane:', REAL(SUM(num_fpw_lda))/REAL(H_N_part)
 			CASE ('prf')
 				media_num_pw=SUM(num_pw_orbit(1:N_pw_lda))/N_pw_lda
 				PRINT * , '     SDe: ', SDe_kind, '          Numero onde piane:', N_pw_lda, &
 				  '     (', media_num_pw, ' per orbitale)      ctf=', REAL(kf_coeff_dnfH,4)
-				IF (flag_output) WRITE (7, *), '     SDe: ', SDe_kind, '          Numero onde piane:', N_pw_lda, &
+				IF (flag_output) WRITE (7, *) '     SDe: ', SDe_kind, '          Numero onde piane:', N_pw_lda, &
 				  '     (', media_num_pw, ' per orbitale)      ctf=', REAL(kf_coeff_dnfH,4)
 			CASE ('fre')
 				media_num_pw=SUM(num_pw_orbit(1:N_pw_lda))/N_pw_lda
 				PRINT * , '     SDe: ', SDe_kind, '          Numero onde piane:', N_pw_lda, &
 				  '     (', media_num_pw, ' per orbitale)      ctf=', REAL(kf_coeff_dnfH,4)
-				IF (flag_output) WRITE (7, *), '     SDe: ', SDe_kind, '          Numero onde piane:', N_pw_lda, &
+				IF (flag_output) WRITE (7, *) '     SDe: ', SDe_kind, '          Numero onde piane:', N_pw_lda, &
 				  '     (', media_num_pw, ' per orbitale)      ctf=', REAL(kf_coeff_dnfH,4)
 			CASE ('atm')
 				PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
-				IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
+				IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)') &
 				  'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 			CASE ('atp')
 				PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
-				IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
+				IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)') &
 				  'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 	  		CASE ('bat','bap','hl_','apo')
 	  			PRINT '(6X,A5,A3,A11,F9.3)' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm
-	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)'), &
+	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3)') &
 	  			  'SDe: ', SDe_kind,'  -  C_atm=', C_atm
 	  		CASE ('1sb')
 	  			PRINT '(6X,A5,A3,A11,F9.3,2(5X,A9,F9.3))' , 'SDe: ', SDe_kind,'  -  C_atm=', C_atm, &
                'A_POT_se=', A_POT_se, 'D_POT_se=', D_POT_se
-	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3,2(5X,A9,F9.3))'), &
+	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A11,F9.3,2(5X,A9,F9.3))') &
 	  			  'SDe: ', SDe_kind,'  -  C_atm=', C_atm, 'A_POT_se=', A_POT_se, 'D_POT_se=', D_POT_se
          CASE ('spb')
 	  			PRINT '(6X,A5,A3,A9,I1,5X,A7,I4,5X,A7,L1,2(5X,A9,F9.3))' , 'SDe: ', SDe_kind,'   -   m=', m_Bsplep, &
                'nknots=', nknots_Bsplep, 'cutoff=', cutoff_Bsplep, 'A_POT_se=', A_POT_se, 'D_POT_se=', D_POT_se
-	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A7,I1,5X,A7,I4,5X,A7,L1,2(5X,A9,F9.3))'), &
+	  			IF (flag_output) WRITE (7, '(6X,A5,A3,A7,I1,5X,A7,I4,5X,A7,L1,2(5X,A9,F9.3))') &
 	  			  'SDe: ', SDe_kind,'  -  m=', m_Bsplep, 'nknots=', nknots_Bsplep, 'cutoff=', cutoff_Bsplep,&
               'A_POT_se=', A_POT_se, 'D_POT_se=', D_POT_se
          CASE ('gss','gsp')
 			   PRINT '(6X,A5,A3,A10,F9.3)' , 'SDe: ', SDe_kind,'  -  Ggaus=', Ggaus
-			   IF (flag_output) WRITE (7, '(6X,A5,A3,A10,F9.3)'), &
+			   IF (flag_output) WRITE (7, '(6X,A5,A3,A10,F9.3)') &
 			     'SDe: ', SDe_kind,'  -  Ggaus=', Ggaus
 			END SELECT
 		END IF
@@ -1065,24 +1050,24 @@ MODULE funzione_onda
 					IF (split_Fee) THEN
 						PRINT '(6X,A5,A3,A15,F9.3,5X,A11,F9.3,5X,A8,F9.3,5X,A11,F9.3)' , &
 						  'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, 'Aee_ud_yuk=', Aee_ud_yuk, 'Fee_yuk=', Fee_yuk, 'Fee_ud_yuk=', Fee_ud_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,F9.3,5X,A11,F9.3,5X,A8,F9.3,5X,A11,F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,F9.3,5X,A11,F9.3,5X,A8,F9.3,5X,A11,F9.3)') &
 						  'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk,'Aee_ud_yuk=', Aee_ud_yuk, 'Fee_yuk=', Fee_yuk, 'Fee_ud_yuk=', Fee_ud_yuk
 					ELSE
 						PRINT '(6X,A5,A3,A15,F9.3,5X,A11,F9.3,5X,A8,F9.3)' , &
 						  'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, 'Aee_ud_yuk=', Aee_ud_yuk, 'Fee_yuk=', Fee_yuk, 'Fee_ud_yuk=', Fee_ud_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,F9.3,5X,A11,F9.3,5X,A8,F9.3)'), 'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,F9.3,5X,A11,F9.3,5X,A8,F9.3)') 'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, &
 						                  'Aee_ud_yuk=', Aee_ud_yuk, 'Fee_yuk=', Fee_yuk
 					END IF
 				ELSE
 					IF (split_Fee) THEN
 						PRINT '(6X,A5,A3,A15,F9.3,5X,A8,F9.3,5X,A11,F9.3)' , &
 						  'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, 'Fee_yuk=', Fee_yuk, 'Fee_ud_yuk=', Fee_ud_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,F9.3,5X,A8,F9.3,5X,A11,F9.3)'), 'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,F9.3,5X,A8,F9.3,5X,A11,F9.3)') 'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, &
 						                  'Fee_yuk=', Fee_yuk, 'Fee_ud_yuk=', Fee_ud_yuk
 					ELSE
 						PRINT '(6X,A5,A3,A15,F9.3,5X,A8,F9.3)' , &
 						  'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, 'Fee_yuk=', Fee_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,F9.3,5X,A8,F9.3)'), 'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,F9.3,5X,A8,F9.3)') 'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, &
 						                  'Fee_yuk=', Fee_yuk
 					END IF
 				END IF
@@ -1091,24 +1076,24 @@ MODULE funzione_onda
 					IF (split_Fee) THEN
 						PRINT '(6X,A5,A3,A15,F9.3,5X,A11,F9.3,5X,A8,F9.3,5X,A11,F9.3)' , &
 						  'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, 'Aee_ud_yuk=', Aee_ud_yuk, 'Fee_yuk=', Fee_yuk, 'Fee_ud_yuk=', Fee_ud_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,F9.3,5X,A11,F9.3,5X,A8,F9.3,5X,A11,F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,F9.3,5X,A11,F9.3,5X,A8,F9.3,5X,A11,F9.3)') &
 						  'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk,'Aee_ud_yuk=', Aee_ud_yuk, 'Fee_yuk=', Fee_yuk, 'Fee_ud_yuk=', Fee_ud_yuk
 					ELSE
 						PRINT '(6X,A5,A3,A15,F9.3,5X,A11,F9.3,5X,A8,F9.3)' , &
 						  'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, 'Aee_ud_yuk=', Aee_ud_yuk, 'Fee_yuk=', Fee_yuk, 'Fee_ud_yuk=', Fee_ud_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,F9.3,5X,A11,F9.3,5X,A8,F9.3)'), 'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,F9.3,5X,A11,F9.3,5X,A8,F9.3)') 'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, &
 						                  'Aee_ud_yuk=', Aee_ud_yuk, 'Fee_yuk=', Fee_yuk
 					END IF
 				ELSE
 					IF (split_Fee) THEN
 						PRINT '(6X,A5,A3,A15,F9.3,5X,A8,F9.3,5X,A11,F9.3)' , &
 						  'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, 'Fee_yuk=', Fee_yuk, 'Fee_ud_yuk=', Fee_ud_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,F9.3,5X,A8,F9.3,5X,A11,F9.3)'), 'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,F9.3,5X,A8,F9.3,5X,A11,F9.3)') 'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, &
 						                  'Fee_yuk=', Fee_yuk, 'Fee_ud_yuk=', Fee_ud_yuk
 					ELSE
 						PRINT '(6X,A5,A3,A15,F9.3,5X,A8,F9.3)' , &
 						  'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, 'Fee_yuk=', Fee_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,F9.3,5X,A8,F9.3)'), 'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,F9.3,5X,A8,F9.3)') 'Jee: ',Jee_kind,'   -   Aee_yuk=', Aee_yuk, &
 						                  'Fee_yuk=', Fee_yuk
 					END IF
 				END IF
@@ -1116,7 +1101,7 @@ MODULE funzione_onda
             PRINT '(6X,A5,A3,A9,I1,5X,A7,I4,5X,A7,L1,5X,A11,L1)', &
                'Jee: ', Jee_kind, '   -   m=', m_Jsplee,'nknots=',nknots_Jsplee,'cutoff=',cutoff_Jsplee,'spin-split=',(split_Aee&
                .OR.split_Fee)
-            IF (flag_output)  WRITE(UNIT=7, FMT='(6X,A5,A3,A9,I1,5X,A7,I4,5X,A7,L1,5X,A11,L1)'), & 
+            IF (flag_output)  WRITE(UNIT=7, FMT='(6X,A5,A3,A9,I1,5X,A7,I4,5X,A7,L1,5X,A11,L1)') & 
                'Jee: ', Jee_kind, '   -   m=', m_Jsplee,'nknots=',nknots_Jsplee,'cutoff=',cutoff_Jsplee,'spin-split=',(split_Aee&
                .OR.split_Fee)
 			END SELECT
@@ -1129,24 +1114,24 @@ MODULE funzione_onda
 					IF (split_Fep) THEN
 						PRINT '(6X,A5,A3,A15,1F9.3,5X,A11,1F9.3,5X,A8,1F9.3,5X,A11,1F9.3)', &
 						  'Jep: ',Jep_kind,'   -   Aep_yuk=', Aep_yuk, 'Aep_ud_yuk=', Aep_ud_yuk, 'Fep_yuk=', Fep_yuk, 'Fep_ud_yuk=', Fep_ud_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3,5X,A11,1F9.3,5X,A8,1F9.3,5X,A11,1F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3,5X,A11,1F9.3,5X,A8,1F9.3,5X,A11,1F9.3)') &
 						  'Jep: ',Jep_kind,'   -   Aep_yuk=', Aep_yuk, 'Aep_ud_yuk=', Aep_ud_yuk, 'Fep_yuk=', Fep_yuk, 'Fep_ud_yuk=', Fep_ud_yuk
 					ELSE
 						PRINT '(6X,A5,A3,A15,1F9.3,5X,A11,1F9.3,5X,A8,1F9.3)', &
 						  'Jep: ',Jep_kind,'   -   Aep_yuk=', Aep_yuk, 'Aep_ud_yuk=', Aep_ud_yuk, 'Fep_yuk=', Fep_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3,5X,A11,1F9.3,5X,A8,1F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3,5X,A11,1F9.3,5X,A8,1F9.3)') &
 						  'Jep: ',Jep_kind,'   -   Aep_yuk=', Aep_yuk, 'Aep_ud_yuk=', Aep_ud_yuk, 'Fep_yuk=', Fep_yuk
 					END IF
 				ELSE
 					IF (split_Fep) THEN
 						PRINT '(6X,A5,A3,A15,1F9.3,5X,A8,1F9.3,5X,A11,1F9.3)', &
 						  'Jep: ',Jep_kind,'   -   Aep_yuk=', Aep_yuk, 'Fep_yuk=', Fep_yuk, 'Fep_ud_yuk=', Fep_ud_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3,5X,A8,1F9.3,5X,A11,1F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3,5X,A8,1F9.3,5X,A11,1F9.3)') &
 						  'Jep: ',Jep_kind,'   -   Aep_yuk=', Aep_yuk, 'Fep_yuk=', Fep_yuk, 'Fep_ud_yuk=', Fep_ud_yuk
 					ELSE
 						PRINT '(6X,A5,A3,A15,1F9.3,5X,A8,1F9.3)', &
 						  'Jep: ',Jep_kind,'   -   Aep_yuk=', Aep_yuk, 'Fep_yuk=', Fep_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3,5X,A8,1F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3,5X,A8,1F9.3)') &
 						  'Jep: ',Jep_kind,'   -   Aep_yuk=', Aep_yuk, 'Fep_yuk=', Fep_yuk
 					END IF
 				END IF
@@ -1155,24 +1140,24 @@ MODULE funzione_onda
 					IF (split_Fep) THEN
 						PRINT '(6X,A5,A3,A15,1F9.3,5X,A11,1F9.3,5X,A8,1F9.3,5X,A11,1F9.3)', &
 						  'Jep: ',Jep_kind,'   -   Aep_yuk=', Aep_yuk, 'Aep_ud_yuk=', Aep_ud_yuk, 'Fep_yuk=', Fep_yuk, 'Fep_ud_yuk=', Fep_ud_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3,5X,A11,1F9.3,5X,A8,1F9.3,5X,A11,1F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3,5X,A11,1F9.3,5X,A8,1F9.3,5X,A11,1F9.3)') &
 						  'Jep: ',Jep_kind,'   -   Aep_yuk=', Aep_yuk, 'Aep_ud_yuk=', Aep_ud_yuk, 'Fep_yuk=', Fep_yuk, 'Fep_ud_yuk=', Fep_ud_yuk
 					ELSE
 						PRINT '(6X,A5,A3,A15,1F9.3,5X,A11,1F9.3,5X,A8,1F9.3)', &
 						  'Jep: ',Jep_kind,'   -   Aep_yuk=', Aep_yuk, 'Aep_ud_yuk=', Aep_ud_yuk, 'Fep_yuk=', Fep_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3,5X,A11,1F9.3,5X,A8,1F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3,5X,A11,1F9.3,5X,A8,1F9.3)') &
 						  'Jep: ',Jep_kind,'   -   Aep_yuk=', Aep_yuk, 'Aep_ud_yuk=', Aep_ud_yuk, 'Fep_yuk=', Fep_yuk
 					END IF
 				ELSE
 					IF (split_Fep) THEN
 						PRINT '(6X,A5,A3,A15,1F9.3,5X,A8,1F9.3,5X,A11,1F9.3)', &
 						  'Jep: ',Jep_kind,'   -   Aep_yuk=', Aep_yuk, 'Fep_yuk=', Fep_yuk, 'Fep_ud_yuk=', Fep_ud_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3,5X,A8,1F9.3,5X,A11,1F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3,5X,A8,1F9.3,5X,A11,1F9.3)') &
 						  'Jep: ',Jep_kind,'   -   Aep_yuk=', Aep_yuk, 'Fep_yuk=', Fep_yuk, 'Fep_ud_yuk=', Fep_ud_yuk
 					ELSE
 						PRINT '(6X,A5,A3,A15,1F9.3,5X,A8,1F9.3)', &
 						  'Jep: ',Jep_kind,'   -   Aep_yuk=', Aep_yuk, 'Fep_yuk=', Fep_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3,5X,A8,1F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3,5X,A8,1F9.3)') &
 						  'Jep: ',Jep_kind,'   -   Aep_yuk=', Aep_yuk, 'Fep_yuk=', Fep_yuk
 					END IF
 				END IF
@@ -1180,18 +1165,18 @@ MODULE funzione_onda
             PRINT '(6X,A5,A3,A9,I1,5X,A7,I4,5X,A7,L1,5X,A11,L1)', &
                'Jep: ', Jep_kind, '   -   m=', m_Jsplep,'nknots=',nknots_Jsplep,'cutoff=',cutoff_Jsplep,&
                'spin-split=',(split_Aep.OR.split_Fep)
-            IF (flag_output)  WRITE(UNIT=7, FMT='(6X,A5,A3,A9,I1,5X,A7,I4,5X,A7,L1,5X,A11,L1)'), & 
+            IF (flag_output)  WRITE(UNIT=7, FMT='(6X,A5,A3,A9,I1,5X,A7,I4,5X,A7,L1,5X,A11,L1)') & 
                'Jep: ', Jep_kind, '   -   m=', m_Jsplep,'nknots=',nknots_Jsplep,'cutoff=',cutoff_Jsplep,&
                'spin-split=',(split_Aep.OR.split_Fep)
 			CASE ('atm')
 				PRINT '(6X,A5,A3,A15,1F9.3)', &
 				  'Jep: ',Jep_kind,'   -   Fep_yuk=', Fep_yuk
-				IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3)'), &
+				IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3)') &
 				  'Jep: ',Jep_kind,'   -   Fep_yuk=', Fep_yuk
 			CASE ('atp')
 				PRINT '(6X,A5,A3,A15,1F9.3)', &
 				  'Jep: ',Jep_kind,'   -   Fep_yuk=', Fep_yuk
-				IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3)'), &
+				IF (flag_output) WRITE (7, '(6X,A5,A3,A15,1F9.3)') &
 				  'Jep: ',Jep_kind,'   -   Fep_yuk=', Fep_yuk
 			END SELECT
 		END IF
@@ -1201,42 +1186,42 @@ MODULE funzione_onda
 			CASE ('gss')
 				PRINT '(6X,A5,A3,A16,F9.3)' , &
 				  'Kse: ',Kse_kind,'   -   C_kern_e=', C_kern_e
-				IF (flag_output) WRITE (7, '(6X,A5,A3,A16,F9.3)'), &
+				IF (flag_output) WRITE (7, '(6X,A5,A3,A16,F9.3)') &
 				  'Kse: ',Kse_kind,'   -   C_kern_e=', C_kern_e
 			CASE ('gsc')
 				PRINT '(6X,A5,A3,A16,F9.3)' , &
 				  'Kse: ',Kse_kind,'   -   C_kern_e=', C_kern_e
-				IF (flag_output) WRITE (7, '(6X,A5,A3,A16,F9.3)'), &
+				IF (flag_output) WRITE (7, '(6X,A5,A3,A16,F9.3)') &
 				  'Kse: ',Kse_kind,'   -   C_kern_e=', C_kern_e
 			CASE ('gsp')
 				PRINT '(6X,A5,A3,A16,F9.3)' , &
 				  'Kse: ',Kse_kind,'   -   C_kern_e=', C_kern_e
-				IF (flag_output) WRITE (7, '(6X,A5,A3,A16,F9.3)'), &
+				IF (flag_output) WRITE (7, '(6X,A5,A3,A16,F9.3)') &
 				  'Kse: ',Kse_kind,'   -   C_kern_e=', C_kern_e
 			CASE ('gsd')
 				PRINT '(6X,A5,A3,A16,F9.3)' , &
 				  'Kse: ',Kse_kind,'   -   C_kern_e=', C_kern_e
-				IF (flag_output) WRITE (7, '(6X,A5,A3,A16,F9.3)'), &
+				IF (flag_output) WRITE (7, '(6X,A5,A3,A16,F9.3)') &
 				  'Kse: ',Kse_kind,'   -   C_kern_e=', C_kern_e
 			CASE ('gdc')
 				PRINT '(6X,A5,A3,A16,F9.3)' , &
 				  'Kse: ',Kse_kind,'   -   C_kern_e=', C_kern_e
-				IF (flag_output) WRITE (7, '(6X,A5,A3,A16,F9.3)'), &
+				IF (flag_output) WRITE (7, '(6X,A5,A3,A16,F9.3)') &
 				  'Kse: ',Kse_kind,'   -   C_kern_e=', C_kern_e
 			CASE ('gdp')
 				PRINT '(6X,A5,A3,A16,F9.3)' , &
 				  'Kse: ',Kse_kind,'   -   C_kern_e=', C_kern_e
-				IF (flag_output) WRITE (7, '(6X,A5,A3,A16,F9.3)'), &
+				IF (flag_output) WRITE (7, '(6X,A5,A3,A16,F9.3)') &
 				  'Kse: ',Kse_kind,'   -   C_kern_e=', C_kern_e
 			CASE ('atm')
 				PRINT '(6X,A5,A3,A16,F9.3)' , &
 				  'Kse: ',Kse_kind,'   -   C_kern_e=', C_kern_e
-				IF (flag_output) WRITE (7, '(6X,A5,A3,A16,F9.3)'), &
+				IF (flag_output) WRITE (7, '(6X,A5,A3,A16,F9.3)') &
 				  'Kse: ',Kse_kind,'   -   C_kern_e=', C_kern_e
 			CASE ('atc')
 				PRINT '(6X,A5,A3,A16,F9.3)' , &
 				  'Kse: ',Kse_kind,'   -   C_kern_e=', C_kern_e
-				IF (flag_output) WRITE (7, '(6X,A5,A3,A16,F9.3)'), &
+				IF (flag_output) WRITE (7, '(6X,A5,A3,A16,F9.3)') &
 				  'Kse: ',Kse_kind,'   -   C_kern_e=', C_kern_e
 			END SELECT
 		END IF
@@ -1246,12 +1231,12 @@ MODULE funzione_onda
 			CASE ('pot')
 				PRINT '(6X,A5,A3,A16,F9.3,5X,A9,F9.3)' , &
 				  'Jse: ',Jse_kind,'   -   A_POT_se=', A_POT_se, 'D_POT_se=', D_POT_se
-				IF (flag_output) WRITE (7, '(6X,A5,A3,A16,F9.3,5X,A9,F9.3)'), &
+				IF (flag_output) WRITE (7, '(6X,A5,A3,A16,F9.3,5X,A9,F9.3)') &
 				  'Jse: ',Jse_kind,'   -   A_POT_se=', A_POT_se, 'D_POT_se=', D_POT_se
 			CASE ('bou')
 				PRINT '(6X,A5,A3,A12,F9.3,A5,F9.3)' , &
 				  'Jse: ',Jse_kind,'   -   B_se=', B_se, 'D_se=', D_se
-				IF (flag_output) WRITE (7, '(6X,A5,A3,A12,F9.3,A5,F9.3)'), &
+				IF (flag_output) WRITE (7, '(6X,A5,A3,A12,F9.3,A5,F9.3)') &
 				  'Jse: ',Jse_kind,'   -   B_se=', B_se, 'D_se=', D_se
 			CASE ('ppb')
 				PRINT '(6X,A5,A3,A12,F9.3)' , &
@@ -1259,9 +1244,9 @@ MODULE funzione_onda
 				PRINT '(6X,A5,A3,A12,F9.3,5X,A5,F9.3)' , &
 				  'Jse: ',Jse_kind,'   -   B_se=', B_se, 'D_se=', D_se
 				IF (flag_output) THEN
-					WRITE (7, '(6X,A5,A3,A12,F9.3)'), &
+					WRITE (7, '(6X,A5,A3,A12,F9.3)') &
 					  'Jse: ',Jse_kind,'   -   c_se=', c_se
-					WRITE (7, '(6X,A5,A3,A12,F9.3,5X,A5,F9.3)'), &
+					WRITE (7, '(6X,A5,A3,A12,F9.3,5X,A5,F9.3)') &
 					  'Jse: ',Jse_kind,'   -   B_se=', B_se, 'D_se=', D_se
 				END IF
 			CASE ('yuk')
@@ -1270,25 +1255,25 @@ MODULE funzione_onda
 						PRINT '(6X,A5,A3,A17,F9.3,5X,A13,F9.3,5X,A13,F9.3,5X,A13,F9.3)' , &
 						  'Jse: ',Jse_kind,'   -   Asese_yuk=',Asese_yuk,'Asese_ud_yuk=',Asese_ud_yuk,&
 						  'Fsese_yuk=',Fsese_yuk,'Fsese_ud_yuk=',Fsese_ud_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A17,F9.3,5X,A13,F9.3,5X,A13,F9.3,5X,A13,F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A17,F9.3,5X,A13,F9.3,5X,A13,F9.3,5X,A13,F9.3)') &
 						  'Jse: ',Jse_kind,'   -   Asese_yuk=',Asese_yuk,'Asese_ud_yuk=',Asese_ud_yuk,&
 						  'Fsese_yuk=',Fsese_yuk,'Fsese_ud_yuk=',Fsese_ud_yuk
 					ELSE
 						PRINT '(6X,A5,A3,A17,F9.3,5X,A13,F9.3,5X,A13,F9.3)' , &
 						  'Jse: ',Jse_kind,'   -   Asese_yuk=',Asese_yuk,'Asese_ud_yuk=',Asese_ud_yuk,'Fsese_yuk=',Fsese_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A17,F9.3,5X,A13,F9.3,5X,A13,F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A17,F9.3,5X,A13,F9.3,5X,A13,F9.3)') &
 						  'Jse: ',Jse_kind,'   -   Asese_yuk=',Asese_yuk,'Asese_ud_yuk=',Asese_ud_yuk,'Fsese_yuk=',Fsese_yuk
 					END IF
 				ELSE
 					IF (split_Fsese) THEN
 						PRINT '(6X,A5,A3,A17,F9.3,5X,A13,F9.3,5X,A13,F9.3)' , &
 						  'Jse: ',Jse_kind,'   -   Asese_yuk=', Asese_yuk, 'Fsese_yuk=', Fsese_yuk, 'Fsese_ud_yuk=', Fsese_ud_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A17,F9.3,5X,A13,F9.3,5X,A13,F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A17,F9.3,5X,A13,F9.3,5X,A13,F9.3)') &
 						  'Jse: ',Jse_kind,'   -   Asese_yuk=', Asese_yuk, 'Fsese_yuk=', Fsese_yuk, 'Fsese_ud_yuk=', Fsese_ud_yuk
 					ELSE
 						PRINT '(6X,A5,A3,A17,F9.3,5X,A13,F9.3)' , &
 						  'Jse: ',Jse_kind,'   -   Asese_yuk=', Asese_yuk, 'Fsese_yuk=', Fsese_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A17,F9.3,5X,A13,F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A17,F9.3,5X,A13,F9.3)') &
 						  'Jse: ',Jse_kind,'   -   Asese_yuk=', Asese_yuk, 'Fsese_yuk=', Fsese_yuk
 					END IF
 				END IF
@@ -1298,25 +1283,25 @@ MODULE funzione_onda
 						PRINT '(6X,A5,A3,A17,F9.3,5X,A13,F9.3,5X,A13,F9.3,5X,A13,F9.3)' , &
 						  'Jse: ',Jse_kind,'   -   Asese_yuk=',Asese_yuk,'Asese_ud_yuk=',Asese_ud_yuk,&
 						  'Fsese_yuk=',Fsese_yuk,'Fsese_ud_yuk=',Fsese_ud_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A17,F9.3,5X,A13,F9.3,5X,A13,F9.3,5X,A13,F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A17,F9.3,5X,A13,F9.3,5X,A13,F9.3,5X,A13,F9.3)') &
 						  'Jse: ',Jse_kind,'   -   Asese_yuk=',Asese_yuk,'Asese_ud_yuk=',Asese_ud_yuk,&
 						  'Fsese_yuk=',Fsese_yuk,'Fsese_ud_yuk=',Fsese_ud_yuk
 					ELSE
 						PRINT '(6X,A5,A3,A17,F9.3,5X,A13,F9.3,5X,A13,F9.3)' , &
 						  'Jse: ',Jse_kind,'   -   Asese_yuk=',Asese_yuk,'Asese_ud_yuk=',Asese_ud_yuk,'Fsese_yuk=',Fsese_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A17,F9.3,5X,A13,F9.3,5X,A13,F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A17,F9.3,5X,A13,F9.3,5X,A13,F9.3)') &
 						  'Jse: ',Jse_kind,'   -   Asese_yuk=',Asese_yuk,'Asese_ud_yuk=',Asese_ud_yuk,'Fsese_yuk=',Fsese_yuk
 					END IF
 				ELSE
 					IF (split_Fsese) THEN
 						PRINT '(6X,A5,A3,A17,F9.3,5X,A13,F9.3,5X,A13,F9.3)' , &
 						  'Jse: ',Jse_kind,'   -   Asese_yuk=', Asese_yuk, 'Fsese_yuk=', Fsese_yuk, 'Fsese_ud_yuk=', Fsese_ud_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A17,F9.3,5X,A13,F9.3,5X,A13,F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A17,F9.3,5X,A13,F9.3,5X,A13,F9.3)') &
 						  'Jse: ',Jse_kind,'   -   Asese_yuk=', Asese_yuk, 'Fsese_yuk=', Fsese_yuk, 'Fsese_ud_yuk=', Fsese_ud_yuk
 					ELSE
 						PRINT '(6X,A5,A3,A17,F9.3,5X,A13,F9.3)' , &
 						  'Jse: ',Jse_kind,'   -   Asese_yuk=', Asese_yuk, 'Fsese_yuk=', Fsese_yuk
-						IF (flag_output) WRITE (7, '(6X,A5,A3,A17,F9.3,5X,A13,F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A5,A3,A17,F9.3,5X,A13,F9.3)') &
 						  'Jse: ',Jse_kind,'   -   Asese_yuk=', Asese_yuk, 'Fsese_yuk=', Fsese_yuk
 					END IF
 				END IF
@@ -1328,7 +1313,7 @@ MODULE funzione_onda
 			CASE ('pot')
 				PRINT '(6X,A7,A3,A14,F9.3)' , &
 				  'Jsesp: ',Jsesp_kind,'   -   c_sesp=', c_sesp
-				IF (flag_output) WRITE (7, '(6X,A7,A3,A14,F9.3)'), &
+				IF (flag_output) WRITE (7, '(6X,A7,A3,A14,F9.3)') &
 				  'Jsesp: ',Jsesp_kind,'   -   c_sesp=', c_sesp
 			CASE ('yuk')
 				IF (split_Asesp) THEN
@@ -1336,25 +1321,25 @@ MODULE funzione_onda
 						PRINT '(6X,A7,A3,A17,F9.3,5X,A13,F9.3,5X,A10,F9.3,5X,A13,F9.3)' , &
 						  'Jsesp: ',Jsesp_kind,'   -   Asesp_yuk=', Asesp_yuk, 'Asesp_ud_yuk=', Asesp_ud_yuk,&
 						  'Fsesp_yuk=', Fsesp_yuk, 'Fsesp_ud_yuk=', Fsesp_ud_yuk
-						IF (flag_output) WRITE (7, '(6X,A7,A3,A17,F9.3,5X,A13,F9.3,5X,A10,F9.3,5X,A13,F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A7,A3,A17,F9.3,5X,A13,F9.3,5X,A10,F9.3,5X,A13,F9.3)') &
 						  'Jsesp: ',Jsesp_kind,'   -   Asesp_yuk=', Asesp_yuk, 'Asesp_ud_yuk=', Asesp_ud_yuk,&
 						  'Fsesp_yuk=', Fsesp_yuk, 'Fsesp_ud_yuk=', Fsesp_ud_yuk
 					ELSE
 						PRINT '(6X,A7,A3,A17,F9.3,5X,A13,F9.3,5X,A10,F9.3)' , &
 						  'Jsesp: ',Jsesp_kind,'   -   Asesp_yuk=', Asesp_yuk, 'Asesp_ud_yuk=', Asesp_ud_yuk, 'Fsesp_yuk=', Fsesp_yuk
-						IF (flag_output) WRITE (7, '(6X,A7,A3,A17,F9.3,5X,A13,F9.3,5X,A10,F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A7,A3,A17,F9.3,5X,A13,F9.3,5X,A10,F9.3)') &
 						  'Jsesp: ',Jsesp_kind,'   -   Asesp_yuk=', Asesp_yuk, 'Asesp_ud_yuk=', Asesp_ud_yuk, 'Fsesp_yuk=', Fsesp_yuk
 					END IF
 				ELSE
 					IF (split_Fsesp) THEN
 						PRINT '(6X,A7,A3,A17,F9.3,5X,A10,F9.3,5X,A13,F9.3)' , &
 						  'Jsesp: ',Jsesp_kind,'   -   Asesp_yuk=', Asesp_yuk, 'Fsesp_yuk=', Fsesp_yuk, 'Fsesp_ud_yuk=', Fsesp_ud_yuk
-						IF (flag_output) WRITE (7, '(6X,A7,A3,A17,F9.3,5X,A10,F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A7,A3,A17,F9.3,5X,A10,F9.3)') &
 						  'Jsesp: ',Jsesp_kind,'   -   Asesp_yuk=', Asesp_yuk, 'Fsesp_yuk=', Fsesp_yuk, 'Fsesp_ud_yuk=', Fsesp_ud_yuk
 					ELSE
 						PRINT '(6X,A7,A3,A17,F9.3,5X,A10,F9.3)' , &
 						  'Jsesp: ',Jsesp_kind,'   -   Asesp_yuk=', Asesp_yuk, 'Fsesp_yuk=', Fsesp_yuk
-						IF (flag_output) WRITE (7, '(6X,A7,A3,A17,F9.3,5X,A10,F9.3,5X,A13,F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A7,A3,A17,F9.3,5X,A10,F9.3,5X,A13,F9.3)') &
 						  'Jsesp: ',Jsesp_kind,'   -   Asesp_yuk=', Asesp_yuk, 'Fsesp_yuk=', Fsesp_yuk
 					END IF
 				END IF
@@ -1364,60 +1349,60 @@ MODULE funzione_onda
 						PRINT '(6X,A7,A3,A17,F9.3,5X,A13,F9.3,5X,A10,F9.3,5X,A13,F9.3)' , &
 						  'Jsesp: ',Jsesp_kind,'   -   Asesp_yuk=', Asesp_yuk, 'Asesp_ud_yuk=', Asesp_ud_yuk,&
 						  'Fsesp_yuk=', Fsesp_yuk, 'Fsesp_ud_yuk=', Fsesp_ud_yuk
-						IF (flag_output) WRITE (7, '(6X,A7,A3,A17,F9.3,5X,A13,F9.3,5X,A10,F9.3,5X,A13,F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A7,A3,A17,F9.3,5X,A13,F9.3,5X,A10,F9.3,5X,A13,F9.3)') &
 						  'Jsesp: ',Jsesp_kind,'   -   Asesp_yuk=', Asesp_yuk, 'Asesp_ud_yuk=', Asesp_ud_yuk,&
 						  'Fsesp_yuk=', Fsesp_yuk, 'Fsesp_ud_yuk=', Fsesp_ud_yuk
 					ELSE
 						PRINT '(6X,A7,A3,A17,F9.3,5X,A13,F9.3,5X,A10,F9.3)' , &
 						  'Jsesp: ',Jsesp_kind,'   -   Asesp_yuk=', Asesp_yuk, 'Asesp_ud_yuk=', Asesp_ud_yuk, 'Fsesp_yuk=', Fsesp_yuk
-						IF (flag_output) WRITE (7, '(6X,A7,A3,A17,F9.3,5X,A13,F9.3,5X,A10,F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A7,A3,A17,F9.3,5X,A13,F9.3,5X,A10,F9.3)') &
 						  'Jsesp: ',Jsesp_kind,'   -   Asesp_yuk=', Asesp_yuk, 'Asesp_ud_yuk=', Asesp_ud_yuk, 'Fsesp_yuk=', Fsesp_yuk
 					END IF
 				ELSE
 					IF (split_Fsesp) THEN
 						PRINT '(6X,A7,A3,A17,F9.3,5X,A10,F9.3,5X,A13,F9.3)' , &
 						  'Jsesp: ',Jsesp_kind,'   -   Asesp_yuk=', Asesp_yuk, 'Fsesp_yuk=', Fsesp_yuk, 'Fsesp_ud_yuk=', Fsesp_ud_yuk
-						IF (flag_output) WRITE (7, '(6X,A7,A3,A17,F9.3,5X,A10,F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A7,A3,A17,F9.3,5X,A10,F9.3)') &
 						  'Jsesp: ',Jsesp_kind,'   -   Asesp_yuk=', Asesp_yuk, 'Fsesp_yuk=', Fsesp_yuk, 'Fsesp_ud_yuk=', Fsesp_ud_yuk
 					ELSE
 						PRINT '(6X,A7,A3,A17,F9.3,5X,A10,F9.3)' , &
 						  'Jsesp: ',Jsesp_kind,'   -   Asesp_yuk=', Asesp_yuk, 'Fsesp_yuk=', Fsesp_yuk
-						IF (flag_output) WRITE (7, '(6X,A7,A3,A17,F9.3,5X,A10,F9.3,5X,A13,F9.3)'), &
+						IF (flag_output) WRITE (7, '(6X,A7,A3,A17,F9.3,5X,A10,F9.3,5X,A13,F9.3)') &
 						  'Jsesp: ',Jsesp_kind,'   -   Asesp_yuk=', Asesp_yuk, 'Fsesp_yuk=', Fsesp_yuk
 					END IF
 				END IF
 			CASE ('gss')
 				PRINT '(6X,A7,A3,A13,F9.3)' , &
 				  'Jsesp: ',Jsesp_kind,'   -   Gsesp=', Gsesp
-				IF (flag_output) WRITE (7, '(6X,A7,A3,A13,F9.3)'), &
+				IF (flag_output) WRITE (7, '(6X,A7,A3,A13,F9.3)') &
 				  'Jsesp: ',Jsesp_kind,'   -   Gsesp=', Gsesp
 			CASE ('gsd')
 				PRINT '(6X,A7,A3,A13,F9.3)' , &
 				  'Jsesp: ',Jsesp_kind,'   -   Gsesp=', Gsesp
-				IF (flag_output) WRITE (7, '(6X,A7,A3,A13,F9.3)'), &
+				IF (flag_output) WRITE (7, '(6X,A7,A3,A13,F9.3)') &
 				  'Jsesp: ',Jsesp_kind,'   -   Gsesp=', Gsesp
 			END SELECT
 		END IF
 		
 		IF (SDse_kind=='gem') THEN
 			PRINT '(6X,A6,A3,A10,F9.3)' , 'SDse: ', SDse_kind,'  -  Ggaus=', Ggaus
-			IF (flag_output) WRITE (7, '(6X,A6,A3,A10,F9.3)'), &
+			IF (flag_output) WRITE (7, '(6X,A6,A3,A10,F9.3)') &
 			  'SDse: ', SDse_kind,'  -  Ggaus=', Ggaus
 		ELSE IF (SDse_kind=='gss') THEN
 			PRINT '(6X,A6,A3,A10,F9.3)' , 'SDse: ', SDse_kind,'  -  Ggaus=', Ggaus
-			IF (flag_output) WRITE (7, '(6X,A6,A3,A10,F9.3)'), &
+			IF (flag_output) WRITE (7, '(6X,A6,A3,A10,F9.3)') &
 			  'SDse: ', SDse_kind,'  -  Ggaus=', Ggaus
 		ELSE IF (SDse_kind=='gsp') THEN
 			PRINT '(6X,A6,A3,A10,F9.3)' , 'SDse: ', SDse_kind,'  -  Ggaus=', Ggaus
-			IF (flag_output) WRITE (7, '(6X,A6,A3,A10,F9.3)'), &
+			IF (flag_output) WRITE (7, '(6X,A6,A3,A10,F9.3)') &
 			  'SDse: ', SDse_kind,'  -  Ggaus=', Ggaus
 		ELSE IF ((SDse_kind=='atm').OR.(SDse_kind=='atp')) THEN
 			PRINT '(6X,A6,A3,A11,F9.3)' , 'SDse: ', SDse_kind,'  -  C_atm=', C_atm
-			IF (flag_output) WRITE (7, '(6X,A6,A3,A11,F9.3)'), &
+			IF (flag_output) WRITE (7, '(6X,A6,A3,A11,F9.3)') &
 			  'SDse: ', SDse_kind,'  -  C_atm=', C_atm
 		ELSE IF (SDse_kind/='no_') THEN
 			PRINT '(6X,A6,A3)' , 'SDse: ', SDse_kind
-			IF (flag_output) WRITE (7, '(6X,A6,A3)'), 'SDse: ', SDse_kind
+			IF (flag_output) WRITE (7, '(6X,A6,A3)') 'SDse: ', SDse_kind
 		END IF
 	END SUBROUTINE stampa_parametri_variazionali
 !-----------------------------------------------------------------------
@@ -1429,20 +1414,20 @@ MODULE funzione_onda
 		IMPLICIT NONE
 		
 		IF ( mpi_myrank==0 ) THEN
-			WRITE (*, FMT='(A42)', ADVANCE='NO'), 'Genero orbitali DFT con Quantum-Espresso '
+			WRITE (*, FMT='(A42)', ADVANCE='NO') 'Genero orbitali DFT con Quantum-Espresso '
 			CALL inizializza_dft()
-			WRITE (*, FMT='(A1)', ADVANCE='NO'), '.'
+			WRITE (*, FMT='(A1)', ADVANCE='NO') '.'
 			CALL genera_scf_in(L,N_part,r_crystal)
-			WRITE (*, FMT='(A1)', ADVANCE='NO'), '.'
+			WRITE (*, FMT='(A1)', ADVANCE='NO') '.'
 			CALL run_quantum_espresso()
 			DO WHILE ( dft_lock )
 				CALL SLEEP(1)
 			END DO
-			WRITE (*, FMT='(A1)', ADVANCE='NO'), '.'
+			WRITE (*, FMT='(A1)', ADVANCE='NO') '.'
 			CALL chiudi_dft()
 			!!!lda_path=TRIM(dft_work_dir)//"OUT.save/"  !use lda_path_complete instead
 			IF (.NOT. flag_TABC) CALL change_flag_TABC(.TRUE.)
-			WRITE (*, FMT='(A1)', ADVANCE='YES'), '!'
+			WRITE (*, FMT='(A1)', ADVANCE='YES') '!'
 		END IF
 		CALL MPI_BARRIER(MPI_COMM_WORLD,mpi_ierr)
 		
@@ -1462,10 +1447,8 @@ MODULE funzione_onda
 		REAL (KIND=8) :: norm_fact_up, norm_fact_dw, shared_norm_fact_up, shared_norm_fact_dw
 		COMPLEX (KIND=8) :: SD(1:H_N_part,1:H_N_part), ISD(1:H_N_part,1:H_N_part)
 		
-		IF (.NOT. iniz_walkers) STOP 'Non puoi normalizzare i coefficienti lda prima di aver inizializzato i walkers &
-		  [ module_funzione_onda.f90 > normalizza_coefficienti_lda ]'				
-		IF (.NOT. iniz_dati_fisici) STOP 'Non puoi normalizzare i coefficienti lda prima di aver letto i dati fisici &
-		  [ module_funzione_onda.f90 > normalizza_coefficienti_lda ]'
+		IF (.NOT. iniz_walkers) STOP 'Non puoi normalizzare i coefficienti lda prima di aver inizializzato i walkers [ module_funzione_onda.f90 > normalizza_coefficienti_lda ]'				
+		IF (.NOT. iniz_dati_fisici) STOP 'Non puoi normalizzare i coefficienti lda prima di aver letto i dati fisici [ module_funzione_onda.f90 > normalizza_coefficienti_lda ]'
 		
 		IF ( flag_simm_lda ) THEN
 			!Calcolo i termini matriciali di SD_new
@@ -1612,12 +1595,11 @@ MODULE funzione_onda
 		DO WHILE ( dummy1>pesi_K_points(i_twist+1) )
 			i_twist=i_twist+1
 		END DO
-		IF (i_twist>num_K_points) STOP 'Errore: i_twist é maggiore di num_K_points &
-		  [ module_funzione_onda.f90 > inizializza_dati_funzione_onda ]'
-		WRITE (istring, '(I4.4)'), i_twist
+		IF (i_twist>num_K_points) STOP 'Errore: i_twist é maggiore di num_K_point [ module_funzione_onda.f90 > inizializza_dati_funzione_onda ]'
+		WRITE (istring, '(I4.4)') i_twist
 		
 		!num_chiamata_twist_lda=num_chiamata_twist_lda+1
-		!WRITE (istring, '(I4.4)'), MOD(mpi_nprocs*num_chiamata_twist_lda+mpi_myrank,260)+1
+		!WRITE (istring, '(I4.4)') MOD(mpi_nprocs*num_chiamata_twist_lda+mpi_myrank,260)+1
 		
 		CALL leggi_N_pw(TRIM(lda_path_complete)//'/K0'//istring//'/gkvectors.xml',N_pw_lda)
 		DEALLOCATE(k_pw_lda,fattori_orb_lda,fattori_pw_lda)
@@ -1686,8 +1668,7 @@ MODULE funzione_onda
 		REAL (KIND=8) :: norm
 		COMPLEX (KIND=8) :: SD(1:N,1:N), ISD(1:N,1:N), detSD
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_SD_pw ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzat [ module_funzione_onda.f90 > valuta_SD_pw ]'
 		
 		norm=1.d0/SQRT(REAL(N))
 		IF (num==-1) THEN
@@ -1716,8 +1697,7 @@ MODULE funzione_onda
 			END DO
 			CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD)
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_SD_pw ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_SD_pw ]'
 		END IF
 						
 		IF (verbose_mode) PRINT * , 'funzione_onda: detSD(pw)=', detSD
@@ -1735,8 +1715,7 @@ MODULE funzione_onda
 		REAL (KIND=8) :: norm
 		COMPLEX (KIND=8) :: SD(1:N,1:N), ISD(1:N,1:N), detSD
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_SD_pw ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzat [ module_funzione_onda.f90 > valuta_SD_pw ]'
 		
 		norm=2.d0**(1./REAL(N))
 		IF (num==-1) THEN
@@ -1765,8 +1744,7 @@ MODULE funzione_onda
 			END DO
 			CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD)
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_SD_pw ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_SD_pw ]'
 		END IF
 				
 		IF (verbose_mode) PRINT * , 'funzione_onda: detSD(gss)=', detSD
@@ -1790,8 +1768,7 @@ MODULE funzione_onda
 		REAL (KIND=8) :: norm
 		COMPLEX (KIND=8) :: SD(1:N,1:N), ISD(1:N,1:N), detSD
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_SD_atm ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzat [ module_funzione_onda.f90 > valuta_SD_atm ]'
 		
 		norm=1.d0 !/DSQRT(PI)
 		IF (num==-1) THEN
@@ -1820,8 +1797,7 @@ MODULE funzione_onda
 			END DO
 			CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD)
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_SD_atm ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_SD_atm ]'
 		END IF
 				
 		IF (verbose_mode) PRINT * , 'funzione_onda: detSD(gss)=', detSD
@@ -1841,8 +1817,7 @@ MODULE funzione_onda
 			REAL (KIND=8) :: norm
 			COMPLEX (KIND=8) :: SD(1:N,1:N), ISD(1:N,1:N), detSD
 		
-			IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-			  [ module_funzione_onda.f90 > valuta_SD_bat ]'
+			IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non e inizializzato [ module_funzione_onda.f90 > valuta_SD_bat ]'
 		
 			norm=1.d0
 			
@@ -1874,8 +1849,7 @@ MODULE funzione_onda
 					END DO
 					CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD)
 				ELSE
-					STOP 'num non accettabile &
-					  [ module_funzione_onda.f90 > valuta_SD_bat ]'
+					STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_SD_bat ]'
 				END IF
 			CASE('dw')
 				IF (num==-1) THEN
@@ -1904,8 +1878,7 @@ MODULE funzione_onda
 					END DO
 					CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD)
 				ELSE
-					STOP 'num non accettabile &
-					  [ module_funzione_onda.f90 > valuta_SD_bat ]'
+					STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_SD_bat ]'
 				END IF
 				CASE DEFAULT
 					STOP 'serve specificare up o dw [ module_funzione_onda.f90 > valuta_SD_bat ]'
@@ -1923,8 +1896,7 @@ MODULE funzione_onda
 			REAL (KIND=8), INTENT(IN) :: rij(1:2,1:2)
 			COMPLEX (KIND=8) :: SD(1:1,1:1), ISD(1:1,1:1), detSD
 		
-			IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-			  [ module_funzione_onda.f90 > valuta_SD_HL ]'
+			IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non éinizializzato [ module_funzione_onda.f90 > valuta_SD_HL ]'
 		
          SD(1,1)=(1.d0,0.d0)*(DEXP(-C_atm*(rij(1,1)+rij(2,2)))+DEXP(-C_atm*(rij(1,2)+rij(2,1))))
          detSD=SD(1,1)
@@ -1945,8 +1917,7 @@ MODULE funzione_onda
 			COMPLEX (KIND=8) :: SDdw(1:1,1:1), ISDdw(1:1,1:1), detSDdw
          REAL(KIND=8) :: APOfact
 		
-			IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-			  [ module_funzione_onda.f90 > valuta_SD_APO ]'
+			IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato [ module_funzione_onda.f90 > valuta_SD_APO ]'
 		
          APOfact=APO_factor(re,rp)
          SDup(1,1)=(1.d0,0.d0)*( phiH2_S(rep(1,1:2)) + APOfact*phiH2_A(rep(1,1:2)) )
@@ -2016,8 +1987,7 @@ MODULE funzione_onda
          COMPLEX (KIND=8) :: ISD_now(1:N,1:N), detSD_now
          REAL(KIND=8) :: q(0:3), dist(0:3)
 		
-			IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-			  [ module_funzione_onda.f90 > valuta_SD_1s_backflow ]'
+			IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non e inizializzato [ module_funzione_onda.f90 > valuta_SD_1s_backflow ]'
 		
 			norm=1.d0 !/DSQRT(PI)
 			
@@ -2073,8 +2043,7 @@ MODULE funzione_onda
 				END DO
             CALL aggiorna_determinante_C_col_1ppt(N,num,ISD_now,detSD_now,SD,detSD)
 			ELSE
-				STOP 'num non accettabile &
-				  [ module_funzione_onda.f90 > valuta_SD_1s_backflow ]'
+				STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_SD_1s_backflow ]'
 			END IF
 				
 			IF (verbose_mode) PRINT * , 'funzione_onda: detSD(gss)=', detSD
@@ -2099,8 +2068,7 @@ MODULE funzione_onda
       COMPLEX (KIND=8) :: ISD_now(1:N,1:N), detSD_now
       REAL(KIND=8) :: q(0:3), dist(0:3), cspl
 	
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_SD_1s_backflow ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzat [ module_funzione_onda.f90 > valuta_SD_1s_backflow ]'
 	
 		norm=1.d0 !/DSQRT(PI)
 		
@@ -2159,8 +2127,7 @@ MODULE funzione_onda
 			END DO
          CALL aggiorna_determinante_C_col_1ppt(N,num,ISD_now,detSD_now,SD,detSD)
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_SD_1s_backflow ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_SD_1s_backflow ]'
 		END IF
 			
 		IF (verbose_mode) PRINT * , 'funzione_onda: detSD(gss)=', detSD
@@ -2180,8 +2147,7 @@ MODULE funzione_onda
 		REAL (KIND=8) :: norm
 		COMPLEX (KIND=8) :: SD(1:N,1:N), ISD(1:N,1:N), detSD
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_SD_pw ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzat [ module_funzione_onda.f90 > valuta_SD_pw ]'
 		
 		norm=2.d0**(1./REAL(N))
 		IF (num==-1) THEN
@@ -2217,8 +2183,7 @@ MODULE funzione_onda
 				CALL aggiorna_determinante_C_col_1ppt(N,num-N,ISD_old,detSD_old,SD,detSD)
 			END IF
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_SD_gem ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_SD_gem ]'
 		END IF
 				
 		IF (verbose_mode) PRINT * , 'funzione_onda: detSD(gem)=', detSD
@@ -2238,8 +2203,7 @@ MODULE funzione_onda
 		INTEGER, INTENT(OUT) :: pvt(1:N)
 		COMPLEX (KIND=8) :: SD(1:N,1:N), ISD(1:N,1:N), detSD, norm_fact
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_SD_lda ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzat [ module_funzione_onda.f90 > valuta_SD_lda ]'
 		
 		IF ( flag_simm_lda ) THEN
 			IF (num==-1) THEN
@@ -2276,8 +2240,7 @@ MODULE funzione_onda
 				END DO
 				CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD)
 			ELSE
-				STOP 'num non accettabile &
-				  [ module_funzione_onda.f90 > valuta_SD_pw ]'
+				STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_SD_pw ]'
 			END IF
 		ELSE
 			IF (num==-1) THEN
@@ -2312,8 +2275,7 @@ MODULE funzione_onda
 				END DO
 				CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD)
 			ELSE
-				STOP 'num non accettabile &
-				  [ module_funzione_onda.f90 > valuta_SD_pw ]'
+				STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_SD_pw ]'
 			END IF
 		END IF
 		
@@ -2331,8 +2293,7 @@ MODULE funzione_onda
 		INTEGER, INTENT(OUT) :: pvt(1:N)
 		COMPLEX (KIND=8) :: SD(1:N,1:N), ISD(1:N,1:N), detSD
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_SD_har ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzat [ module_funzione_onda.f90 > valuta_SD_har ]'
 		
 		IF (num==-1) THEN
 			!Calcolo i termini matriciali di SD_new
@@ -2368,8 +2329,7 @@ MODULE funzione_onda
 			END DO
 			CALL aggiorna_determinante_C_1ppt(N,num,ISD_old,detSD_old,SD,detSD)
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_SD_pw ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_SD_pw ]'
 		END IF
 		
 		IF (verbose_mode) PRINT * , 'funzione_onda: detSD(pw)=', detSD
@@ -2382,8 +2342,7 @@ MODULE funzione_onda
 		REAL (KIND=8), INTENT(IN) :: rij(0:3,1:N,1:N)
 		REAL (KIND=8) :: u_ee(1:N,1:N), Uee
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_Uee_YUK ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_Uee_YUK ]'
 		
 		H_N=N/2
 		IF (num==-1) THEN
@@ -2509,8 +2468,7 @@ MODULE funzione_onda
 			END IF
 			
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_Uee_YUK ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_Uee_YUK ]'
 		END IF
 		
 		IF (verbose_mode) PRINT * , 'funzione_onda: Uee(yuk)=', Uee
@@ -2523,8 +2481,7 @@ MODULE funzione_onda
 		REAL (KIND=8), INTENT(IN) :: rij(0:3,1:N,1:N)
 		REAL (KIND=8) :: u_ee(1:N,1:N), Uee
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_Uee_YUK ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_Uee_YUK ]'
 		
 		H_N=N/2
 		IF (num==-1) THEN
@@ -2582,8 +2539,7 @@ MODULE funzione_onda
 			END IF
 			
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_Uee_YUK ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_Uee_YUK ]'
 		END IF
 		
 		IF (verbose_mode) PRINT * , 'funzione_onda: Uee(yuk)=', Uee
@@ -2596,8 +2552,7 @@ MODULE funzione_onda
 		REAL (KIND=8), INTENT(IN) :: rij(0:3,1:N,1:N)
 		REAL (KIND=8) :: u_ep(1:N,1:N), Uep
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_Uep_YUK ]'
 		
 		H_N=N/2
 		IF (num==-1) THEN
@@ -2675,8 +2630,7 @@ MODULE funzione_onda
 							Uep=Uep+u_ep(i,num)
 						END DO
 					ELSE
-						STOP 'eop non accettabile &
-						  [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
+						STOP 'eop non accettabile [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
 					END IF
 				ELSE
 					IF (eop==1) THEN
@@ -2700,8 +2654,7 @@ MODULE funzione_onda
 							Uep=Uep+u_ep(i,num)
 						END DO
 					ELSE
-						STOP 'eop non accettabile &
-						  [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
+						STOP 'eop non accettabile [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
 					END IF
 				END IF
 			ELSE
@@ -2727,8 +2680,7 @@ MODULE funzione_onda
 							Uep=Uep+u_ep(i,num)
 						END DO
 					ELSE
-						STOP 'eop non accettabile &
-						  [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
+						STOP 'eop non accettabile [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
 					END IF
 				ELSE
 					IF (eop==1) THEN
@@ -2744,14 +2696,12 @@ MODULE funzione_onda
 							Uep=Uep+u_ep(i,num)
 						END DO
 					ELSE
-						STOP 'eop non accettabile &
-						  [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
+						STOP 'eop non accettabile [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
 					END IF
 				END IF
 			END IF
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
 		END IF
 		
 		IF (verbose_mode) PRINT * , 'funzione_onda: Uep(yuk)=', Uep
@@ -2764,8 +2714,7 @@ MODULE funzione_onda
 		REAL (KIND=8), INTENT(IN) :: rij(0:3,1:N,1:N)
 		REAL (KIND=8) :: u_ep(1:N,1:N), Uep
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_Uep_YUK ]'
 
       !PRINT *, MAXVAL(rij(0,:,:))
       !IF (MAXVAL(rij(0,:,:))>100.) STOP 
@@ -2811,8 +2760,7 @@ MODULE funzione_onda
 				END DO
 			END IF
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
 		END IF
 		
 		IF (verbose_mode) PRINT * , 'funzione_onda: Uep(yuk)=', Uep
@@ -2825,8 +2773,7 @@ MODULE funzione_onda
 		REAL (KIND=8), INTENT(IN) :: rij(0:3,1:N,1:N)
 		REAL (KIND=8) :: u_ep(1:N,1:N), Uep
 
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_Uep_YUK ]'
 
 		H_N=N/2
 		IF (num==-1) THEN
@@ -2845,12 +2792,10 @@ MODULE funzione_onda
 				u_ep(num,num)=Fep_yuk*rij(0,num,num)
 				Uep=Uep+u_ep(num,num)
 			ELSE
-				STOP 'eop non accettabile &
-				  [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
+				STOP 'eop non accettabile [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
 			END IF
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_Uep_YUK ]'
 		END IF
 
 		IF (verbose_mode) PRINT * , 'funzione_onda: Uep(atm)=', Uep
@@ -2865,8 +2810,7 @@ MODULE funzione_onda
 		INTEGER :: i, j
 		REAL (KIND=8) :: u_ss(1:H_N_part), Uss
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_Use_POT ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_Use_POT ]'
 		
 		IF (i_num==-1) THEN
 			Uss=0.d0
@@ -2879,8 +2823,7 @@ MODULE funzione_onda
 			u_ss(i_num)=A_POT_se*(A1*DEXP(-D_POT_se*B1*dist_mol_ss(i_num))-A2*DEXP(-D_POT_se*B2*dist_mol_ss(i_num)))
 			Uss=Uss+u_ss(i_num)
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_Use_POT ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_Use_POT ]'
 		END IF
 		IF (verbose_mode) PRINT * , 'funzione_onda: Use(pot)=', Uss
 				
@@ -2893,8 +2836,7 @@ MODULE funzione_onda
 		REAL (KIND=8), INTENT(IN) :: sij(0:3,1:N,1:N)
 		REAL (KIND=8) :: u_sese(1:N,1:N), Usese
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_Usese_YUK ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_Usese_YUK ]'
 		
 		H_N=N/2
 		IF (num==-1) THEN
@@ -3019,8 +2961,7 @@ MODULE funzione_onda
 				END IF
 			END IF
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_Usese_YUK ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_Usese_YUK ]'
 		END IF
 		
 		IF (verbose_mode) PRINT * , 'funzione_onda: Usese(yuk)=', Usese
@@ -3067,8 +3008,7 @@ MODULE funzione_onda
 		INTEGER :: i, j
 		REAL (KIND=8) :: u_ss(1:N,1:N), Uss
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_Use_BOUND ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_Use_BOUND ]'
 		
 		IF (num==-1) THEN
 			Uss=0.d0
@@ -3083,8 +3023,7 @@ MODULE funzione_onda
 			u_ss(partner(num),num)=u_ss(num,partner(num))
 			Uss=Uss+u_ss(num,partner(num))
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_Use_POT ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_Use_POT ]'
 		END IF
 		IF (verbose_mode) PRINT * , 'funzione_onda: Use(pot)=', Uss
 	END SUBROUTINE valuta_Use_BOUND
@@ -3097,8 +3036,7 @@ MODULE funzione_onda
 		INTEGER :: i
 		REAL (KIND=8) :: k_se(1:N), Kse
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_KERNse ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_KERNse ]'
 		
 		IF (num==-1) THEN
 			Kse=0.d0
@@ -3111,8 +3049,7 @@ MODULE funzione_onda
 			k_se(num)=C_kern_e*rij(0,num,num)*rij(0,num,num)
 			Kse=Kse+k_se(num)
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_KERNse ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_KERNse ]'
 		END IF
 		IF (verbose_mode) PRINT * , 'funzione_onda: Kse(pot)=', Kse
 	END SUBROUTINE valuta_KERNse
@@ -3126,8 +3063,7 @@ MODULE funzione_onda
 		INTEGER :: i
 		REAL (KIND=8) :: k_se(1:N), Kse, minL
 
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_KERNse ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_KERNse ]'
 		
 		minL=MINVAL(L)
 
@@ -3154,8 +3090,7 @@ MODULE funzione_onda
 			END IF
 			Kse=Kse+k_se(num)
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_KERNse ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_KERNse ]'
 		END IF
 				
 		IF (verbose_mode) PRINT * , 'funzione_onda: Kse(pot)=', Kse
@@ -3169,8 +3104,7 @@ MODULE funzione_onda
 		INTEGER :: i
 		REAL (KIND=8) :: k_se(1:N), Kse
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_KERNse ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_KERNse ]'
 		
 		IF (num==-1) THEN
 			Kse=0.d0
@@ -3183,8 +3117,7 @@ MODULE funzione_onda
 			k_se(num)=C_kern_e*rij(0,num,num)*rij(0,num,num)
 			Kse=Kse+k_se(num)
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_KERNse ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_KERNse ]'
 		END IF
 		IF (verbose_mode) PRINT * , 'funzione_onda: Kse(pot)=', Kse
 	END SUBROUTINE valuta_KERNse_periodic	
@@ -3197,8 +3130,7 @@ MODULE funzione_onda
 		INTEGER :: i
 		REAL (KIND=8) :: k_se(1:N), Kse
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_atmKERNse ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_atmKERNse ]'
 		
 		IF (num==-1) THEN
 			Kse=0.d0
@@ -3211,8 +3143,7 @@ MODULE funzione_onda
 			k_se(num)=C_kern_e*rij(0,num,num)
 			Kse=Kse+k_se(num)
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_KERNse ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_KERNse ]'
 		END IF
 		IF (verbose_mode) PRINT * , 'funzione_onda: Kse(pot)=', Kse
 	END SUBROUTINE valuta_atmKERNse
@@ -3225,8 +3156,7 @@ MODULE funzione_onda
 		INTEGER :: i
 		REAL (KIND=8) :: L38, k_se(1:N), Kse
 
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_atmKERNse ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_atmKERNse ]'
 		
 		L38=3.d0*MINVAL(L)/8.d0
 		IF (num==-1) THEN
@@ -3248,8 +3178,7 @@ MODULE funzione_onda
 			END IF
 			Kse=Kse+k_se(num)
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_KERNse ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_KERNse ]'
 		END IF
 		IF (verbose_mode) PRINT * , 'funzione_onda: Kse(pot)=', Kse
 	END SUBROUTINE valuta_atmKERNse_ctf
@@ -3264,8 +3193,7 @@ MODULE funzione_onda
 		REAL (KIND=8) :: GD(1:N,1:N), IGD(1:N,1:N), detGD
 		INTEGER, INTENT(OUT) :: pvt(1:N)
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_GDse ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_GDse ]'
 		
 		IF (num==-1) THEN
 			!Calcolo i termini matriciali di SD_new
@@ -3299,12 +3227,10 @@ MODULE funzione_onda
 				END DO
 				CALL aggiorna_determinante_R_col_1ppt(N,num,IGD_old,detGD_old,GD,detGD)
 			ELSE
-				STOP 'eop non accettabile &
-				  [ module_funzione_onda.f90 > valuta_GDse ]'
+				STOP 'eop non accettabile [ module_funzione_onda.f90 > valuta_GDse ]'
 			END IF
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_GDse ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_GDse ]'
 		END IF
 		
 	END SUBROUTINE valuta_GDse
@@ -3320,8 +3246,7 @@ MODULE funzione_onda
 		REAL (KIND=8) :: GD(1:N,1:N), IGD(1:N,1:N), detGD, minL, exp_term
 		INTEGER, INTENT(OUT) :: pvt(1:N)
 
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_GDse ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_GDse ]'
 		
 		minL=MINVAL(L)
 		
@@ -3378,12 +3303,10 @@ MODULE funzione_onda
 				END DO
 				CALL aggiorna_determinante_R_col_1ppt(N,num,IGD_old,detGD_old,GD,detGD)
 			ELSE
-				STOP 'eop non accettabile &
-				  [ module_funzione_onda.f90 > valuta_GDse ]'
+				STOP 'eop non accettabile [ module_funzione_onda.f90 > valuta_GDse ]'
 			END IF
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_GDse ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_GDse ]'
 		END IF
 
 	END SUBROUTINE valuta_GDse_ctf
@@ -3397,8 +3320,7 @@ MODULE funzione_onda
 		INTEGER :: i, j
 		REAL (KIND=8) :: u_ss(1:N,1:N), Uss
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_Usesp_POT ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_Usesp_POT ]'
 		
 		IF (num==-1) THEN
 			Uss=0.d0
@@ -3436,8 +3358,7 @@ MODULE funzione_onda
 				Uss=Uss+u_ss(i,num)
 			END DO
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_Usesp_POT ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_Usesp_POT ]'
 		END IF
 		IF (verbose_mode) PRINT * , 'funzione_onda: Usesp(pot)=', Uss
 	END SUBROUTINE valuta_Usesp_POT
@@ -3449,8 +3370,7 @@ MODULE funzione_onda
 		REAL (KIND=8), INTENT(IN) :: sij(0:3,1:N,1:N)
 		REAL (KIND=8) :: u_sesp(1:N,1:N), Usesp
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_Usesp_GSS ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_Usesp_GSS ]'
 		
 		IF (num==-1) THEN
 			Usesp=0.d0
@@ -3474,12 +3394,10 @@ MODULE funzione_onda
 				u_sesp(num,num)=Gsesp*sij(0,num,num)*sij(0,num,num)
 				Usesp=Usesp+u_sesp(num,num)
 			ELSE
-				STOP 'eop non accettabile &
-				  [ module_funzione_onda.f90 > valuta_Usesp_GSS ]'
+				STOP 'eop non accettabile [ module_funzione_onda.f90 > valuta_Usesp_GSS ]'
 			END IF
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_Usesp_GSS ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_Usesp_GSS ]'
 		END IF
 
 		!IF (verbose_mode) PRINT * , 'funzione_onda: Usesp(gss)=', Usesp
@@ -3497,8 +3415,7 @@ MODULE funzione_onda
 		REAL (KIND=8) :: GD(1:N,1:N), IGD(1:N,1:N), detGD
 		INTEGER, INTENT(OUT) :: pvt(1:N)
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_GDsp ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_GDsp ]'
 		
 		IF (num==-1) THEN
 			!Calcolo i termini matriciali di SD_new
@@ -3531,12 +3448,10 @@ MODULE funzione_onda
 				END DO
 				CALL aggiorna_determinante_R_col_1ppt(N,num,IGD_old,detGD_old,GD,detGD)
 			ELSE
-				STOP 'eop non accettabile &
-				  [ module_funzione_onda.f90 > valuta_GDsp ]'
+				STOP 'eop non accettabile [ module_funzione_onda.f90 > valuta_GDsp ]'
 			END IF
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_GDsp ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_GDsp ]'
 		END IF
 		
 	END SUBROUTINE valuta_GDsp
@@ -3548,8 +3463,7 @@ MODULE funzione_onda
 		REAL (KIND=8), INTENT(IN) :: sij(0:3,1:N,1:N)
 		REAL (KIND=8) :: u_sesp(1:N,1:N), Usesp
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > valuta_Usesp_YUK ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > valuta_Usesp_YUK ]'
 		
 		H_N=N/2
 		IF (num==-1) THEN
@@ -3623,8 +3537,7 @@ MODULE funzione_onda
 							Usesp=Usesp+u_sesp(i,num)
 						END DO
 					ELSE
-						STOP 'eop non accettabile &
-						  [ module_funzione_onda.f90 > valuta_Usesp_YUK ]'
+						STOP 'eop non accettabile [ module_funzione_onda.f90 > valuta_Usesp_YUK ]'
 					END IF
 				ELSE
 					IF (eop==1) THEN
@@ -3648,8 +3561,7 @@ MODULE funzione_onda
 							Usesp=Usesp+u_sesp(i,num)
 						END DO
 					ELSE
-						STOP 'eop non accettabile &
-						  [ module_funzione_onda.f90 > valuta_Usesp_YUK ]'
+						STOP 'eop non accettabile [ module_funzione_onda.f90 > valuta_Usesp_YUK ]'
 					END IF
 				END IF
 			ELSE
@@ -3675,8 +3587,7 @@ MODULE funzione_onda
 							Usesp=Usesp+u_sesp(i,num)
 						END DO
 					ELSE
-						STOP 'eop non accettabile &
-						  [ module_funzione_onda.f90 > valuta_Usesp_YUK ]'
+						STOP 'eop non accettabile [ module_funzione_onda.f90 > valuta_Usesp_YUK ]'
 					END IF
 				ELSE
 					IF (eop==1) THEN
@@ -3692,14 +3603,12 @@ MODULE funzione_onda
 							Usesp=Usesp+u_sesp(i,num)
 						END DO
 					ELSE
-						STOP 'eop non accettabile &
-						  [ module_funzione_onda.f90 > valuta_Usesp_YUK ]'
+						STOP 'eop non accettabile [ module_funzione_onda.f90 > valuta_Usesp_YUK ]'
 					END IF
 				END IF
 			END IF
 		ELSE
-			STOP 'num non accettabile &
-			  [ module_funzione_onda.f90 > valuta_Usesp_YUK ]'
+			STOP 'num non accettabile [ module_funzione_onda.f90 > valuta_Usesp_YUK ]'
 		END IF
 		
 		IF (verbose_mode) PRINT * , 'funzione_onda: Usesp(yuk)=', Usesp
@@ -3711,8 +3620,7 @@ MODULE funzione_onda
 		USE dati_mc
 		IMPLICIT NONE
 		
-		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato &
-		  [ module_funzione_onda.f90 > chiudi_dati_funzione_onda ]'
+		IF (.NOT. iniz_funzione_onda) STOP 'funzione_onda non é inizializzato[ module_funzione_onda.f90 > chiudi_dati_funzione_onda ]'
 		
 		IF ((SDe_kind=='lda').OR.(SDse_kind=='lda')) THEN
 			IF ( flag_TABC ) THEN

@@ -77,6 +77,22 @@ MODULE generic_tools
 		
 	END SUBROUTINE stampa_logo_HswfQMC
 !-----------------------------------------------------------------------
+	SUBROUTINE stampa_file_vettores3D(nome_file, vettores, nv)
+        IMPLICIT NONE
+        CHARACTER(LEN=*) :: nome_file
+        INTEGER :: nv, i, ios
+        REAL (KIND=8), INTENT(IN) :: vettores(3,nv)
+
+        OPEN(UNIT=1991, FILE=nome_file, STATUS='UNKNOWN', IOSTAT=ios)
+        IF ( ios /= 0 ) STOP 'Errore nell aprire il file per salvare vettores [ module_generic_tools.f90 > stampa_file_vettores3D ]'
+
+        DO i = 1, nv, 1
+            WRITE(UNIT=1991, FMT=*) vettores(1:3,i)
+        END DO
+        CLOSE (1991)
+
+    END SUBROUTINE stampa_file_vettores3D
+!-----------------------------------------------------------------------
 	!dato il numero di particelle N (che deve essere pari) salva tutte M=(N-1)!! le possibilitá di creare coppie nel vettore coppie(1:2,1:N/2,1:M)
 	SUBROUTINE crea_tutte_le_coppie(N,M,coppie)
 		IMPLICIT NONE
@@ -154,7 +170,7 @@ MODULE generic_tools
 !		INTEGER, INTENT(OUT) :: num_K_points
 !		!Nella funzione richiamante si puó poi usare TRIM(path) in modo da eliminare gli spazi bianchi
 !		IF (myrank>9999) STOP 'Stai usando troppi processori - determina_numero_cartelle_K [module_generic_tools.f90]'
-!		WRITE (string_myrank, '(I4.4)'), myrank
+!		WRITE (string_myrank, '(I4.4)') myrank
 !		INQUIRE(FILE=path//'/.lock_qmc',EXIST=flag_lock)
 !		DO WHILE (flag_lock )
 !			CALL SLEEP(1)
@@ -212,13 +228,13 @@ MODULE generic_tools
 		cont=0
 		DO WHILE ( .NOT. flag_find )
 			cont=cont+1
-			READ (66, *), string_find
+			READ (66, *) string_find
 			IF ( string_find=='<MONKHORST_PACK_OFFSET' ) THEN
 				flag_find=.TRUE.
 			END IF
 		END DO
 		DO i1 = 1, num_K, 1
-			READ (66, '(A150)'), string_weight(1:150)
+			READ (66, '(A150)') string_weight(1:150)
 			flag_find=.FALSE.
 			i2=0
 			DO WHILE ( (.NOT. flag_find) .AND. (i2<130) )
@@ -229,7 +245,7 @@ MODULE generic_tools
 					DO WHILE ( string_weight(i2+i3+2:i2+i3+3)/='/>' )
 						i3=i3+1
 					END DO
-					READ (string_weight(i2:i2+i3), *), weight
+					READ (string_weight(i2:i2+i3), *) weight
 					pesi(i1)=weight
 				END IF
 			END DO
@@ -250,10 +266,10 @@ MODULE generic_tools
 		IF (flag_file) THEN
 			OPEN (UNIT=89, FILE=file, STATUS='OLD')
 			DO i = 1, 9, 1
-				READ (89,*), 
+				READ (89,*) 
 			END DO
 			DO i = 1, N, 1
-				READ (89,*), fattori(i)
+				READ (89,*) fattori(i)
 			END DO
 			CLOSE (89)
 		ELSE
@@ -274,9 +290,9 @@ MODULE generic_tools
 		IF ( flag_file ) THEN
 			!OPEN (UNIT=89, FILE=file, STATUS='OLD')   !leggeva da evc.xml
 			!DO i = 1, 6, 1
-			!	READ (89,*), 
+			!	READ (89,*) 
 			!END DO
-			!READ (89,89), stringa;		89 FORMAT(2X,20A)
+			!READ (89,89) stringa;		89 FORMAT(2X,20A)
 			!cont=0
 			!num_ch=50
 			!DO WHILE ((num_ch<58).AND.(num_ch>47))
@@ -292,9 +308,9 @@ MODULE generic_tools
 			!CLOSE (89)
 			OPEN (UNIT=89, FILE=file, STATUS='OLD')         !legge da gkvectors.xml
 			DO i = 1, 7, 1
-				READ (89,*), 
+				READ (89,*) 
 			END DO
-			READ (89, *), N_pw
+			READ (89, *) N_pw
 			!PRINT * , 'N_pw=', N_pw
 			CLOSE (89)
 		ELSE
@@ -316,15 +332,15 @@ MODULE generic_tools
 		IF ( flag_file ) THEN
 			OPEN (UNIT=89, FILE=file, STATUS='OLD')
 			DO i = 1, 6, 1
-				READ (89,*), 
+				READ (89,*) 
 			END DO
 			DO i = 1, N, 1
-				READ(89,*),
-				READ(89,*),
+				READ(89,*)
+				READ(89,*)
 				!PRINT * , 'i=', i
 				DO j = 1, N_pw, 1
 					!PRINT * , 'j=', j
-					READ (89,*), dato(1:2)
+					READ (89,*) dato(1:2)
 					fattori(j,i)=(1.d0,0.d0)*dato(1)+(0.d0,1.d0)*dato(2)
 				END DO
 			END DO
@@ -349,16 +365,16 @@ MODULE generic_tools
 		IF ( flag_file ) THEN
 			OPEN (UNIT=89, FILE=file, STATUS='OLD')
 			DO i = 1, 16, 1
-				READ (89,*), 
+				READ (89,*) 
 			END DO
-			READ (89, *), trasl_k(1)
-			READ (89, *), trasl_k(2)
-			READ (89, *), trasl_k(3)
+			READ (89, *) trasl_k(1)
+			READ (89, *) trasl_k(2)
+			READ (89, *) trasl_k(3)
 			DO i = 1, N_pw+4, 1
-				READ (89,*), 
+				READ (89,*) 
 			END DO
 			DO i = 1, N_pw, 1
-				READ (89,*), k(1:3,i)
+				READ (89,*) k(1:3,i)
 			END DO
 			CLOSE (89)
 		ELSE
@@ -579,8 +595,7 @@ MODULE generic_tools
 		REAL (KIND=8), INTENT(OUT) :: r_coppie(1:N/2)     !distanza delle coppie piú vicine
 
 		IF ( MOD(N,2)==1 ) THEN
-			STOP "Errore, N deve essere un numero pari &
-				[ module_generic_tools.f90 > crea_coppie_minima_distanza ]"
+			STOP "Errore, N deve essere un numero pari [ module_generic_tools.f90 > crea_coppie_minima_distanza ]"
 		END IF
 		R_N=REAL(N)
 		num_free_p=N
@@ -632,8 +647,7 @@ MODULE generic_tools
 		REAL (KIND=8), INTENT(OUT) :: r_coppie(1:N/2)     !distanza delle coppie piú vicine
 
 		IF ( MOD(N,2)==1 ) THEN
-			STOP "Errore, N deve essere un numero pari &
-				[ module_generic_tools.f90 > crea_coppie_minima_distanza ]"
+			STOP "Errore, N deve essere un numero pari [ module_generic_tools.f90 > crea_coppie_minima_distanza ]"
 		END IF
 		R_N=REAL(N)
 		H_N=N/2
@@ -696,8 +710,7 @@ MODULE generic_tools
 		REAL (KIND=8), INTENT(OUT) :: r_coppie(1:N/2)     !distanza delle coppie piú vicine
 
 		IF ( MOD(N,2)==1 ) THEN
-			STOP "Errore, N deve essere un numero pari &
-				[ module_generic_tools.f90 > crea_coppie_minima_distanza ]"
+			STOP "Errore, N deve essere un numero pari [ module_generic_tools.f90 > crea_coppie_minima_distanza ]"
 		END IF
 				
 		DO i1 = 1, N/2, 1
@@ -996,7 +1009,7 @@ MODULE generic_tools
 		
 		OPEN (UNIT=77, FILE=nome_file//'.dat', STATUS='UNKNOWN')
 		DO i = 1, N, 1
-			WRITE (77, *), x(i), y(i)
+			WRITE (77, *) x(i), y(i)
 		END DO
 		CLOSE(77)
 		
@@ -1013,11 +1026,11 @@ MODULE generic_tools
 		OPEN (UNIT=77, FILE=nome_file//'.dat', STATUS='UNKNOWN')
 		IF (N>N_dati_nel_file) THEN
 			DO i = 1, N, N/N_dati_nel_file
-				WRITE (77, *), x(i)
+				WRITE (77, *) x(i)
 			END DO
 		ELSE
 			DO i = 1, N, 1
-				WRITE (77, *), x(i)
+				WRITE (77, *) x(i)
 			END DO
 		END IF
 		CLOSE(77)
@@ -1033,7 +1046,7 @@ MODULE generic_tools
 		REAL (KIND=8), INTENT(IN) :: F(1:N)
 		LOGICAL, PARAMETER :: flag_debug=.FALSE.
 		LOGICAL :: flag_file_dat, flag_file_w, f1, f2
-		INTEGER, PARAMETER :: N_file=512  !numero di dati di tipo double che ci saranno in ogni record dei file accumulatori
+		INTEGER (KIND=8), PARAMETER :: N_file=512  !numero di dati di tipo double che ci saranno in ogni record dei file accumulatori
 		INTEGER :: N_AV_old
 		INTEGER (KIND=8) :: i, j, N_old, N_resto
 		REAL (KIND=8) :: F_AV(1:N/N_AV), F_AV_prima_riga(1:N_file), R_N_AV
@@ -1042,8 +1055,7 @@ MODULE generic_tools
 		R_N_AV=REAL(N_AV,8)
 		INQUIRE(FILE=nome_file//'.bin',EXIST=flag_file_dat)
 		IF (flag_continua) THEN
-			IF (.NOT. flag_file_dat) PRINT *, 'Hai detto di voler continuare a salvare dai dati precedenti ma non ci sono. &
-			  Trascrivo ugualmente i dati. [salva_vettore_dati_bin]: ', nome_file
+			IF (.NOT. flag_file_dat) PRINT *, 'Hai detto di voler continuare a salvare dai dati precedenti ma non ci sono. Trascrivo ugualmente i dati. [salva_vettore_dati_bin]: ', nome_file
 		END IF		
 		
 		IF ((.NOT. flag_continua) .AND. (.NOT. flag_file_dat)) THEN
@@ -1066,34 +1078,31 @@ MODULE generic_tools
 
 		IF ( (.NOT. flag_continua) .OR. (.NOT. flag_file_dat) ) THEN
 			!scrivo un nuovo file dati
-			IF (N_AV<1) STOP 'Non puoi salvare i dati se non setti un N_AV adeguato &
-			  [ module_generic_tools.f90 > salva_vettore_dati_bin ]'
-			IF (N<1) STOP 'Non hai dati da salvare &
-			  [ module_generic_tools.f90 > salva_vettore_dati_bin ]'
+			IF (N_AV<1) STOP 'Non puoi salvare i dati se non setti un N_AV adeguato [ module_generic_tools.f90 > salva_vettore_dati_bin ]'
+			IF (N<1) STOP 'Non hai dati da salvare [ module_generic_tools.f90 > salva_vettore_dati_bin ]'
 
-			WRITE(77, REC=1), N, N_AV
+			WRITE(77, REC=1) N, N_AV
 
 			DO i = 1, (N/N_AV)/N_file+1, 1
 				IF ((i-1)*N_file+1 > N/N_AV) EXIT
-				WRITE(77, REC=i+1), F_AV((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
+				WRITE(77, REC=i+1) F_AV((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
 				IF (flag_debug) PRINT * , 'ho scritto i dati sulla riga ', i, ' da ', (i-1)*N_file+1, ' a ', MIN(i*N_file,N/N_AV)
 			END DO
 		ELSE
 			!continuo da un file dati vecchio
-			READ(77, REC=1), N_old, N_AV_old
+			READ(77, REC=1) N_old, N_AV_old
 			IF (flag_debug) PRINT * , 'Leggo: N_old = ', N_old
 
-			IF (N_AV/=N_AV_old) STOP 'Stai provando ad aggiunger dati ma con un N_AV diverso &
-			  [ generic_tools.f90 > salva_vettore_dati_bin ]'
+			IF (N_AV/=N_AV_old) STOP 'Stai provando ad aggiunger dati ma con un N_AV diverso [ generic_tools.f90 > salva_vettore_dati_bin ]'
 
-			WRITE (77, REC=1), N_old+N, N_AV
+			WRITE (77, REC=1) N_old+N, N_AV
 			IF (flag_debug) PRINT * , 'Trascrivo: N = ', N_old+N
 
 			IF (MOD(N_old/N_AV_old,N_file)==0) THEN
 				!nel caso il file vecchio terminasse senza una linea lasciata a metá
 				DO i = (N_old/N_AV_old)/N_file+1, (N_old/N_AV_old)/N_file+(N/N_AV)/N_file+1, 1
 					IF ((i-1)*N_file+1 > N/N_AV+N_old/N_AV_old) EXIT
-					WRITE(77, REC=i+1), F_AV((i-1)*N_file-N_old/N_AV_old+1:MIN(i*N_file-N_old/N_AV_old,N/N_AV))
+					WRITE(77, REC=i+1) F_AV((i-1)*N_file-N_old/N_AV_old+1:MIN(i*N_file-N_old/N_AV_old,N/N_AV))
 					IF (flag_debug) PRINT * , 'ho scritto i dati sulla riga ', i, ' da ', (i-1)*N_file-N_old/N_AV_old+1, &
 					  ' a ', MIN(i*N_file-N_old/N_AV_old,N/N_AV)
 				END DO
@@ -1101,15 +1110,15 @@ MODULE generic_tools
 				!nel caso il file vecchio avesse una linea lasciata a metá
 				N_resto=N_old/N_AV_old-((N_old/N_AV_old)/N_file)*N_file
 				IF (flag_debug) PRINT * , 'N_resto= ', N_resto
-				READ(77, REC=(N_old/N_AV)/N_file+2), F_AV_prima_riga(1:N_resto)
+				READ(77, REC=(N_old/N_AV)/N_file+2) F_AV_prima_riga(1:N_resto)
 				IF (flag_debug) PRINT * , 'ho letto dalla riga ', (N_old/N_AV)/N_file+1, ' i vecchi dati da 1 a ', N_resto
 				F_AV_prima_riga(N_resto+1:MIN(N_file,N/N_AV+N_resto))=F_AV(1:MIN(N_file-N_resto,N/N_AV))
 				IF (flag_debug) PRINT * , 'ai primi ', N_resto, ' dati, aggiungo i dati da 1 a ', MIN(N_file-N_resto,N/N_AV)
-				WRITE(77, REC=(N_old/N_AV)/N_file+2), F_AV_prima_riga(1:MIN(N_file,N/N_AV+N_resto))
+				WRITE(77, REC=(N_old/N_AV)/N_file+2) F_AV_prima_riga(1:MIN(N_file,N/N_AV+N_resto))
 				IF (flag_debug) PRINT * , 'ho ri-scritto sulla riga ', (N_old/N_AV)/N_file+1, ' da 1 a ', MIN(N_file,N/N_AV+N_resto)
 				DO i = (N_old/N_AV_old)/N_file+2, (N_old/N_AV_old)/N_file+(N/N_AV)/N_file+2, 1
 					IF ((i-1)*N_file+1 > N/N_AV+N_old/N_AV_old) EXIT
-					WRITE(77, REC=i+1), F_AV((i-1)*N_file-N_old/N_AV_old+1:MIN(i*N_file-N_old/N_AV_old,N/N_AV))
+					WRITE(77, REC=i+1) F_AV((i-1)*N_file-N_old/N_AV_old+1:MIN(i*N_file-N_old/N_AV_old,N/N_AV))
 					IF (flag_debug) PRINT * , 'ho scritto i dati sulla riga ', i, ' da ', (i-1)*N_file-N_old/N_AV_old+1, &
 					  ' a ', MIN(i*N_file-N_old/N_AV_old,N/N_AV)
 				END DO
@@ -1136,16 +1145,15 @@ MODULE generic_tools
 		R_N_AV=REAL(N_AV,8)
 
 		INQUIRE(FILE=nome_file//'.bin',EXIST=flag_file_dat)
-		IF (.NOT. flag_file_dat) STOP 'Manca il file da comprimere &
-		  [comprimi_dati_bin] '
+		IF (.NOT. flag_file_dat) STOP 'Manca il file da comprimere [comprimi_dati_bin] '
 		OPEN (77, FILE=nome_file//'.bin', STATUS='OLD',ACCESS='DIRECT',FORM='UNFORMATTED', RECL=N_file*8)
 
-		READ(77, REC=1), N_old, N_AV_old
+		READ(77, REC=1) N_old, N_AV_old
 		ALLOCATE(dati(1:N_old/N_AV_old), dati_new(1:(N_old/N_AV_old)/N_AV))
 		DO i = 1, (N_old/N_AV_old)/N_file+1, 1
 			IF ((i-1)*N_file+1>N_old/N_AV_old) EXIT
 			IF (flag_debug) PRINT * , 'Leggo dalla riga ', i, '  i dati da ', (i-1)*N_file+1, ' a ', MIN(i*N_file,N_old/N_AV_old)
-			READ (77, REC=i+1), dati((i-1)*N_file+1:MIN(i*N_file,N_old/N_AV_old))
+			READ (77, REC=i+1) dati((i-1)*N_file+1:MIN(i*N_file,N_old/N_AV_old))
 		END DO
 
 		CLOSE (77, STATUS='KEEP')
@@ -1161,10 +1169,10 @@ MODULE generic_tools
 		END DO
 
 		OPEN (77, FILE=nome_file//'.bin', STATUS='REPLACE',ACCESS='DIRECT',FORM='UNFORMATTED', RECL=N_file*8)
-		WRITE(77, REC=1), N_old-MOD(N_old,N_AV), N_AV*N_AV_old
+		WRITE(77, REC=1) N_old-MOD(N_old,N_AV), N_AV*N_AV_old
 		DO i = 1, (N_old/N_AV*N_AV_old)/N_file+1, 1
 			IF ((i-1)*N_file+1 > N_old/N_AV) EXIT
-			WRITE(77, REC=i+1), dati_new((i-1)*N_file+1:MIN(i*N_file,N_old/(N_AV*N_AV_old)))
+			WRITE(77, REC=i+1) dati_new((i-1)*N_file+1:MIN(i*N_file,N_old/(N_AV*N_AV_old)))
 			IF (flag_debug) PRINT * , 'ho scritto i dati sulla riga ', i, ' da ', (i-1)*N_file+1, &
 			  ' a ', MIN(i*N_file,N_old/(N_AV*N_AV_old))
 		END DO
@@ -1185,20 +1193,20 @@ MODULE generic_tools
 
 		OPEN (77, FILE=nome_file//'.bin', STATUS='UNKNOWN',ACCESS='DIRECT',FORM='UNFORMATTED', RECL=N_file*8)
 		OPEN (UNIT=78, FILE=nome_file//'.dat', STATUS='UNKNOWN')
-		READ (77, REC=1), N, N_AV
+		READ (77, REC=1) N, N_AV
 		IF (flag_debug) PRINT * , 'Il file da trsformare ha N=',N,'    N_AV=', N_AV
 		ALLOCATE(dati(1:N/N_AV))
 		DO i = 1, (N/N_AV)/N_file+1, 1
 			IF ((i-1)*N_file+1>N/N_AV) EXIT
 			IF (flag_debug) PRINT * , 'Leggo dalla riga ', i, '  i dati da ', (i-1)*N_file+1, ' a ', MIN(i*N_file,N/N_AV)
-			READ (77, REC=i+1), dati((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
+			READ (77, REC=i+1) dati((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
 		END DO
 		DO i = 1, (N/N_AV)/N_rid, 1
 			frf=0.d0
 			DO j = 1, N_rid, 1
 				frf=frf+dati((i-1)*N_rid+j)/REAL(N_rid,8)
 			END DO
-			WRITE (78, *), frf
+			WRITE (78, *) frf
 		END DO
 		CLOSE(77,STATUS='KEEP')
 		CLOSE(78)
@@ -1218,14 +1226,14 @@ MODULE generic_tools
 		REAL (KIND=8) :: media, errore
 		
 		OPEN (UNIT=40, FILE=nome_file//'_details.d', STATUS='UNKNOWN')
-		WRITE (40, *), '                                  - - - ESTIMATION FOR ',nome_file,' - - -'
-		WRITE (40, *), 
+		WRITE (40, *) '                                  - - - ESTIMATION FOR ',nome_file,' - - -'
+		WRITE (40, *) 
 		IF (PRESENT(nome_file_pesi)) THEN
 			i=-1
 			CALL calcola_estimatore_con_blocking_da_file_bin(nome_file_pesi,i,average,error)
-			WRITE (40, *), 'Denominator: ', average ,' +- ', error*error, &
+			WRITE (40, *) 'Denominator: ', average ,' +- ', error*error, &
 			  ' . Ratio: ', average/error
-			WRITE (40, *),
+			WRITE (40, *)
 		END IF
 		DO i = num_block_min, num_block_max, 1
 			IF (PRESENT(nome_file_pesi)) THEN
@@ -1233,22 +1241,22 @@ MODULE generic_tools
 			ELSE
 				CALL calcola_estimatore_con_blocking_da_file_bin(nome_file,i,average_(i),error_(i))
 			END IF
-			WRITE (40, *), i, ' blocks: ', average_(i), ' +- ', error_(i)
+			WRITE (40, *) i, ' blocks: ', average_(i), ' +- ', error_(i)
 		END DO
-		WRITE (40, *), 
+		WRITE (40, *) 
 		IF (PRESENT(nome_file_pesi)) THEN 
 			CALL estrai_valori_con_blocking_da_file_bin(nome_file,8,F,nome_file_pesi,Q)
-			WRITE (40, *), 'NUM with 8 blocks: ', REAL(F,4)
-			WRITE (40, *), 'DEN with 8 blocks: ', REAL(Q,4)
-			WRITE (40, *), 'N/D with 8 blocks: ', REAL((/(F(i)/Q(i),i=1,8)/),4)
-			WRITE (40, *), 
+			WRITE (40, *) 'NUM with 8 blocks: ', REAL(F,4)
+			WRITE (40, *) 'DEN with 8 blocks: ', REAL(Q,4)
+			WRITE (40, *) 'N/D with 8 blocks: ', REAL((/(F(i)/Q(i),i=1,8)/),4)
+			WRITE (40, *) 
 		END IF
 		i_min=8
 		DO i = 9, 16, 1
 			IF (error_(i)>error_(i_min)) i_min=i
 		END DO
-		WRITE (40, *), '### CON METODO KALOS-PEDERIVA: ', i_min, ' BLOCCHI ###'
-		WRITE (40, *), nome_file, ': ', average_(i_min), '+-', error_(i_min)
+		WRITE (40, *) '### CON METODO KALOS-PEDERIVA: ', i_min, ' BLOCCHI ###'
+		WRITE (40, *) nome_file, ': ', average_(i_min), '+-', error_(i_min)
 		delta_=0.d0
 		i_min=num_block_min+num_media_max
 		DO n_media = 1, num_media_max, 1
@@ -1266,13 +1274,13 @@ MODULE generic_tools
 				END IF
 			END DO
 		END DO
-		WRITE (40, *), '### CON METODO PLATEAU: ', i_min, ' BLOCCHI ###'
+		WRITE (40, *) '### CON METODO PLATEAU: ', i_min, ' BLOCCHI ###'
 		average=0.2d0*(average_(i_min-2)+average_(i_min-1)+average_(i_min)+average_(i_min+1)+average_(i_min+2))
 		error=0.2d0*(error_(i_min-2)+error_(i_min-1)+error_(i_min)+error_(i_min+1)+error_(i_min+2))
-		WRITE (40, *), nome_file, ': ', average, ' +- ', error
-		WRITE (40,*), 'errore overstimato:', MAXVAL(error_(i_min-2:i_min+2))
-		WRITE (40, *), 
-		WRITE (40, *), 
+		WRITE (40, *) nome_file, ': ', average, ' +- ', error
+		WRITE (40,*) 'errore overstimato:', MAXVAL(error_(i_min-2:i_min+2))
+		WRITE (40, *) 
+		WRITE (40, *) 
 		media=average
 		errore=error
 		CLOSE (40)
@@ -1313,12 +1321,11 @@ MODULE generic_tools
 		flag_file_dat=flag_file_dat.AND.flag_file_dat_pesi
 		IF (.NOT. flag_file_dat) THEN
 			PRINT *, nome_file_pesi
-		  	STOP 'Manca il file da cui prendere i dati per calcolare il valore di aspettazione &
-		  	 [estrai_valori_con_blocking_da_file_bin] '
+		  	STOP 'Manca il file da cui prendere i dati per calcolare il valore di aspettazione [estrai_valori_con_blocking_da_file_bin] '
 		END IF
 
 		OPEN (77, FILE=nome_file//'.bin', STATUS='OLD',ACCESS='DIRECT',FORM='UNFORMATTED', RECL=N_file*8)
-		READ (77, REC=1), N, N_AV
+		READ (77, REC=1) N, N_AV
 		IF (PRESENT(nome_file_pesi)) OPEN (78,FILE=nome_file_pesi//'.bin',STATUS='OLD',ACCESS='DIRECT',FORM='UNFORMATTED',RECL=N_file*8)
 
 		IF (num_block==-1) num_block=N/N_AV
@@ -1328,7 +1335,7 @@ MODULE generic_tools
 		DO i = 1, (N/N_AV)/N_file+1, 1
 			IF ((i-1)*N_file+1>N/N_AV) EXIT
 			IF (flag_debug) PRINT * , 'Leggo dalla riga ', i, '  i dati da ', (i-1)*N_file+1, ' a ', MIN(i*N_file,N/N_AV)
-			READ (77, REC=i+1), numeratore((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
+			READ (77, REC=i+1) numeratore((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
 		END DO
 		CLOSE(77,STATUS='KEEP')
 		IF (PRESENT(nome_file_pesi)) THEN
@@ -1336,7 +1343,7 @@ MODULE generic_tools
 			DO i = 1, (N/N_AV)/N_file+1, 1
 				IF ((i-1)*N_file+1>N/N_AV) EXIT
 				IF (flag_debug) PRINT * , 'Leggo dalla riga ', i, '  i dati da ', (i-1)*N_file+1, ' a ', MIN(i*N_file,N/N_AV)
-				READ (78, REC=i+1), denominatore((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
+				READ (78, REC=i+1) denominatore((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
 			END DO
 			CLOSE(78,STATUS='KEEP')
 		END IF
@@ -1394,18 +1401,17 @@ MODULE generic_tools
 		IF ((.NOT. flag_file_dat).OR.((.NOT. flag_file_dat_pesi) .AND. (PRESENT(nome_file_pesi)))) THEN
                         IF (.NOT. flag_file_dat) PRINT *, nome_file//'.bin'
 			IF ((.NOT. flag_file_dat_pesi) .AND. (PRESENT(nome_file_pesi))) PRINT *, nome_file_pesi//'.bin'
-                        STOP 'Manca il file da cui prendere i dati per calcolare il valore di aspettazione &
-                         [estrai_valori_con_blocking_da_file_bin] '
+                        STOP 'Manca il file da cui prendere i dati per calcolare il valore di aspettazione [estrai_valori_con_blocking_da_file_bin] '
                 END IF
 	
 	
 		IF (PRESENT(nome_file_pesi)) THEN
 			OPEN (77, FILE=nome_file//'.bin', STATUS='OLD',ACCESS='DIRECT',FORM='UNFORMATTED', RECL=N_file*8)
-			READ (77, REC=1), N, N_AV
+			READ (77, REC=1) N, N_AV
 			OPEN (78, FILE=nome_file_pesi//'.bin', STATUS='OLD',ACCESS='DIRECT',FORM='UNFORMATTED', RECL=N_file*8)
 		ELSE
 			OPEN (77, FILE=nome_file//'.bin', STATUS='OLD',ACCESS='DIRECT',FORM='UNFORMATTED', RECL=N_file*8)
-			READ (77, REC=1), N, N_AV
+			READ (77, REC=1) N, N_AV
 		END IF
 	
 		IF (num_block==-1) num_block=N/N_AV
@@ -1416,8 +1422,8 @@ MODULE generic_tools
 			DO i = 1, (N/N_AV)/N_file+1, 1
 				IF ((i-1)*N_file+1>N/N_AV) EXIT
 				IF (flag_debug) PRINT * , 'Leggo dalla riga ', i, '  i dati da ', (i-1)*N_file+1, ' a ', MIN(i*N_file,N/N_AV)
-				READ (77, REC=i+1), numeratore((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
-				READ (78, REC=i+1), denominatore((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
+				READ (77, REC=i+1) numeratore((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
+				READ (78, REC=i+1) denominatore((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
 			END DO
 			CLOSE(77,STATUS='KEEP')
 			CLOSE(78,STATUS='KEEP')
@@ -1426,7 +1432,7 @@ MODULE generic_tools
 			DO i = 1, (N/N_AV)/N_file+1, 1
 				IF ((i-1)*N_file+1>N/N_AV) EXIT
 				IF (flag_debug) PRINT * , 'Leggo dalla riga ', i, '  i dati da ', (i-1)*N_file+1, ' a ', MIN(i*N_file,N/N_AV)
-				READ (77, REC=i+1), numeratore((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
+				READ (77, REC=i+1) numeratore((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
 			END DO
 			CLOSE(77,STATUS='KEEP')
 		END IF
@@ -1489,32 +1495,32 @@ MODULE generic_tools
 		REAL (KIND=8), INTENT(OUT) :: stima(1:2)
 		
 		IF (flag_report) OPEN (UNIT=40, FILE='report.d', STATUS='UNKNOWN')
-		IF (flag_report) WRITE (40, *), '                                  - - - ESTIMATION - - -'
-		IF (flag_report) WRITE (40, *), 
+		IF (flag_report) WRITE (40, *) '                                  - - - ESTIMATION - - -'
+		IF (flag_report) WRITE (40, *) 
 		DO i = num_block_min, num_block_max, 1
 			IF (PRESENT(dati_pesi)) THEN
 				CALL calcola_estimatore_blocco_con_pesi_RAM(dati,dati_pesi,N_cpu,i,average_(i),error_(i))
 			ELSE
 				CALL calcola_estimatore_blocco_RAM(dati,N_cpu,i,average_(i),error_(i))
 			END IF
-			IF (flag_report) WRITE (40, *), i, ' blocks: ', average_(i), ' +- ', error_(i)
+			IF (flag_report) WRITE (40, *) i, ' blocks: ', average_(i), ' +- ', error_(i)
 		END DO
-		IF (flag_report) WRITE (40, *), 
+		IF (flag_report) WRITE (40, *) 
 		IF (flag_report) i=8
 		IF (flag_report) CALL ottieni_dati_blocco_RAM(dati,N_cpu,i,F)
-		IF (flag_report) WRITE (40, *), 'NUM with 8 blocks: ', REAL(F,4)
+		IF (flag_report) WRITE (40, *) 'NUM with 8 blocks: ', REAL(F,4)
 		IF (PRESENT(dati_pesi) .AND. flag_report) THEN
 			CALL ottieni_dati_blocco_RAM(dati_pesi,N_cpu,i,Q)
-			WRITE (40, *), 'DEN with 8 blocks: ', REAL(Q,4)
-			WRITE (40, *), 'N/D with 8 blocks: ', REAL((/(F(i)/Q(i),i=1,8)/),4)
+			WRITE (40, *) 'DEN with 8 blocks: ', REAL(Q,4)
+			WRITE (40, *) 'N/D with 8 blocks: ', REAL((/(F(i)/Q(i),i=1,8)/),4)
 		END IF
-		IF (flag_report) WRITE (40, *), 
+		IF (flag_report) WRITE (40, *) 
 		i_min=8
 		DO i = 9, 16, 1
 			IF (error_(i)>error_(i_min)) i_min=i
 		END DO
-		IF (flag_report) WRITE (40, *), '### CON METODO KALOS-PEDERIVA: ', i_min, ' BLOCCHI ###'
-		IF (flag_report) WRITE (40, *), 'ESTIMATOR: ', average_(i_min), '+-', error_(i_min)
+		IF (flag_report) WRITE (40, *) '### CON METODO KALOS-PEDERIVA: ', i_min, ' BLOCCHI ###'
+		IF (flag_report) WRITE (40, *) 'ESTIMATOR: ', average_(i_min), '+-', error_(i_min)
 		delta_=0.d0
 		i_min=num_block_min+num_media_max
 		DO n_media = 1, num_media_max, 1
@@ -1532,13 +1538,13 @@ MODULE generic_tools
 				END IF
 			END DO
 		END DO
-		IF (flag_report) WRITE (40, *), '### CON METODO PLATEAU: ', i_min, ' BLOCCHI ###'
+		IF (flag_report) WRITE (40, *) '### CON METODO PLATEAU: ', i_min, ' BLOCCHI ###'
 		average=0.2d0*(average_(i_min-2)+average_(i_min-1)+average_(i_min)+average_(i_min+1)+average_(i_min+2))
 		error=0.2d0*(error_(i_min-2)+error_(i_min-1)+error_(i_min)+error_(i_min+1)+error_(i_min+2))
-		IF (flag_report) WRITE (40, *), 'ESTIMATOR: ', average, ' +- ', error
-		IF (flag_report) WRITE (40,*), 'errore overstimato:', MAXVAL(error_(i_min-2:i_min+2))
-		IF (flag_report) WRITE (40, *), 
-		IF (flag_report) WRITE (40, *), 
+		IF (flag_report) WRITE (40, *) 'ESTIMATOR: ', average, ' +- ', error
+		IF (flag_report) WRITE (40,*) 'errore overstimato:', MAXVAL(error_(i_min-2:i_min+2))
+		IF (flag_report) WRITE (40, *) 
+		IF (flag_report) WRITE (40, *) 
 		media=average
 		errore=error
 		IF (flag_report) CLOSE (40)
@@ -1678,9 +1684,9 @@ MODULE generic_tools
 		REAL (KIND=8) :: media, errore
 		
 		OPEN (UNIT=40, FILE=nome_file1//'_details.d', STATUS='UNKNOWN')
-		WRITE (40, *), '                                  - - - ESTIMATION FOR DIFFERENCE BETWEEN ', &
+		WRITE (40, *) '                                  - - - ESTIMATION FOR DIFFERENCE BETWEEN ', &
 		  nome_file1, ' AND ', nome_file2, ' - - -'
-		WRITE (40, *), 
+		WRITE (40, *) 
 		DO i = num_block_min, num_block_max, 1
 			IF (PRESENT(nome_file_pesi2)) THEN
 				CALL calcola_estimatore_differenza_con_blocking_da_file_bin(nome_file1,nome_file2,i, &
@@ -1689,15 +1695,15 @@ MODULE generic_tools
 				CALL calcola_estimatore_differenza_con_blocking_da_file_bin(nome_file1,nome_file2,i, &
 				  average_(i),error_(i),nome_file_pesi1)
 			END IF
-			WRITE (40, *), i, ' blocks: ', average_(i), ' +- ', error_(i)
+			WRITE (40, *) i, ' blocks: ', average_(i), ' +- ', error_(i)
 		END DO
-		WRITE (40, *), 
+		WRITE (40, *) 
 		i_min=8
 		DO i = 9, 16, 1
 			IF (error_(i)>error_(i_min)) i_min=i
 		END DO
-		WRITE (40, *), '### CON METODO KALOS-PEDERIVA: ', i_min, ' BLOCCHI ###'
-		WRITE (40, *), nome_file1, ': ', average_(i_min), '+-', error_(i_min)
+		WRITE (40, *) '### CON METODO KALOS-PEDERIVA: ', i_min, ' BLOCCHI ###'
+		WRITE (40, *) nome_file1, ': ', average_(i_min), '+-', error_(i_min)
 		delta_=0.d0
 		i_min=num_block_min+num_media_max
 		DO n_media = 1, num_media_max, 1
@@ -1715,13 +1721,13 @@ MODULE generic_tools
 				END IF
 			END DO
 		END DO
-		WRITE (40, *), '### CON METODO PLATEAU: ', i_min, ' BLOCCHI ###'
+		WRITE (40, *) '### CON METODO PLATEAU: ', i_min, ' BLOCCHI ###'
 		average=0.2d0*(average_(i_min-2)+average_(i_min-1)+average_(i_min)+average_(i_min+1)+average_(i_min+2))
 		error=0.2d0*(error_(i_min-2)+error_(i_min-1)+error_(i_min)+error_(i_min+1)+error_(i_min+2))
-		WRITE (40, *), nome_file1, ': ', average, ' +- ', error
-		WRITE (40,*), 'errore overstimato:', MAXVAL(error_(i_min-2:i_min+2))
-		WRITE (40, *), 
-		WRITE (40, *), 
+		WRITE (40, *) nome_file1, ': ', average, ' +- ', error
+		WRITE (40,*) 'errore overstimato:', MAXVAL(error_(i_min-2:i_min+2))
+		WRITE (40, *) 
+		WRITE (40, *) 
 		media=average
 		errore=error
 	END SUBROUTINE calcola_estimatori_differenza
@@ -1764,8 +1770,7 @@ MODULE generic_tools
 		INQUIRE(FILE=nome_file1//'.bin',EXIST=flag_file_dat)
 		INQUIRE(FILE=nome_file_pesi1//'.bin',EXIST=flag_file_dat_pesi)
 		IF ((.NOT. flag_file_dat).OR.(.NOT. flag_file_dat_pesi)) &
-		  STOP 'Manca il file da cui prendere i dati per calcolare il valore di aspettazione &
-		  [calcola_estimatore_con_blocking_da_file_bin] '
+		  STOP 'Manca il file da cui prendere i dati per calcolare il valore di aspettazione [calcola_estimatore_con_blocking_da_file_bin] '
 		IF (PRESENT(nome_file_pesi2)) THEN
 			INQUIRE(FILE=nome_file2//'.bin',EXIST=flag_file_dat)
 			INQUIRE(FILE=nome_file_pesi2//'.bin',EXIST=flag_file_dat_pesi)
@@ -1774,12 +1779,11 @@ MODULE generic_tools
 			flag_file_dat_pesi=.TRUE.
 		END IF
 		IF ((.NOT. flag_file_dat).OR.(.NOT. flag_file_dat_pesi)) &
-		  STOP 'Manca il file da cui prendere i dati per calcolare il valore di aspettazione &
-		  [calcola_estimatore_con_blocking_da_file_bin] '
+		  STOP 'Manca il file da cui prendere i dati per calcolare il valore di aspettazione [calcola_estimatore_con_blocking_da_file_bin] '
 	
 		
 		OPEN (75, FILE=nome_file1//'.bin', STATUS='OLD',ACCESS='DIRECT',FORM='UNFORMATTED', RECL=N_file*8)
-		READ (75, REC=1), N, N_AV
+		READ (75, REC=1) N, N_AV
 		OPEN (76, FILE=nome_file_pesi1//'.bin', STATUS='OLD',ACCESS='DIRECT',FORM='UNFORMATTED', RECL=N_file*8)
 		OPEN (77, FILE=nome_file2//'.bin', STATUS='OLD',ACCESS='DIRECT',FORM='UNFORMATTED', RECL=N_file*8)
 		IF (PRESENT(nome_file_pesi2)) THEN
@@ -1794,8 +1798,8 @@ MODULE generic_tools
 		DO i = 1, (N/N_AV)/N_file+1, 1
 			IF ((i-1)*N_file+1>N/N_AV) EXIT
 			IF (flag_debug) PRINT * , 'Leggo dalla riga ', i, '  i dati da ', (i-1)*N_file+1, ' a ', MIN(i*N_file,N/N_AV)
-			READ (75, REC=i+1), numeratore1((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
-			READ (76, REC=i+1), denominatore1((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
+			READ (75, REC=i+1) numeratore1((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
+			READ (76, REC=i+1) denominatore1((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
 		END DO
 		CLOSE(75,STATUS='KEEP')
 		CLOSE(76,STATUS='KEEP')
@@ -1804,14 +1808,14 @@ MODULE generic_tools
 		DO i = 1, (N/N_AV)/N_file+1, 1
 			IF ((i-1)*N_file+1>N/N_AV) EXIT
 			IF (flag_debug) PRINT * , 'Leggo dalla riga ', i, '  i dati da ', (i-1)*N_file+1, ' a ', MIN(i*N_file,N/N_AV)
-			READ (77, REC=i+1), numeratore2((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
+			READ (77, REC=i+1) numeratore2((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
 		END DO
 		CLOSE(77,STATUS='KEEP')
 		IF (PRESENT(nome_file_pesi2)) THEN
 			DO i = 1, (N/N_AV)/N_file+1, 1
 				IF ((i-1)*N_file+1>N/N_AV) EXIT
 				IF (flag_debug) PRINT * , 'Leggo dalla riga ', i, '  i dati da ', (i-1)*N_file+1, ' a ', MIN(i*N_file,N/N_AV)
-				READ (78, REC=i+1), denominatore2((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
+				READ (78, REC=i+1) denominatore2((i-1)*N_file+1:MIN(i*N_file,N/N_AV))
 			END DO
 			CLOSE(78,STATUS='KEEP')
 		ELSE
@@ -1862,19 +1866,19 @@ MODULE generic_tools
 		REAL (KIND=8), INTENT(OUT) :: stima(1:2)
 		
 		IF (flag_report) OPEN (UNIT=40, FILE='report.d', STATUS='UNKNOWN')
-		IF (flag_report) WRITE (40, *), '                                  - - - ESTIMATION - - -'
-		IF (flag_report) WRITE (40, *), 
+		IF (flag_report) WRITE (40, *) '                                  - - - ESTIMATION - - -'
+		IF (flag_report) WRITE (40, *) 
 		DO i = num_block_min, num_block_max, 1
 			CALL calcola_estimatore_differenza_blocco_RAM(dati1,dati2,dati3,dati4,N_cpu,i,average_(i),error_(i))
-			IF (flag_report) WRITE (40, *), i, ' blocks: ', average_(i), ' +- ', error_(i)
+			IF (flag_report) WRITE (40, *) i, ' blocks: ', average_(i), ' +- ', error_(i)
 		END DO
-		IF (flag_report) WRITE (40, *), 
+		IF (flag_report) WRITE (40, *) 
 		i_min=8
 		DO i = 9, 16, 1
 			IF (error_(i)>error_(i_min)) i_min=i
 		END DO
-		IF (flag_report) WRITE (40, *), '### CON METODO KALOS-PEDERIVA: ', i_min, ' BLOCCHI ###'
-		IF (flag_report) WRITE (40, *), 'ESTIMATOR: ', average_(i_min), '+-', error_(i_min)
+		IF (flag_report) WRITE (40, *) '### CON METODO KALOS-PEDERIVA: ', i_min, ' BLOCCHI ###'
+		IF (flag_report) WRITE (40, *) 'ESTIMATOR: ', average_(i_min), '+-', error_(i_min)
 		delta_=0.d0
 		i_min=num_block_min+num_media_max
 		DO n_media = 1, num_media_max, 1
@@ -1892,13 +1896,13 @@ MODULE generic_tools
 				END IF
 			END DO
 		END DO
-		IF (flag_report) WRITE (40, *), '### CON METODO PLATEAU: ', i_min, ' BLOCCHI ###'
+		IF (flag_report) WRITE (40, *) '### CON METODO PLATEAU: ', i_min, ' BLOCCHI ###'
 		average=0.2d0*(average_(i_min-2)+average_(i_min-1)+average_(i_min)+average_(i_min+1)+average_(i_min+2))
 		error=0.2d0*(error_(i_min-2)+error_(i_min-1)+error_(i_min)+error_(i_min+1)+error_(i_min+2))
-		IF (flag_report) WRITE (40, *), 'ESTIMATOR: ', average, ' +- ', error
-		IF (flag_report) WRITE (40,*), 'errore overstimato:', MAXVAL(error_(i_min-2:i_min+2))
-		IF (flag_report) WRITE (40, *), 
-		IF (flag_report) WRITE (40, *), 
+		IF (flag_report) WRITE (40, *) 'ESTIMATOR: ', average, ' +- ', error
+		IF (flag_report) WRITE (40,*) 'errore overstimato:', MAXVAL(error_(i_min-2:i_min+2))
+		IF (flag_report) WRITE (40, *) 
+		IF (flag_report) WRITE (40, *) 
 		media=average
 		errore=error
 		IF (flag_report) CLOSE (40)
@@ -1963,7 +1967,7 @@ MODULE generic_tools
 		
 		OPEN (UNIT=77, FILE=nome_file//'.pos', STATUS='UNKNOWN')
 		DO i = 1, N, 1
-			WRITE (77, *), r(1:3,i)
+			WRITE (77, *) r(1:3,i)
 		END DO
 		CLOSE(77)
 		
@@ -1978,7 +1982,7 @@ MODULE generic_tools
     
 		OPEN (UNIT=77, FILE=nome_file//'.pos', STATUS='UNKNOWN')
 		DO i = 1, N, 1
-			READ (77, *), r(1:3,i)
+			READ (77, *) r(1:3,i)
 		END DO
 		CLOSE(77)
     
@@ -2037,7 +2041,7 @@ MODULE generic_tools
 
 		IF (mpi_myrank==0) THEN
 			OPEN (UNIT=37, FILE=nome_file, STATUS='OLD')
-			READ (37, *), numero_righe, numero_colonne
+			READ (37, *) numero_righe, numero_colonne
 			num_tot=numero_righe*numero_colonne
 			IF (num_tot<n_seed*mpi_nprocs) THEN
             PRINT *, "Non ci sono abbastanza numeri random nel file fornito"
@@ -2050,7 +2054,7 @@ MODULE generic_tools
 			ALLOCATE(random_numbers(1:num_tot))
 			DO i = 1, numero_righe, 1
 				index=(i-1)*numero_colonne+1
-				READ (37, *), random_numbers(index:index+numero_colonne-1)
+				READ (37, *) random_numbers(index:index+numero_colonne-1)
 			END DO
 			CLOSE (37)
 		END IF

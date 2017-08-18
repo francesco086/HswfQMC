@@ -58,11 +58,26 @@ xcuserdata
 DerivedData
 *.xcuserstate
 
+# -- Emacs files (from github's Global/Emacs.gitignore) --
+
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
 # -- project specific ignores --
 source/*.o
 source/*.mod
-source/makefile.users_settings
+source/makefile.users_settings*
 HswfQMC*
 source/HswfQMC*
+ipi_client/*.o
+ipi_client/*.x
+ipi_client/*.mod
+ipi_client/molxyz_shifted
 lapack_lib
 markuspline

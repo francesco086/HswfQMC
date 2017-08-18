@@ -1,0 +1,17 @@
+This 'test' directory is intended to serve for regression testing.
+
+Inputs for tests are supposed to be created under inp/ (e.g. inp/xyztest.inp) 
+Corresponding folders containing expected output should be under 
+cmp/ (e.g. cmp/xyztest.cmp). The actual test runs should be executed in
+run/ (e.g. run/xyztest.run). The run folder is ignored by git.
+
+Builds for testing should be compiled via default pilot script compilation
+and gfortran compiler.
+
+Currently only one test ('templatest') is implemented. It tests a slightly
+modified (less time consuming) version of the input from input_templates. 
+It can be easily run by executing './templatest.sh $EXEC_PATH', where 
+$EXEC_PATH should be the path of the HswfQMC executable you want to test. 
+If it is the default 'HswfQMC_exe' in HswfQMC's main directory, you can 
+simply run 'templatest.sh'. If the test output differs from the expected 
+output, you can find the diff in 'run/templatest.diff'.

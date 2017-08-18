@@ -73,8 +73,7 @@ MODULE momenta
 		USE generic_tools
 		IMPLICIT NONE
 
-		IF (.NOT. iniz_momenta) STOP 'Prima di applicare un twist devi inizializzare le k &
-		  [ module_momenta.f90 > applica_twist ]'
+		IF (.NOT. iniz_momenta) STOP 'Prima di applicare un twist devi inizializzare le k [ module_momenta.f90 > applica_twist ]'
 
       !!!Obsolete after the introduction of the class KWaVe, contained in the module fermi_k
 		!!!CALL fermi_quantization_twist(H_N_part, L, k_pw)
@@ -275,8 +274,7 @@ MODULE momenta
 	SUBROUTINE chiudi_momenta()
 		USE dati_mc
 		IMPLICIT NONE
-		IF (.NOT. iniz_momenta) STOP 'Prima di chiudere devi inizializzare i momenti &
-		  [ module_momenta.f90 > chiudi_momenta ]'
+		IF (.NOT. iniz_momenta) STOP 'Prima di chiudere devi inizializzare i momenti [ module_momenta.f90 > chiudi_momenta ]'
 		
 		IF (save_momenta) THEN
 			IF (mpi_myrank==0) CALL SYSTEM ('cat posizioni/k_pw_TABC*.pos > posizioni/k_pw_TABC.pos')

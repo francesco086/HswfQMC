@@ -65,7 +65,6 @@ MODULE dati_fisici
 			N_part=N_cell_side
 		ELSE IF ( crystal_cell=='hring' ) THEN
 			N_part=6
-         flag_2D=.TRUE.
 		ELSE IF ( crystal_cell=='grp__' ) THEN
 			N_part=4*(N_cell_side**2)
          flag_2D=.TRUE.
@@ -211,11 +210,12 @@ MODULE dati_fisici
 
 		ELSE IF ( crystal_cell=='hring' ) THEN
 
+      ! Spin is alternating around the hydrogen ring (up: 1,2,3, dw: 4,5,6)
 			r_crystal(1:3,1)=(/ L_cov_bond		,	0.d0						,	0.d0/)
-			r_crystal(1:3,2)=(/ L_cov_bond*0.5d0,	sqrt(3.d0)*L_cov_bond*0.5d0	,	0.d0/)
-			r_crystal(1:3,3)=(/-L_cov_bond*0.5d0,	sqrt(3.d0)*L_cov_bond*0.5d0	,	0.d0/)
-			r_crystal(1:3,4)=(/-L_cov_bond		,	0.d0						,	0.d0/)
-			r_crystal(1:3,5)=(/-L_cov_bond*0.5d0,	-sqrt(3.d0)*L_cov_bond*0.5d0,	0.d0/)
+			r_crystal(1:3,4)=(/ L_cov_bond*0.5d0,	sqrt(3.d0)*L_cov_bond*0.5d0	,	0.d0/)
+			r_crystal(1:3,2)=(/-L_cov_bond*0.5d0,	sqrt(3.d0)*L_cov_bond*0.5d0	,	0.d0/)
+			r_crystal(1:3,5)=(/-L_cov_bond		,	0.d0						,	0.d0/)
+			r_crystal(1:3,3)=(/-L_cov_bond*0.5d0,	-sqrt(3.d0)*L_cov_bond*0.5d0,	0.d0/)
 			r_crystal(1:3,6)=(/ L_cov_bond*0.5d0,	-sqrt(3.d0)*L_cov_bond*0.5d0,	0.d0/)
 
 		ELSE IF ( (crystal_cell=='mhcpo') .AND. (flag_molecular) ) THEN
@@ -258,7 +258,7 @@ MODULE dati_fisici
 		ELSE IF ( crystal_cell=='dat__' ) THEN
 			OPEN (UNIT=2, FILE=TRIM(file_reticolo), STATUS='OLD')
 			DO i = 1, N_part, 1
-				READ (2, *), r_crystal(1:3,i)
+				READ (2, *) r_crystal(1:3,i)
 				r_crystal(1:3,i)=r_crystal(1:3,i)+(/ 0.5d0 , 0.5d0 , 0.5d0 /)
 			END DO
 			CLOSE (2)
@@ -269,10 +269,10 @@ MODULE dati_fisici
 			END DO
 		ELSE IF ( crystal_cell=='datex' ) THEN
 			OPEN (UNIT=2, FILE=TRIM(file_reticolo), STATUS='OLD')
-			READ (2, *), L(1:3)
+			READ (2, *) L(1:3)
 			H_L=0.5d0*L
 			DO i = 1, N_part, 1
-				READ (2, *), r_crystal(1:3,i)
+				READ (2, *) r_crystal(1:3,i)
 			END DO
 			CLOSE (2)
 		ELSE IF ( crystal_cell=='grp__' ) THEN
@@ -291,8 +291,7 @@ MODULE dati_fisici
 						r_crystal(1:3,i)=r_crystal(1:3,i)-dist(1:3)*(dist(0)-L_cov_bond)*0.5d0
 						r_crystal(1:3,i+H_N_part)=r_crystal(1:3,i+H_N_part)+dist(1:3)*(dist(0)-L_cov_bond)*0.5d0
 					ELSE
-						STOP 'distanze giá minori che per la fase molecolare &
-						  [ module_funzione_onda.f90 > inizializza_funzione_onda ]'
+						STOP 'distanze giá minori che per la fase molecolar [ module_funzione_onda.f90 > inizializza_funzione_onda ]'
 					END IF
 				END DO
 			END IF
@@ -335,8 +334,7 @@ MODULE dati_fisici
 		
 		CALL applica_pbc(r_crystal,N_part,L)
 		
-		IF (MOD(N_part,2)/=0) STOP 'Stai lavorando con un numero di particelle non pari!!! &
-		  [ module_funzione_onda.f90 > inizializza_funzione_onda ]'
+		IF (MOD(N_part,2)/=0) STOP 'Stai lavorando con un numero di particelle non pari!!! [ module_funzione_onda.f90 > inizializza_funzione_onda ]'
 		
 		DEALLOCATE(app)
 		
@@ -354,8 +352,7 @@ MODULE dati_fisici
 !-----------------------------------------------------------------------
 	SUBROUTINE chiudi_dati_fisici()
 		IMPLICIT NONE
-		IF (.NOT. iniz_dati_fisici) STOP 'Prima di chiudere avresti dovuto inizializzare &
-		  [ module_dati.f90 > chiudi_dati_fisici ]'
+		IF (.NOT. iniz_dati_fisici) STOP 'Prima di chiudere avresti dovuto inizializzare [ module_dati.f90 > chiudi_dati_fisici ]'
 		DEALLOCATE(r_crystal)
 		iniz_dati_fisici=.FALSE.
 	END SUBROUTINE chiudi_dati_fisici
