@@ -65,7 +65,6 @@ MODULE dati_fisici
 			N_part=N_cell_side
 		ELSE IF ( crystal_cell=='hring' ) THEN
 			N_part=6
-         flag_2D=.TRUE.
 		ELSE IF ( crystal_cell=='grp__' ) THEN
 			N_part=4*(N_cell_side**2)
          flag_2D=.TRUE.
@@ -211,6 +210,7 @@ MODULE dati_fisici
 
 		ELSE IF ( crystal_cell=='hring' ) THEN
 
+      ! Spin is alternating around the hydrogen ring (up: 1,2,3, dw: 4,5,6)
 			r_crystal(1:3,1)=(/ L_cov_bond		,	0.d0						,	0.d0/)
 			r_crystal(1:3,4)=(/ L_cov_bond*0.5d0,	sqrt(3.d0)*L_cov_bond*0.5d0	,	0.d0/)
 			r_crystal(1:3,2)=(/-L_cov_bond*0.5d0,	sqrt(3.d0)*L_cov_bond*0.5d0	,	0.d0/)
