@@ -346,12 +346,12 @@
 
                IF (notlimit) THEN
                   IF (vstyle == 0) THEN
-                     CALL execute_command_line('seedfile_shift.py', WAIT = .true.)
+                     CALL seedshift('randomseed1.d', 'randomseed1.new', 20, 21, .TRUE.)
                   END IF
                   EXIT
                ELSE
                   WRITE(*,*) "Force was above limit. Recalculating with new seed..."
-                  CALL execute_command_line('seedfile_shift.py', WAIT = .true.)
+                  CALL seedshift('randomseed1.d', 'randomseed1.new', 20, 21, .TRUE.)
                END IF
 
             ENDDO

@@ -32,7 +32,7 @@ all: ipi_client.x molshift_file.x
 sockets.o: sockets.c
 	$(CC) $(CFLAGS) -c -o sockets.o sockets.c
 
-ipi_client.x: sockets.o fsockets.o ipi_client.o molshift.o
+ipi_client.x: sockets.o fsockets.o ipi_client.o molshift.o seedshift.o
 	$(FC) $(FFLAGS) -o ipi_client.x $^
 
 molshift_file.x: molshift.o molshift_file.o
