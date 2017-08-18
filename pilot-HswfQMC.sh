@@ -348,7 +348,6 @@ complete -F _pilot-HswfQMC.sh pilot-HswfQMC.sh" >> ~/.${FILE_TO_SET}
             cd markuspline/
             if [ "$ANSWBG" = "y" ]
             then
-                patch <../source/markuspline_XL.patch module_markuspline.f90
                 ${FF} -c -O3 -qstrict -qarch=qp -qtune=qp -qsimd=auto -qessl -qmaxmem=-1 -qfree=f90 -qport=mod module_markuspline.f90 -L${LAPACK_LIB} -L/bgsys/local/lib -llapack -lesslbg
             else
                 ${FF} -c -O3 module_markuspline.f90 -L${pilot_PATH}/${LAPACK_FOLDER} -llapack${HswfQMC_NAME} -lblas${HswfQMC_NAME}
