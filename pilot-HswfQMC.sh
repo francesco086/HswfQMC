@@ -60,7 +60,7 @@ do
             echo "Make the current folder a working folder (with all necessary input files and folders)"
             mkdir estimatori estimatori/gradiente ottimizzazione ottimizzazione/splines posizioni reticolo
             cp ${pilot_PATH}/input_templates/* .
-            cp ${pilot_PATH}/random_seed/randomseed1.d .
+            cp ${pilot_PATH}/random_seed/randomseed1.d randomseed.d
             exit
             ;;
 

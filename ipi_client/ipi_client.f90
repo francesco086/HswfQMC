@@ -204,7 +204,7 @@
    END IF
 
    !Backup the initial random seed file
-   CALL execute_command_line('cp randomseed1.d randomseed1.bak', WAIT = .true.)
+   CALL execute_command_line('cp randomseed.d randomseed.bak', WAIT = .true.)
 
    IF (verbose > 0) THEN
       WRITE(*,*) " DRIVER - Connecting to host ", trim(host)
@@ -346,12 +346,12 @@
 
                IF (notlimit) THEN
                   IF (vstyle == 0) THEN
-                     CALL seedshift('randomseed1.d', 'randomseed1.new', 20, 21, .TRUE.)
+                     CALL seedshift('randomseed.d', 'randomseed.new', 20, 21, .TRUE.)
                   END IF
                   EXIT
                ELSE
                   WRITE(*,*) "Force was above limit. Recalculating with new seed..."
-                  CALL seedshift('randomseed1.d', 'randomseed1.new', 20, 21, .TRUE.)
+                  CALL seedshift('randomseed.d', 'randomseed.new', 20, 21, .TRUE.)
                END IF
 
             ENDDO
