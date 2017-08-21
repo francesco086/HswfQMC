@@ -1776,11 +1776,11 @@ MODULE variational_opt
             END IF
          END IF
          IF (SR_change_bound_Rp) THEN
-            !setto il lambda_Rp in modo che il cambio delle posizioni protoniche non sia maggiore di SR_max_change%
-            IF ( lambda_Rp*lambda2_Rp > DSQRT(((0.01d0*SR_max_change)**2)*&
+            !setto il lambda_Rp in modo che il cambio delle posizioni protoniche non sia maggiore di SR_max_change_Rp%
+            IF ( lambda_Rp*lambda2_Rp > DSQRT(((0.01d0*SR_max_change_Rp)**2)*&
                  DOT_PRODUCT(p0(N-num_coord_Rp+1:N),p0(N-num_coord_Rp+1:N))/&
                  DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N))) ) THEN
-               lambda2_Rp=(0.01d0*SR_max_change/lambda_Rp)*&
+               lambda2_Rp=(0.01d0*SR_max_change_Rp/lambda_Rp)*&
                   DSQRT( DOT_PRODUCT(p0(N-num_coord_Rp+1:N),p0(N-num_coord_Rp+1:N))/&
                   DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N)) )
                IF (mpi_myrank==0) THEN
@@ -1790,11 +1790,11 @@ MODULE variational_opt
                      "VAR_OPT: [change_bound] Cambio delle posizioni protoniche troppo grande, lo riduco di ", lambda2_Rp
                END IF
             END IF
-            !setto il lambda in modo che il cambio delle posizioni protoniche non sia minore di SR_min_change%
-            IF ( lambda_Rp*lambda2_Rp < DSQRT(((0.01d0*SR_min_change)**2)*&
+            !setto il lambda in modo che il cambio delle posizioni protoniche non sia minore di SR_min_change_Rp%
+            IF ( lambda_Rp*lambda2_Rp < DSQRT(((0.01d0*SR_min_change_Rp)**2)*&
                  DOT_PRODUCT(p0(N-num_coord_Rp+1:N),p0(N-num_coord_Rp+1:N))/&
                  DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N))) ) THEN
-               lambda2_Rp=(0.01d0*SR_min_change/lambda_Rp)*&
+               lambda2_Rp=(0.01d0*SR_min_change_Rp/lambda_Rp)*&
                   DSQRT( DOT_PRODUCT(p0(N-num_coord_Rp+1:N),p0(N-num_coord_Rp+1:N))/&
                   DOT_PRODUCT(dp(N-num_coord_Rp+1:N),dp(N-num_coord_Rp+1:N)) )
                IF (mpi_myrank==0) THEN
