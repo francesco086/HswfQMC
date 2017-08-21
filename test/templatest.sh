@@ -16,8 +16,8 @@ INP_PATH=${TEST_PATH}/inp/templatest.inp
 
 rm -rv $RUN_PATH
 cp -r $INP_PATH $RUN_PATH
-
 cd $RUN_PATH
+mkdir ottimizzazione ottimizzazione/splines
 $HQMC_PATH > templatest.out
 
 cd ../
