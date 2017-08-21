@@ -23,8 +23,8 @@ MODULE dati_mc
 	REAL (KIND=8), SAVE :: time_VMC_start
    CHARACTER (LEN=9) :: SR_kind
    LOGICAL, PROTECTED, SAVE :: SR_adaptative_beta, SR_lambda, SR_lambda_Rp
-   LOGICAL, PROTECTED, SAVE :: SR_change_bound, SR_change_bound_Rp = .FALSE.
-   REAL(KIND=8), SAVE :: SR_beta, SR_beta_Rp, SR_max_change, SR_min_change, SR_max_SVD_MIN, SR_maxdeltaPsi
+   LOGICAL, PROTECTED, SAVE :: SR_change_bound, SR_change_bound_Rp
+   REAL(KIND=8), SAVE :: SR_beta, SR_beta_Rp, SR_max_change, SR_min_change, SR_max_change_Rp, SR_min_change_Rp, SR_max_SVD_MIN, SR_maxdeltaPsi
    REAL(KIND=8), SAVE :: lambda_init, min_lambda, max_lambda, lambda_Rp_init, min_lambda_Rp, max_lambda_Rp
    INTEGER, PROTECTED, SAVE :: SR_num_max_WO_MIN
 	
@@ -45,9 +45,9 @@ MODULE dati_mc
 		NAMELIST /dati_ottimizzazione/ opt_SDe, opt_orbital, opt_dynamic_backflow, opt_A_Jee, opt_F_Jee, opt_A_Jep, &
          opt_F_Jep, opt_Jse, opt_Kse, opt_Jsesp, opt_SDse, opt_c_eff_dnfH, opt_rp, costri_rp, costri_rp_param, opt_L
 
-      NAMELIST /dati_SR/ SR_kind, SR_num_max_WO_MIN, SR_beta, SR_beta_Rp, SR_maxdeltaPsi, SR_max_SVD_MIN, &
-         SR_change_bound, SR_min_change, SR_max_change, SR_adaptative_beta, &
-         SR_lambda, lambda_init, min_lambda, max_lambda, &
+    NAMELIST /dati_SR/ SR_kind, SR_num_max_WO_MIN, SR_beta, SR_beta_Rp, SR_maxdeltaPsi, SR_max_SVD_MIN, &
+         SR_change_bound, SR_min_change, SR_max_change, SR_change_bound_Rp, SR_min_change_Rp, SR_max_change_Rp, &
+         SR_adaptative_beta, SR_lambda, lambda_init, min_lambda, max_lambda, &
          SR_lambda_Rp, lambda_Rp_init, min_lambda_Rp, max_lambda_Rp
 		
 		CALL CPU_TIME(time_VMC_start)
