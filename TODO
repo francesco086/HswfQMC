@@ -1,8 +1,6 @@
 Things that can be done without breaking anything:
- * Fix all exceptions that occur when compiling with: -ffpe-trap=zero,overflow,underflow,invalid
+ * Fix all exceptions that occur when running a build compiled with: -ffpe-trap=zero,overflow,underflow,invalid
 
 Things to be done which require a pull request with changes to the examples in i-Pi (better all at once):
- * Merge release to master -> make i-Pi examples use new master
- * Renaming randomseed1.d -> randomseed.d in pilot, seedfile_shift, ipi_client and templates/qespresso
  * Renaming wf_now.d -> dati_funzione_onda.d in ipi_client (?). Keep rp_now.d in reticolo?
  * Add SR_change_bound_Rp to dati_SR.d input, atm its hardcoded to FALSE. Also add corresponding min/max boundaries.
