@@ -14,10 +14,12 @@ RUN_PATH=${TEST_PATH}/run/templatest.run
 CMP_PATH=${TEST_PATH}/cmp/templatest.cmp
 INP_PATH=${TEST_PATH}/inp/templatest.inp
 
-rm -rv $RUN_PATH
+rm -r $RUN_PATH
 cp -r $INP_PATH $RUN_PATH
 cd $RUN_PATH
 mkdir ottimizzazione ottimizzazione/splines
+
+echo "Executing template test..."
 $HQMC_PATH > templatest.out
 
 cd ../
