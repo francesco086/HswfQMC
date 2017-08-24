@@ -4412,8 +4412,10 @@ END SUBROUTINE derivata_Jep_ATM
                frf1(1:3)=DCOS(frf2(1:3)*rij_ep_old(1:3,j,i))*rijpc_ep_old(1:3,j,i)/rijpc_ep_old(0,j,i)
                O(3*(i-1)+1:3*i)=O(3*(i-1)+1:3*i)+0.5d0*frf1(1:3)*frf3
 				END DO
-         END DO
-		END SELECT
+      END DO
+    CASE DEFAULT
+       STOP 'Rp-derivative for Electron-Proton-Jastrow requested, but not implemented for chosen type! [ module_estimatori.f90 > derivata_psi_Rp ]'
+    END SELECT
 		
 	SELECT CASE(SDe_kind)
 		CASE('bat')
@@ -4669,7 +4671,8 @@ END SUBROUTINE derivata_Jep_ATM
          !!!   STOP "Errore nelle derivate Rp 2"
          !!!END IF
          !STOP
-	
+    CASE DEFAULT
+      STOP 'Rp-derivative for electron SD requested, but not implemented for chosen type! [ module_estimatori.f90 > derivata_psi_Rp ]'
 	END SELECT
 		
 	END SUBROUTINE derivata_psi_Rp
