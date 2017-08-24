@@ -4312,8 +4312,8 @@ END SUBROUTINE derivata_Jep_ATM
 		   			uep1=Aep_yuk*( -(1.d0-DEXP(-Fep_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_yuk* &
 		   			DEXP(-Fep_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
 		   		ELSE
-		   			IF (split_Fee) THEN
-		   				IF (split_Aee) THEN
+		   			IF (split_Fep) THEN
+		   				IF (split_Aep) THEN
 		   					uep1=Aep_ud_yuk*( -(1.d0-DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_ud_yuk* &
 		   					DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
 		   				ELSE
@@ -4321,7 +4321,7 @@ END SUBROUTINE derivata_Jep_ATM
 		   					DEXP(-Fep_ud_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
 		   				END IF
 		   			ELSE
-		   				IF (split_Aee) THEN
+		   				IF (split_Aep) THEN
 		   					uep1=Aep_ud_yuk*( -(1.d0-DEXP(-Fep_yuk*rij_ep_old(0,i,j)))/rij_ep_old(0,i,j)+Fep_yuk* &
 		   					DEXP(-Fep_yuk*rij_ep_old(0,i,j)) )/rij_ep_old(0,i,j)
 		   				ELSE
@@ -4360,8 +4360,8 @@ END SUBROUTINE derivata_Jep_ATM
 						uep1=Aep_yuk*( -(1.d0-DEXP(-Fep_yuk*rijpc_ep_old(0,i,j)))/rijpc_ep_old(0,i,j)+Fep_yuk* &
 						  DEXP(-Fep_yuk*rijpc_ep_old(0,i,j)) )/rijpc_ep_old(0,i,j)
 					ELSE
-						IF (split_Fee) THEN
-							IF (split_Aee) THEN
+						IF (split_Fep) THEN
+							IF (split_Aep) THEN
 								uep1=Aep_ud_yuk*( -(1.d0-DEXP(-Fep_ud_yuk*rijpc_ep_old(0,i,j)))/rijpc_ep_old(0,i,j)+Fep_ud_yuk* &
 								  DEXP(-Fep_ud_yuk*rijpc_ep_old(0,i,j)) )/rijpc_ep_old(0,i,j)
 							ELSE
@@ -4369,7 +4369,7 @@ END SUBROUTINE derivata_Jep_ATM
 								  DEXP(-Fep_ud_yuk*rijpc_ep_old(0,i,j)) )/rijpc_ep_old(0,i,j)
 							END IF
 						ELSE
-							IF (split_Aee) THEN
+							IF (split_Aep) THEN
 								uep1=Aep_ud_yuk*( -(1.d0-DEXP(-Fep_yuk*rijpc_ep_old(0,i,j)))/rijpc_ep_old(0,i,j)+Fep_yuk* &
 								  DEXP(-Fep_yuk*rijpc_ep_old(0,i,j)) )/rijpc_ep_old(0,i,j)
 							ELSE
@@ -4412,9 +4412,11 @@ END SUBROUTINE derivata_Jep_ATM
                frf1(1:3)=DCOS(frf2(1:3)*rij_ep_old(1:3,j,i))*rijpc_ep_old(1:3,j,i)/rijpc_ep_old(0,j,i)
                O(3*(i-1)+1:3*i)=O(3*(i-1)+1:3*i)+0.5d0*frf1(1:3)*frf3
 				END DO
-         END DO
-		END SELECT
-		
+      END DO
+    CASE DEFAULT
+       STOP 'Rp-derivative for Electron-Proton-Jastrow requested, but not implemented for chosen type! [ module_estimatori.f90 > derivata_psi_Rp ]'
+    END SELECT
+
 	SELECT CASE(SDe_kind)
 		CASE('bat')
 		DO i = 1, H_N_part, 1
@@ -4430,7 +4432,24 @@ END SUBROUTINE derivata_Jep_ATM
 				O(3*(i_SD-1)+1:3*i_SD)=O(3*(i_SD-1)+1:3*i_SD)+&
 				(rij_ep_old(1:3,j,i_SD)*C_atm/rij_ep_old(0,j,i_SD))*DEXP(-C_atm*rij_ep_old(0,j,i_SD))*ISDe_up_old(i,j)
 			END DO
-		END DO
+    END DO
+
+  CASE('bap')
+   frfs1(1:3)=PI/L(1:3)
+   DO i = 1, H_N_part, 1
+			i_SD=i+H_N_part
+			DO j = 1, H_N_part, 1
+         j_SD=j+H_N_part
+         O(3*(i-1)+1:3*i)=O(3*(i-1)+1:3*i)+ DCOS(frfs1(1:3)*rij_ep_old(1:3,j,i))* &
+              (rij_ep_old(1:3,j,i)*C_atm/rij_ep_old(0,j,i))*DEXP(-C_atm*rij_ep_old(0,j,i))*ISDe_up_old(i,j)
+         O(3*(i-1)+1:3*i)=O(3*(i-1)+1:3*i)+ DCOS(frfs1(1:3)*rij_ep_old(1:3,j_SD,i))* &
+              (rij_ep_old(1:3,j_SD,i)*C_atm/rij_ep_old(0,j_SD,i))*DEXP(-C_atm*rij_ep_old(0,j_SD,i))*ISDe_dw_old(i,j)
+         O(3*(i_SD-1)+1:3*i_SD)=O(3*(i_SD-1)+1:3*i_SD)+ DCOS(frfs1(1:3)*rij_ep_old(1:3,j_SD,i_SD))* &
+              (rij_ep_old(1:3,j_SD,i_SD)*C_atm/rij_ep_old(0,j_SD,i_SD))*DEXP(-C_atm*rij_ep_old(0,j_SD,i_SD))*ISDe_dw_old(i,j)
+         O(3*(i_SD-1)+1:3*i_SD)=O(3*(i_SD-1)+1:3*i_SD)+ DCOS(frfs1(1:3)*rij_ep_old(1:3,j,i_SD))* &
+              (rij_ep_old(1:3,j,i_SD)*C_atm/rij_ep_old(0,j,i_SD))*DEXP(-C_atm*rij_ep_old(0,j,i_SD))*ISDe_up_old(i,j)
+			END DO
+   END DO
 
 	    CASE ('hl_')
 
@@ -4443,6 +4462,22 @@ END SUBROUTINE derivata_Jep_ATM
 	            *DEXP(-C_atm*(rij_ep_old(0,1,1)+rij_ep_old(0,2,2))) +&
 	            (rij_ep_old(1:3,2,1)/rij_ep_old(0,2,1))&
 	            *DEXP(-C_atm*(rij_ep_old(0,1,2)+rij_ep_old(0,2,1))) ) *ISDe_up_old(1,1)
+
+
+       CASE ('atm')
+         DO i = 1, H_N_part, 1
+            i_SD=i+H_N_part
+            DO j = 1, H_N_part, 1
+               j_SD=j+H_N_part
+
+               der1_up(1:3)= rij_ep_old(1:3,j,i)*C_atm/rij_ep_old(0,j,i)
+               der1_dw(1:3)= rij_ep_old(1:3,j_SD,i_SD)*C_atm/rij_ep_old(0,j_SD,i_SD)
+
+               O(3*(i-1)+1:3*i)=O(3*(i-1)+1:3*i) + SDe_up_old(j,i)*der1_up*ISDe_up_old(i,j)
+               O(3*(i_SD-1)+1:3*i_SD)=O(3*(i_SD-1)+1:3*i_SD) + SDe_dw_old(j,i)*der1_dw*ISDe_dw_old(i,j)
+
+            END DO
+        END DO
 
         CASE ('atp')
             frfs1(1:3)=PI/L(1:3)
@@ -4669,7 +4704,8 @@ END SUBROUTINE derivata_Jep_ATM
          !!!   STOP "Errore nelle derivate Rp 2"
          !!!END IF
          !STOP
-	
+    CASE DEFAULT
+      STOP 'Rp-derivative for electron SD requested, but not implemented for chosen type! [ module_estimatori.f90 > derivata_psi_Rp ]'
 	END SELECT
 		
 	END SUBROUTINE derivata_psi_Rp
