@@ -34,26 +34,31 @@ REAL(8), ALLOCATABLE    ::    POSARR(:,:), NEWARR(:,:), DISTARR(:)
 INTEGER, ALLOCATABLE    ::    INVINDARR(:)
 
 REAL(8)    ::    distv(3), LR(3)
-INTEGER    ::    i,j
+INTEGER    ::    i,j,st
 
-N = 64
+OPEN(20,FILE='molxyz_toshift')
+
+READ(20,*) L(:)
+LR(:) = 1.d0 / L(:)
+
+N = 0
+DO
+    READ(20,*,iostat=st) !only read for line count
+    IF (st/=0) EXIT
+    N = N + 1
+ENDDO
 N_PART = N/2
 
 ALLOCATE(POSARR(3,N), NEWARR(3,N), DISTARR(N), INVINDARR(N))
 
-NEWARR(:,:) = 0.d0
-
-OPEN(20,FILE='molxyz_toshift')
-READ(20,*) L(:)
+REWIND(20)
+READ(20,*)
 DO i=1,N
-    READ(20,*) POSARR(:,i) 
+    READ(20,*) POSARR(:,i)
 ENDDO
 CLOSE(20)
 
-LR(:) = 1.d0 / L(:)
-
 NEWARR(:,:) = POSARR(:,:)
-
 CALL molshift(N, L, NEWARR, INVINDARR)
 
 OPEN(21,FILE='molxyz_shifted')
