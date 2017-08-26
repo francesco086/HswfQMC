@@ -4441,13 +4441,13 @@ END SUBROUTINE derivata_Jep_ATM
 			DO j = 1, H_N_part, 1
          j_SD=j+H_N_part
          O(3*(i-1)+1:3*i)=O(3*(i-1)+1:3*i)+ DCOS(frfs1(1:3)*rij_ep_old(1:3,j,i))* &
-              (rij_ep_old(1:3,j,i)*C_atm/rij_ep_old(0,j,i))*DEXP(-C_atm*rij_ep_old(0,j,i))*ISDe_up_old(i,j)
+              (rijpc_ep_old(1:3,j,i)*C_atm/rijpc_ep_old(0,j,i))*DEXP(-C_atm*rijpc_ep_old(0,j,i))*ISDe_up_old(i,j)
          O(3*(i-1)+1:3*i)=O(3*(i-1)+1:3*i)+ DCOS(frfs1(1:3)*rij_ep_old(1:3,j_SD,i))* &
-              (rij_ep_old(1:3,j_SD,i)*C_atm/rij_ep_old(0,j_SD,i))*DEXP(-C_atm*rij_ep_old(0,j_SD,i))*ISDe_dw_old(i,j)
+              (rijpc_ep_old(1:3,j_SD,i)*C_atm/rijpc_ep_old(0,j_SD,i))*DEXP(-C_atm*rijpc_ep_old(0,j_SD,i))*ISDe_dw_old(i,j)
          O(3*(i_SD-1)+1:3*i_SD)=O(3*(i_SD-1)+1:3*i_SD)+ DCOS(frfs1(1:3)*rij_ep_old(1:3,j_SD,i_SD))* &
-              (rij_ep_old(1:3,j_SD,i_SD)*C_atm/rij_ep_old(0,j_SD,i_SD))*DEXP(-C_atm*rij_ep_old(0,j_SD,i_SD))*ISDe_dw_old(i,j)
+              (rijpc_ep_old(1:3,j_SD,i_SD)*C_atm/rijpc_ep_old(0,j_SD,i_SD))*DEXP(-C_atm*rijpc_ep_old(0,j_SD,i_SD))*ISDe_dw_old(i,j)
          O(3*(i_SD-1)+1:3*i_SD)=O(3*(i_SD-1)+1:3*i_SD)+ DCOS(frfs1(1:3)*rij_ep_old(1:3,j,i_SD))* &
-              (rij_ep_old(1:3,j,i_SD)*C_atm/rij_ep_old(0,j,i_SD))*DEXP(-C_atm*rij_ep_old(0,j,i_SD))*ISDe_up_old(i,j)
+              (rijpc_ep_old(1:3,j,i_SD)*C_atm/rijpc_ep_old(0,j,i_SD))*DEXP(-C_atm*rijpc_ep_old(0,j,i_SD))*ISDe_up_old(i,j)
 			END DO
    END DO
 
