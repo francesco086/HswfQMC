@@ -28,10 +28,11 @@
 SUBROUTINE seedshift(oldfname, newfname, oldunit, newunit, doreplace)
 ! Creates a copy of file oldfname, where the first line is moved to the end
 !
-! oldfname: Old File name
-! newfname: New File name
-! oldunit: Old File I/O unit
-! newunit: New File I/O unit
+! oldfname:  Old File name
+! newfname:  New File name
+! oldunit:   Old File I/O unit
+! newunit:   New File I/O unit
+! doreplace: Replace the old randomseed file?
 
 IMPLICIT NONE
 
@@ -39,7 +40,7 @@ CHARACTER(LEN=*), INTENT(IN) :: oldfname, newfname
 INTEGER, INTENT(IN) :: oldunit, newunit
 LOGICAL, INTENT(IN) :: doreplace
 
-CHARACTER(LEN=1000) :: firststr, linestr
+CHARACTER(LEN=1024) :: firststr, linestr
 
 OPEN(FILE = oldfname, UNIT = oldunit, STATUS = 'old', ACTION = 'read', ERR=3)
 OPEN(FILE = newfname, UNIT = newunit, STATUS = 'replace', ACTION = 'write', ERR=3)
@@ -55,7 +56,7 @@ DO
     READ(UNIT = oldunit, FMT = '(A)', END=1, ERR=3) linestr
     WRITE(UNIT = newunit, FMT = '(A)', ERR=3) trim(linestr)
 
-    CONTINUE
+    CYCLE
 1   EXIT
 ENDDO
 
@@ -69,10 +70,10 @@ IF (doreplace) THEN
     CALL execute_command_line('mv ' // trim(newfname) // ' ' // trim(oldfname), WAIT=.TRUE.)
 END IF
 
-2   WRITE(*,*) '[seedshift] Error: Random seed file ended prematurely.'
-    STOP
+RETURN
 
-3   WRITE(*,*) '[seedshift] Error: File I/O error.'
-    STOP
+2   STOP '[seedshift] Error: Random seed file ended prematurely.'
+
+3   STOP '[seedshift] Error: File I/O error.'
 
 END SUBROUTINE
