@@ -40,33 +40,39 @@ INTEGER, INTENT(IN) :: oldunit, newunit
 LOGICAL, INTENT(IN) :: doreplace
 
 CHARACTER(LEN=1000) :: firststr, linestr
-INTEGER :: oldst = 0
 
-OPEN(FILE = oldfname, UNIT = oldunit, STATUS = 'old', ACTION = 'read')
-OPEN(FILE = newfname, UNIT = newunit, STATUS = 'replace', ACTION = 'write')
+OPEN(FILE = oldfname, UNIT = oldunit, STATUS = 'old', ACTION = 'read', ERR=3)
+OPEN(FILE = newfname, UNIT = newunit, STATUS = 'replace', ACTION = 'write', ERR=3)
 
 ! copy header
-READ(UNIT = oldunit, FMT = '(A)') linestr
-WRITE(UNIT = newunit, FMT = '(A)') trim(linestr)
+READ(UNIT = oldunit, FMT = '(A)', END=2, ERR=3) linestr
+WRITE(UNIT = newunit, FMT = '(A)', ERR=3) trim(linestr)
 
 ! backup first seed line
-READ(UNIT = oldunit, FMT = '(A)') firststr
+READ(UNIT = oldunit, FMT = '(A)', END=2, ERR=3) firststr
 
-DO WHILE (oldst == 0)
-    READ(UNIT = oldunit, IOSTAT = oldst, FMT = '(A)') linestr
-    IF (oldst == 0) THEN
-        WRITE(UNIT = newunit, FMT = '(A)') trim(linestr)
-    END IF
+DO
+    READ(UNIT = oldunit, FMT = '(A)', END=1, ERR=3) linestr
+    WRITE(UNIT = newunit, FMT = '(A)', ERR=3) trim(linestr)
+
+    CONTINUE
+1   EXIT
 ENDDO
 
 ! write first seed line to end
-WRITE(UNIT = newunit, FMT = '(A)') trim(firststr)
+WRITE(UNIT = newunit, FMT = '(A)', ERR=3) trim(firststr)
 
-CLOSE(UNIT = oldunit)
-CLOSE(UNIT = newunit)
+CLOSE(UNIT = oldunit, ERR=3)
+CLOSE(UNIT = newunit, ERR=3)
 
 IF (doreplace) THEN
-    CALL execute_command_line('mv ' // trim(newfname) // ' ' // trim(oldfname))
+    CALL execute_command_line('mv ' // trim(newfname) // ' ' // trim(oldfname), WAIT=.TRUE.)
 END IF
+
+2   WRITE(*,*) '[seedshift] Error: Random seed file ended prematurely.'
+    STOP
+
+3   WRITE(*,*) '[seedshift] Error: File I/O error.'
+    STOP
 
 END SUBROUTINE
