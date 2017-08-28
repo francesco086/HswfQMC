@@ -38,8 +38,7 @@
 
    ! COMMAND LINE PARSING
    CHARACTER(LEN=1024) :: cmdbuffer
-   INTEGER ccmd, vstyle
-   INTEGER verbose
+   INTEGER ccmd, vstyle, verbose
    INTEGER commas(2), par_count_o, par_count_c      ! stores the index of commas in the parameter string
    INTEGER vpars_o(2), vpars_c(2)         ! array to store the parameters of the potential
 
@@ -58,10 +57,11 @@
 
    ! PARAMETERS CONCERNING VMC (NRANKS,NWOMIN)
    INTEGER nranks,mpicom,nwomin
-   CHARACTER*1024 strnranks, strrid
+   CHARACTER(LEN=1024) strnranks, ridstr
    LOGICAL domshift, dolimit, notlimit
    INTEGER, ALLOCATABLE :: invindarr(:)
    DOUBLE PRECISION :: flimit
+   CHARACTER(LEN=4) state
 
    ! ITERATORS
    INTEGER i, k, l
@@ -305,9 +305,9 @@
             CLOSE(20)
 
             IF (vstyle > 1) THEN
-               WRITE(strrid, *) rid
-               strrid = trim(adjustl(strrid))
-               CALL execute_command_line('cp ../SR_wf.dir/'//strrid//' wf_now.d', WAIT = .true.)
+               WRITE(ridstr, *) rid
+               ridstr = trim(adjustl(ridstr))
+               CALL execute_command_line('cp ../SR_wf.dir/'//ridstr//' wf_now.d', WAIT = .true.)
             END IF
 
             WRITE (strnranks, *) nranks
@@ -325,10 +325,15 @@
                END IF
 
                IF (vstyle > 1) THEN
-                  CALL execute_command_line('cp ottimizzazione/SR_wf.d ../SR_wf.dir/'//strrid, WAIT = .true.)
+                  CALL execute_command_line('cp ottimizzazione/SR_wf.d ../SR_wf.dir/'//ridstr, WAIT = .true.)
                END IF
 
-               OPEN (UNIT=20, FILE='reticolo/LagrDyn_Frp-0000.d',ACTION='READ')
+               OPEN(UNIT=20, FILE='state.out', ACTION='READ')
+               READ(20,*) state
+               IF (state /= 'done') STOP '[ipi_client] An error ocurred during execution of HswfQMC_exe.'
+               CLOSE(UNIT=20)
+
+               OPEN (UNIT=20, FILE='reticolo/LagrDyn_Frp-0000.d', ACTION='READ')
                DO i = 1, nat
                   READ(20, *) forces(:,i)
                ENDDO
@@ -356,11 +361,7 @@
 
             ENDDO
 
-            IF (vstyle > 1) THEN
-               CALL execute_command_line('cp ottimizzazione/SR_wf.d ../SR_wf.dir/'//strrid, WAIT = .true.)
-            END IF
-
-            OPEN (UNIT=20, FILE='ottimizzazione/SR_energies.dat',ACTION='READ')
+            OPEN (UNIT=20, FILE='ottimizzazione/SR_energies.dat', ACTION='READ')
             DO WHILE(ios.eq.0)
                READ(20,*,iostat=ios) enhelp
             ENDDO

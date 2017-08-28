@@ -9,7 +9,11 @@ PROGRAM main
 	INTEGER :: i, n1_char, n2_char
 	REAL (KIND=8) :: accuracy_energy
 	REAL :: time1, time2, delta_t, t_sum
-	
+
+   OPEN(UNIT=8, FILE='state.out', STATUS='REPLACE', ACTION='WRITE')
+   WRITE(8,*) 'exec'
+   CLOSE(UNIT=8)
+
 	!initialize MPI (in module_dati_mc.f90)
 	CALL inizializza_MPI()
 	
@@ -94,4 +98,9 @@ PROGRAM main
 	IF (mpi_myrank==0 .AND. flag_output) CLOSE (7)
 	
 	CALL termina_MPI()
+
+    OPEN(UNIT=8, FILE='state.out', STATUS='REPLACE', ACTION='WRITE')
+    WRITE(8,*) 'done'
+    CLOSE(UNIT=8)
+
 END PROGRAM main
