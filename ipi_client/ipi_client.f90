@@ -38,7 +38,9 @@
 
    ! COMMAND LINE PARSING
    CHARACTER(LEN=1024) :: cmdbuffer
-   INTEGER ccmd, vstyle, verbose
+   CHARACTER(LEN=3) :: vstyle
+   CHARACTER(LEN=10) :: ccmd
+   INTEGER verbose
    INTEGER commas(2), par_count_o, par_count_c      ! stores the index of commas in the parameter string
    INTEGER vpars_o(2), vpars_c(2)         ! array to store the parameters of the potential
 
@@ -58,7 +60,7 @@
    ! PARAMETERS CONCERNING VMC (NRANKS,NWOMIN)
    INTEGER nranks,mpicom,nwomin
    CHARACTER(LEN=1024) strnranks, ridstr
-   LOGICAL domshift, dolimit, notlimit
+   LOGICAL domshift, notlimit, dowfopt
    INTEGER, ALLOCATABLE :: invindarr(:)
    DOUBLE PRECISION :: flimit
    CHARACTER(LEN=4) state
@@ -69,19 +71,20 @@
    ! intialize parameter defaults
    inet = 1
    verbose = 0
-   host = "localhost"//achar(0)
+   host = 'localhost'//achar(0)
    port = 54321
-   vstyle = -1
+   vstyle = 'nop'
    domshift = .FALSE.
    nwomin = 0
    nranks = 1
    mpicom = 0
-   dolimit = .FALSE.
+   flimit = 0.d0
+   dowfopt = .FALSE.
 
    ! initialize control variables
    isinit = .FALSE.
    hasdata = .FALSE.
-   ccmd = 0
+   ccmd = ''
    par_count_o = 0
    par_count_c = 0
 
@@ -91,51 +94,58 @@
 
    ! parse the command line parameters
    DO i = 1, COMMAND_ARGUMENT_COUNT()
+
       CALL GET_COMMAND_ARGUMENT(i, cmdbuffer)
-      IF (cmdbuffer == "-u") THEN ! flag for unix socket
+
+      IF (cmdbuffer == '-u') THEN ! flag for unix socket
          inet = 0
-      ELSEIF (cmdbuffer == "-v") THEN ! flag for verbose standard output
+      ELSEIF (cmdbuffer == '-v') THEN ! flag for verbose standard output
          verbose = 1
-      ELSEIF (cmdbuffer == "-vv") THEN ! flag for verbose standard output
+      ELSEIF (cmdbuffer == '-vv') THEN ! flag for verbose standard output
          verbose = 2
-      ELSEIF (cmdbuffer == "-h") THEN ! read the hostname
-         ccmd = 1
-      ELSEIF (cmdbuffer == "-p") THEN ! reads the port number
-         ccmd = 2
-      ELSEIF (cmdbuffer == "-m") THEN ! reads the mode of electronic parameter optimization
-         ccmd = 3
-      ELSEIF (cmdbuffer == "-o") THEN ! reads the options for mode
-         ccmd = 4
-      ELSEIF (cmdbuffer == "-c") THEN ! reads the MPI/Rank configuration
-         ccmd = 5
-      ELSEIF (cmdbuffer == "-l") THEN ! reads the force amplitude limit
-         ccmd = 6
+      ELSEIF (cmdbuffer == '-h') THEN ! read the hostname
+         ccmd = 'host'
+      ELSEIF (cmdbuffer == '-p') THEN ! reads the port number
+         ccmd = 'port'
+      ELSEIF (cmdbuffer == '-m') THEN ! reads the mode of electronic parameter optimization
+         ccmd = 'wfmode'
+      ELSEIF (cmdbuffer == '-o') THEN ! reads the options for mode
+         ccmd = 'wfopts'
+      ELSEIF (cmdbuffer == '-c') THEN ! reads the MPI/Rank configuration
+         ccmd = 'mpiconf'
+      ELSEIF (cmdbuffer == '-l') THEN ! reads the force amplitude limit
+         ccmd = 'flimit'
+
       ELSE
-         IF (ccmd == 0) THEN
-            WRITE(*,*) " Unrecognized command line argument: ", cmdbuffer
-            CALL helpmessage
-            STOP "ENDED"
-         ELSEIF (ccmd == 1) THEN
+         IF (ccmd == 'host') THEN
             host = trim(cmdbuffer)//achar(0)
-         ELSEIF (ccmd == 2) THEN
+
+         ELSEIF (ccmd == 'port') THEN
             READ(cmdbuffer,*) port
-         ELSEIF (ccmd == 3) THEN
-            IF (trim(cmdbuffer) == "alt") THEN
-               vstyle = 3
-            ELSEIF (trim(cmdbuffer) == "sim") THEN
-               vstyle = 2
-            ELSEIF (trim(cmdbuffer) == "fix") THEN
-               vstyle = 1
-            ELSEIF (trim(cmdbuffer) == "ffs") THEN
-               vstyle = 0
-            ELSEIF (trim(cmdbuffer) == "nop") THEN
-               vstyle = -1
+
+         ELSEIF (ccmd == 'wfmode') THEN
+            IF (trim(cmdbuffer) == 'alt') THEN
+               vstyle = 'alt'
+               dowfopt = .TRUE.
+            ELSEIF (trim(cmdbuffer) == 'sim') THEN
+               vstyle = 'sim'
+               dowfopt = .TRUE.
+            ELSEIF (trim(cmdbuffer) == 'fix') THEN
+               vstyle = 'fix'
+               dowfopt = .FALSE.
+            ELSEIF (trim(cmdbuffer) == 'ffs') THEN
+               vstyle = 'ffs'
+               dowfopt = .FALSE.
+            ELSEIF (trim(cmdbuffer) == 'nop') THEN
+               vstyle = 'nop'
+               dowfopt = .FALSE.
             ELSE
-               WRITE(*,*) " Unrecognized wavefunction optimization mode ", trim(cmdbuffer)
-               WRITE(*,*) " Use -m [alt|sim|fix|ffs|nop] "
-               STOP "ENDED"
+               WRITE(*,*) ' Unrecognized wavefunction optimization mode ', trim(cmdbuffer)
+               WRITE(*,*) ' Use -m [alt|sim|fix|ffs|nop] '
+               STOP 'ENDED'
             ENDIF
-         ELSEIF (ccmd == 4) THEN
+
+         ELSEIF (ccmd == 'wfopts') THEN
             par_count_o = 1
             commas(1) = 0
             DO WHILE (index(cmdbuffer(commas(par_count_o)+1:), ',') > 0)
@@ -144,7 +154,8 @@
                par_count_o = par_count_o + 1
             ENDDO
             READ(cmdbuffer(commas(par_count_o)+1:),*) vpars_o(par_count_o)
-         ELSEIF (ccmd == 5) THEN
+
+         ELSEIF (ccmd == 'mpiconf') THEN
             par_count_c = 1
             commas(1) = 0
             DO WHILE (index(cmdbuffer(commas(par_count_c)+1:), ',') > 0)
@@ -153,32 +164,35 @@
                par_count_c = par_count_c + 1
             ENDDO
             READ(cmdbuffer(commas(par_count_c)+1:),*) vpars_c(par_count_c)
-         ELSEIF (ccmd == 6) THEN
+
+         ELSEIF (ccmd == 'flimit') THEN
             READ(cmdbuffer(:),*) flimit ! force amplitude limit (dirty fix)
-            IF (flimit > 0) THEN
-               dolimit = .TRUE.
-            END IF
+
+         ELSE
+            WRITE(*,*) ' Unrecognized command line argument: ', cmdbuffer
+            CALL helpmessage
+            STOP 'ENDED'
          ENDIF
-         ccmd = 0
+         ccmd = ''
       ENDIF
    ENDDO
 
-   IF (vstyle < 1) THEN
+   IF (vstyle == 'nop' .or. vstyle == 'ffs') THEN
       CONTINUE
-   ELSEIF (vstyle < 3) THEN
+   ELSEIF (vstyle == 'fix' .or. vstyle == 'sim') THEN
       IF (par_count_o /= 1) THEN
-         WRITE(*,*) "Error: Wrong number of -o parameters provided. Expected: -o ISHIFT"
-         STOP "ENDED"
+         WRITE(*,*) 'Error: Wrong number of -o parameters provided. Expected: -o ISHIFT'
+         STOP 'ENDED'
       ENDIF
       IF (vpars_o(1) > 0) THEN
          domshift = .TRUE.
       ELSE
          domshift = .FALSE.
       END IF
-   ELSEIF (vstyle == 3) THEN
+   ELSEIF (vstyle == 'alt') THEN
       IF (par_count_o /= 2) THEN
-         WRITE(*,*) "Error: Wrong number of -o parameters provided. Expected: -o ISHIFT,NWOMIN"
-         STOP "ENDED"
+         WRITE(*,*) 'Error: Wrong number of -o parameters provided. Expected: -o ISHIFT,NWOMIN'
+         STOP 'ENDED'
       ENDIF
       IF (vpars_o(1) > 0) THEN
          domshift = .TRUE.
@@ -188,30 +202,31 @@
       nwomin = vpars_o(2)
    ENDIF
 
-   IF (vstyle < 2) THEN
-      isinit = .TRUE.
-   ELSE
-      isinit = .FALSE. ! WF optimization enabled -> we need to know our bead id
-   END IF
    IF (par_count_c == 1) THEN
       nranks = vpars_c(1)
    ELSEIF (par_count_c == 2) THEN
       nranks = vpars_c(1)
       mpicom = vpars_c(2)
    ELSE
-      WRITE(*,*) "Error: Wrong number of -c parameters provided. Expected: -c NRANKS or -c NRANKS,MPICOM"
-      STOP "ENDED"
+      WRITE(*,*) 'Error: Wrong number of -c parameters provided. Expected: -c NRANKS or -c NRANKS,MPICOM'
+      STOP 'ENDED'
+   END IF
+
+   IF (dowfopt) THEN
+      isinit = .FALSE. ! WF optimization enabled -> we need to know our bead id
+   ELSE
+      isinit = .TRUE.
    END IF
 
    !Backup the initial random seed file
    CALL execute_command_line('cp randomseed.d randomseed.bak', WAIT = .true.)
 
    IF (verbose > 0) THEN
-      WRITE(*,*) " DRIVER - Connecting to host ", trim(host)
+      WRITE(*,*) ' DRIVER - Connecting to host ', trim(host)
       IF (inet > 0) THEN
-         WRITE(*,*) " on port ", port, " using an internet socket."
+         WRITE(*,*) ' on port ', port, ' using an internet socket.'
       ELSE
-         WRITE(*,*) " using an UNIX socket."
+         WRITE(*,*) ' using an UNIX socket.'
       ENDIF
    ENDIF
 
@@ -222,37 +237,39 @@
 
       ! Reads from the socket one message header
       CALL readbuffer(socket, header, MSGLEN)
-      IF (verbose > 0) WRITE(*,*) " Message from server: ", trim(header)
+      IF (verbose > 0) WRITE(*,*) ' Message from server: ', trim(header)
 
-      IF (trim(header) == "STATUS") THEN
+      IF (trim(header) == 'STATUS') THEN
          ! The wrapper is inquiring on what we are doing
          IF (.not. isinit) THEN
-            CALL writebuffer(socket,"NEEDINIT    ",MSGLEN)  ! Signals that we need initialization data
-            IF (verbose > 1) WRITE(*,*) "    !write!=> ", "NEEDINIT    "
+            CALL writebuffer(socket,'NEEDINIT    ',MSGLEN)  ! Signals that we need initialization data
+            IF (verbose > 1) WRITE(*,*) '    !write!=> ', 'NEEDINIT    '
          ELSEIF (hasdata) THEN
-            CALL writebuffer(socket,"HAVEDATA    ",MSGLEN)  ! Signals that we are done computing and can return forces
-            IF (verbose > 1) WRITE(*,*) "    !write!=> ", "HAVEDATA    "
+            CALL writebuffer(socket,'HAVEDATA    ',MSGLEN)  ! Signals that we are done computing and can return forces
+            IF (verbose > 1) WRITE(*,*) '    !write!=> ', 'HAVEDATA    '
          ELSE
-            CALL writebuffer(socket,"READY       ",MSGLEN)  ! We are idling and eager to compute something
-            IF (verbose > 1) WRITE(*,*) "    !write!=> ", "READY       "
+            CALL writebuffer(socket,'READY       ',MSGLEN)  ! We are idling and eager to compute something
+            IF (verbose > 1) WRITE(*,*) '    !write!=> ', 'READY       '
          ENDIF
-      ELSEIF (trim(header) == "INIT") THEN     ! The driver is kindly providing a string for initialization
+
+      ELSEIF (trim(header) == 'INIT') THEN     ! The driver is kindly providing a string for initialization
          CALL readbuffer(socket, rid)
-         IF (verbose > 1) WRITE(*,*) "    !read!=> RID: ", rid
+         IF (verbose > 1) WRITE(*,*) '    !read!=> RID: ', rid
          CALL readbuffer(socket, cbuf)
-         IF (verbose > 1) WRITE(*,*) "    !read!=> init_lenght: ", cbuf
+         IF (verbose > 1) WRITE(*,*) '    !read!=> init_lenght: ', cbuf
          CALL readbuffer(socket, initbuffer, cbuf)
-         IF (verbose > 1) WRITE(*,*) "    !read!=> init_string: ", cbuf
-         IF (verbose > 0) WRITE(*,*) " Initializing system from wrapper, using ", trim(initbuffer)
+         IF (verbose > 1) WRITE(*,*) '    !read!=> init_string: ', cbuf
+         IF (verbose > 0) WRITE(*,*) ' Initializing system from wrapper, using ', trim(initbuffer)
          isinit=.TRUE. ! We actually do nothing with this string, thanks anyway. Could be used to pass some information (e.g. the input parameters, or the index of the replica, from the driver
-      ELSEIF (trim(header) == "POSDATA") THEN  ! The driver is sending the positions of the atoms. Here is where we do the calculation!
+
+      ELSEIF (trim(header) == 'POSDATA') THEN  ! The driver is sending the positions of the atoms. Here is where we do the calculation!
 
          ! Parses the flow of data from the socket
          CALL readbuffer(socket, mtxbuf, 9)  ! Cell matrix
-         IF (verbose > 1) WRITE(*,*) "    !read!=> cell: ", mtxbuf
+         IF (verbose > 1) WRITE(*,*) '    !read!=> cell: ', mtxbuf
          cell_h = RESHAPE(mtxbuf, (/3,3/))
          CALL readbuffer(socket, mtxbuf, 9)  ! Inverse of the cell matrix (so we don't have to invert it every time here)
-         IF (verbose > 1) WRITE(*,*) "    !read!=> cell-1: ", mtxbuf
+         IF (verbose > 1) WRITE(*,*) '    !read!=> cell-1: ', mtxbuf
          cell_ih = RESHAPE(mtxbuf, (/3,3/))
 
          ! We assume an upper triangular cell-vector matrix
@@ -262,10 +279,10 @@
          box(3) = cell_h(3,3)
 
          CALL readbuffer(socket, cbuf)       ! The number of atoms in the cell
-         IF (verbose > 1) WRITE(*,*) "    !read!=> cbuf: ", cbuf
+         IF (verbose > 1) WRITE(*,*) '    !read!=> cbuf: ', cbuf
          IF (nat < 0) THEN  ! Assumes that the number of atoms does not change throughout a simulation, so only does this once
             nat = cbuf
-            IF (verbose > 0) WRITE(*,*) " Allocating buffer and data arrays, with ", nat, " atoms"
+            IF (verbose > 0) WRITE(*,*) ' Allocating buffer and data arrays, with ', nat, ' atoms'
             ALLOCATE(msgbuffer(3*nat))
             ALLOCATE(atoms(3,nat))
             ALLOCATE(forces(3,nat))
@@ -277,7 +294,7 @@
          ENDIF
 
          CALL readbuffer(socket, msgbuffer, nat*3)
-         IF (verbose > 1) WRITE(*,*) "    !read!=> positions: ", msgbuffer
+         IF (verbose > 1) WRITE(*,*) '    !read!=> positions: ', msgbuffer
          DO i = 1, nat
             atoms(:,i) = msgbuffer(3*(i-1)+1:3*i)
          ENDDO
@@ -289,11 +306,11 @@
          ios = 0
          istep = istep + 1
          IF (verbose > 0) THEN
-            WRITE(*,*) " Force calculation step ", istep
-            WRITE(*,*) " Calculating forces for bead ", rid
+            WRITE(*,*) ' Force calculation step ', istep
+            WRITE(*,*) ' Calculating forces for bead ', rid
          END IF
 
-         IF (vstyle > -1) THEN
+         IF (vstyle /= 'nop') THEN
 
             IF (domshift) CALL molshift(nat, box, atoms, invindarr)
 
@@ -304,7 +321,7 @@
             ENDDO
             CLOSE(20)
 
-            IF (vstyle > 1) THEN
+            IF (dowfopt) THEN
                WRITE(ridstr, *) rid
                ridstr = trim(adjustl(ridstr))
                CALL execute_command_line('cp ../SR_wf.dir/'//ridstr//' wf_now.d', WAIT = .true.)
@@ -324,7 +341,7 @@
                   CALL execute_command_line('mpirun -np '//strnranks//' HswfQMC_exe', WAIT = .true.)
                END IF
 
-               IF (vstyle > 1) THEN
+               IF (dowfopt) THEN
                   CALL execute_command_line('cp ottimizzazione/SR_wf.d ../SR_wf.dir/'//ridstr, WAIT = .true.)
                END IF
 
@@ -341,7 +358,7 @@
                CLOSE(20)
 
                notlimit = .TRUE.
-               IF (dolimit) THEN
+               IF (flimit > 0) THEN
                   DO i = 1, nat
                      IF (NORM2(forces(:,i)) > flimit) THEN
                         notlimit = .FALSE.
@@ -350,12 +367,12 @@
                END IF
 
                IF (notlimit) THEN
-                  IF (vstyle == 0) THEN
+                  IF (vstyle == 'ffs') THEN
                      CALL seedshift('randomseed.d', 'randomseed.new', 20, 21, .TRUE.)
                   END IF
                   EXIT
                ELSE
-                  WRITE(*,*) "Force was above limit. Recalculating with new seed..."
+                  WRITE(*,*) 'Force was above limit. Recalculating with new seed...'
                   CALL seedshift('randomseed.d', 'randomseed.new', 20, 21, .TRUE.)
                END IF
 
@@ -382,72 +399,76 @@
             ENDDO
          END IF
 
-         IF (verbose > 0) WRITE(*,*) " Calculated energy is ", pot
+         IF (verbose > 0) WRITE(*,*) ' Calculated energy is ', pot
 
          hasdata = .true. ! Signal that we have data ready to be passed back to the wrapper
-      ELSEIF (trim(header) == "GETFORCE") THEN  ! The driver calculation is finished, it's time to send the results back to the wrapper
+
+      ELSEIF (trim(header) == 'GETFORCE') THEN  ! The driver calculation is finished, it's time to send the results back to the wrapper
 
          DO i = 1, nat
             msgbuffer(3*(i-1)+1:3*i) = forces(:,i)
          ENDDO
 
-         CALL writebuffer(socket,"FORCEREADY  ",MSGLEN)
-         IF (verbose > 1) WRITE(*,*) "    !write!=> ", "FORCEREADY  "
+         CALL writebuffer(socket,'FORCEREADY  ',MSGLEN)
+         IF (verbose > 1) WRITE(*,*) '    !write!=> ', 'FORCEREADY  '
          CALL writebuffer(socket,pot)  ! Writing the potential
-         IF (verbose > 1) WRITE(*,*) "    !write!=> pot: ", pot
+         IF (verbose > 1) WRITE(*,*) '    !write!=> pot: ', pot
          CALL writebuffer(socket,nat)  ! Writing the number of atoms
-         IF (verbose > 1) WRITE(*,*) "    !write!=> nat:", nat
+         IF (verbose > 1) WRITE(*,*) '    !write!=> nat:', nat
          CALL writebuffer(socket,msgbuffer,3*nat) ! Writing the forces
-         IF (verbose > 1) WRITE(*,*) "    !write!=> forces:", msgbuffer
+         IF (verbose > 1) WRITE(*,*) '    !write!=> forces:', msgbuffer
          CALL writebuffer(socket,reshape(virial,(/9/)),9)  ! Writing the virial tensor, NOT divided by the volume
-         IF (verbose > 1) WRITE(*,*) "    !write!=> strss: ", reshape(virial,(/9/))
+         IF (verbose > 1) WRITE(*,*) '    !write!=> strss: ', reshape(virial,(/9/))
 
 
-         cbuf = 7 ! Size of the "extras" string
-         CALL writebuffer(socket,cbuf) ! This would write out the "extras" string, but in this case we only use a dummy string.
-         IF (verbose > 1) WRITE(*,*) "    !write!=> extra_lenght: ", cbuf
-         CALL writebuffer(socket,"nothing",7)
-         IF (verbose > 1) WRITE(*,*) "    !write!=> extra: nothing"
+         cbuf = 7 ! Size of the 'extras' string
+         CALL writebuffer(socket,cbuf) ! This would write out the 'extras' string, but in this case we only use a dummy string.
+         IF (verbose > 1) WRITE(*,*) '    !write!=> extra_lenght: ', cbuf
+         CALL writebuffer(socket,'nothing',7)
+         IF (verbose > 1) WRITE(*,*) '    !write!=> extra: nothing'
 
-         hasdata = .false.
-         IF (vstyle > 1) isinit=.FALSE. ! we want to make sure that the beadid didn't change next time
+         hasdata = .FALSE.
+         IF (dowfopt) isinit=.FALSE. ! we want to make sure that the beadid didn't change next time
 
       ELSE
-         WRITE(*,*) " Unexpected header ", header
-         STOP "ENDED"
+         WRITE(*,*) ' Unexpected header ', header
+         STOP 'ENDED'
       ENDIF
    ENDDO
+
    IF (nat > 0) THEN
       DEALLOCATE(atoms, forces, msgbuffer)
       IF (domshift) DEALLOCATE(invindarr)
    END IF
+
  CONTAINS
+
    SUBROUTINE helpmessage
      ! Help banner
-     WRITE(*,*) " SYNTAX: ipi_driver.x [-u] [-v] -h hostname -p port -m [alt|sim|fix|ffs|nop] " &
-          //"[-o comma,separated,options] [-c comma,separated,options] "
-     WRITE(*,*) ""
-     WRITE(*,*) " The -u flag enables the use of unix sockets instead of internet sockets. "
-     WRITE(*,*) ""
-     WRITE(*,*) " The -v flag enables verbose mode. "
-     WRITE(*,*) ""
-     WRITE(*,*) " You may want to provide options via -o according to the wavefunction optimization mode:"
-     WRITE(*,*) " Fixed wavefunction mode (-m fix):                     -o ISHIFT "
-     WRITE(*,*) " Simultaneous wavefunction optimization mode (-m sim): -o ISHIFT "
-     WRITE(*,*) " Alternating wavefunction optimization mode (-m alt):  -o ISHIFT,NWOMIN (not implemented yet!)"
-     WRITE(*,*) " In case of the no operation mode (-m nop) and fixed force sampling (-m ffs) there are no options to be set."
-     WRITE(*,*) ""
-     WRITE(*,*) " Option Documentation:"
-     WRITE(*,*) " ISHIFT = Molecular Partner Shifting Flag. 0 -> disabled, 1 -> enabled"
-     WRITE(*,*) " NWOMIN = Number of wavefunction optimizations without new minimum before termination."
-     WRITE(*,*) ""
-     WRITE(*,*) " You can provide options via -c concerning the MPI/Rank configuration:"
-     WRITE(*,*) " -c NRANKS,MPICOM"
-     WRITE(*,*) ""
-     WRITE(*,*) " Option Documentation:"
-     WRITE(*,*) " NRANKS = Number of MPI Ranks"
-     WRITE(*,*) " MPICOM = MPI Execution Command: 0 -> mpirun, 1 -> srun, 2 -> runjob"
-     WRITE(*,*) ""
+     WRITE(*,*) ' SYNTAX: ipi_driver.x [-u] [-v] -h hostname -p port -m [alt|sim|fix|ffs|nop] ' &
+          //'[-o comma,separated,options] [-c comma,separated,options] '
+     WRITE(*,*) ''
+     WRITE(*,*) ' The -u flag enables the use of unix sockets instead of internet sockets. '
+     WRITE(*,*) ''
+     WRITE(*,*) ' The -v flag enables verbose mode. '
+     WRITE(*,*) ''
+     WRITE(*,*) ' You may want to provide options via -o according to the wavefunction optimization mode:'
+     WRITE(*,*) ' Fixed wavefunction mode (-m fix):                     -o ISHIFT '
+     WRITE(*,*) ' Simultaneous wavefunction optimization mode (-m sim): -o ISHIFT '
+     WRITE(*,*) ' Alternating wavefunction optimization mode (-m alt):  -o ISHIFT,NWOMIN (not implemented yet!)'
+     WRITE(*,*) ' In case of the no operation mode (-m nop) and fixed force sampling (-m ffs) there are no options to be set.'
+     WRITE(*,*) ''
+     WRITE(*,*) ' Option Documentation:'
+     WRITE(*,*) ' ISHIFT = Molecular Partner Shifting Flag. 0 -> disabled, 1 -> enabled'
+     WRITE(*,*) ' NWOMIN = Number of wavefunction optimizations without new minimum before termination.'
+     WRITE(*,*) ''
+     WRITE(*,*) ' You can provide options via -c concerning the MPI/Rank configuration:'
+     WRITE(*,*) ' -c NRANKS,MPICOM'
+     WRITE(*,*) ''
+     WRITE(*,*) ' Option Documentation:'
+     WRITE(*,*) ' NRANKS = Number of MPI Ranks'
+     WRITE(*,*) ' MPICOM = MPI Execution Command: 0 -> mpirun, 1 -> srun, 2 -> runjob'
+     WRITE(*,*) ''
    END SUBROUTINE helpmessage
 
  END PROGRAM IPI_CLIENT
