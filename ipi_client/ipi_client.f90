@@ -42,31 +42,30 @@
    CHARACTER(LEN=10) :: ccmd
    INTEGER verbose
    INTEGER commas(2), par_count_o, par_count_c      ! stores the index of commas in the parameter string
-   INTEGER vpars_o(2), vpars_c(2)         ! array to store the parameters of the potential
+   INTEGER vpars_o(2), vpars_c(3)         ! array to store the parameters of the potential
 
    ! SOCKET COMMUNICATION BUFFERS
    CHARACTER(LEN=12) :: header
    LOGICAL :: isinit, hasdata
-   INTEGER cbuf, rid, ios, istep
+   INTEGER cbuf, rid, istep
    CHARACTER(LEN=2048) :: initbuffer      ! it's unlikely a string this large will ever be passed...
    DOUBLE PRECISION, ALLOCATABLE :: msgbuffer(:)
 
    ! PARAMETERS OF THE SYSTEM (CELL, ATOM POSITIONS, ...)
    INTEGER nat
-   DOUBLE PRECISION pot, volume, box(3), enhelp(3)
+   DOUBLE PRECISION pot, volume, box(3)
    DOUBLE PRECISION, ALLOCATABLE :: atoms(:,:), forces(:,:)
    DOUBLE PRECISION cell_h(3,3), cell_ih(3,3), virial(3,3), mtxbuf(9)
 
    ! PARAMETERS CONCERNING VMC (NRANKS,NWOMIN)
-   INTEGER nranks,mpicom,nwomin
-   CHARACTER(LEN=1024) strnranks, ridstr
-   LOGICAL domshift, notlimit, dowfopt
+   INTEGER nranks, nnodes, mpicom, nwomin
+   CHARACTER(LEN=1024) ridstr
+   LOGICAL domshift, dowfopt
    INTEGER, ALLOCATABLE :: invindarr(:)
    DOUBLE PRECISION :: flimit
-   CHARACTER(LEN=4) state
 
    ! ITERATORS
-   INTEGER i, k, l
+   INTEGER i
 
    ! intialize parameter defaults
    inet = 1
@@ -77,6 +76,7 @@
    domshift = .FALSE.
    nwomin = 0
    nranks = 1
+   nnodes = 1
    mpicom = 0
    flimit = 0.d0
    dowfopt = .FALSE.
@@ -207,8 +207,12 @@
    ELSEIF (par_count_c == 2) THEN
       nranks = vpars_c(1)
       mpicom = vpars_c(2)
+   ELSEIF (par_count_c == 3) THEN
+      nranks = vpars_c(1)
+      mpicom = vpars_c(2)
+      nnodes = vpars_c(3)
    ELSE
-      WRITE(*,*) 'Error: Wrong number of -c parameters provided. Expected: -c NRANKS or -c NRANKS,MPICOM'
+      WRITE(*,*) 'Error: Wrong number of -c parameters provided. Expected: -c NRANKS , -c NRANKS,MPICOM or -c NRANKS,MPICOM,NNODES'
       STOP 'ENDED'
    END IF
 
@@ -260,10 +264,13 @@
          CALL readbuffer(socket, initbuffer, cbuf)
          IF (verbose > 1) WRITE(*,*) '    !read!=> init_string: ', cbuf
          IF (verbose > 0) WRITE(*,*) ' Initializing system from wrapper, using ', trim(initbuffer)
-         isinit=.TRUE. ! We actually do nothing with this string, thanks anyway. Could be used to pass some information (e.g. the input parameters, or the index of the replica, from the driver
+
+         WRITE(ridstr, *) rid
+         ridstr = trim(adjustl(ridstr))
+
+         isinit=.TRUE. 
 
       ELSEIF (trim(header) == 'POSDATA') THEN  ! The driver is sending the positions of the atoms. Here is where we do the calculation!
-
          ! Parses the flow of data from the socket
          CALL readbuffer(socket, mtxbuf, 9)  ! Cell matrix
          IF (verbose > 1) WRITE(*,*) '    !read!=> cell: ', mtxbuf
@@ -273,10 +280,10 @@
          cell_ih = RESHAPE(mtxbuf, (/3,3/))
 
          ! We assume an upper triangular cell-vector matrix
-         volume = cell_h(1,1)*cell_h(2,2)*cell_h(3,3)
          box(1) = cell_h(1,1)
          box(2) = cell_h(2,2)
          box(3) = cell_h(3,3)
+         volume = box(1)*box(2)*box(3)
 
          CALL readbuffer(socket, cbuf)       ! The number of atoms in the cell
          IF (verbose > 1) WRITE(*,*) '    !read!=> cbuf: ', cbuf
@@ -302,8 +309,6 @@
          pot = 0.0d0
          virial = 0.0d0
 
-         enhelp = 0
-         ios = 0
          istep = istep + 1
          IF (verbose > 0) THEN
             WRITE(*,*) ' Force calculation step ', istep
@@ -314,59 +319,19 @@
 
             IF (domshift) CALL molshift(nat, box, atoms, invindarr)
 
-            OPEN (UNIT=20, FILE='reticolo/rp_now.d', STATUS='REPLACE', ACTION='WRITE')
-            WRITE(20,*) box
-            DO i = 1, nat
-               WRITE(20,*) atoms(:,i)
-            ENDDO
-            CLOSE(20)
+            CALL write_atoms(nat, box, atoms)
 
             IF (dowfopt) THEN
-               WRITE(ridstr, *) rid
-               ridstr = trim(adjustl(ridstr))
                CALL execute_command_line('cp ../SR_wf.dir/'//ridstr//' wf_now.d', WAIT = .true.)
             END IF
 
-            WRITE (strnranks, *) nranks
-            strnranks = trim(adjustl(strnranks))
-
             DO WHILE (.TRUE.)
 
-               IF (mpicom == 1) THEN
-                  CALL execute_command_line('srun -n '//strnranks//' HswfQMC_exe', WAIT = .true.)
-               ELSE IF (mpicom == 2) THEN
-                  CALL execute_command_line('runjob --np '//strnranks &
-                       //' --exe /homea/hpb01/hpb015/HswfQMC/HswfQMC_exe --ranks-per-node 64', WAIT = .true.)
-               ELSE
-                  CALL execute_command_line('mpirun -np '//strnranks//' HswfQMC_exe', WAIT = .true.)
-               END IF
+               CALL exec_hswfqmc(mpicom, nranks, nnodes)
 
-               IF (dowfopt) THEN
-                  CALL execute_command_line('cp ottimizzazione/SR_wf.d ../SR_wf.dir/'//ridstr, WAIT = .true.)
-               END IF
+               CALL read_forces(nat, forces)
 
-               OPEN(UNIT=20, FILE='state.out', ACTION='READ')
-               READ(20,*) state
-               IF (state /= 'done') STOP '[ipi_client] An error ocurred during execution of HswfQMC_exe.'
-               CLOSE(UNIT=20)
-
-               OPEN (UNIT=20, FILE='reticolo/LagrDyn_Frp-0000.d', ACTION='READ')
-               DO i = 1, nat
-                  READ(20, *) forces(:,i)
-               ENDDO
-               forces(:,:) = forces(:,:) *0.5*nat !HswfQMC output values are per atom, convert to Hartree
-               CLOSE(20)
-
-               notlimit = .TRUE.
-               IF (flimit > 0) THEN
-                  DO i = 1, nat
-                     IF (NORM2(forces(:,i)) > flimit) THEN
-                        notlimit = .FALSE.
-                     END IF
-                  ENDDO
-               END IF
-
-               IF (notlimit) THEN
+               IF (notlimit(nat, forces, flimit)) THEN
                   IF (vstyle == 'ffs') THEN
                      CALL seedshift('randomseed.d', 'randomseed.new', 20, 21, .TRUE.)
                   END IF
@@ -378,25 +343,17 @@
 
             ENDDO
 
-            OPEN (UNIT=20, FILE='ottimizzazione/SR_energies.dat', ACTION='READ')
-            DO WHILE(ios.eq.0)
-               READ(20,*,iostat=ios) enhelp
-            ENDDO
-            pot = enhelp(2) *0.5*nat
-            CLOSE(20)
+            IF (dowfopt) THEN
+               CALL execute_command_line('cp ottimizzazione/SR_wf.d ../SR_wf.dir/'//ridstr, WAIT = .true.)
+            END IF
+
+            CALL read_epot(nat, pot)
 
             IF (domshift) THEN
                CALL molshift_back(nat, atoms, invindarr)
                CALL molshift_back(nat, forces, invindarr)
             END IF
 
-            DO i = 1, nat
-               DO k = 1, 3
-                  DO l = k, 3
-                     virial(k,l) = virial(k,l) + atoms(k,i)*forces(l,i)
-                  ENDDO
-               ENDDO
-            ENDDO
          END IF
 
          IF (verbose > 0) WRITE(*,*) ' Calculated energy is ', pot
@@ -442,6 +399,121 @@
    END IF
 
  CONTAINS
+
+   SUBROUTINE write_atoms(nat, box, atoms)
+     IMPLICIT NONE
+
+     INTEGER, INTENT(IN) :: nat
+     DOUBLE PRECISION, INTENT(IN) :: box(3), atoms(3, nat)
+
+     INTEGER :: i
+
+     OPEN (UNIT=20, FILE='reticolo/rp_now.d', STATUS='REPLACE', ACTION='WRITE')
+     WRITE(20,*) box
+     DO i = 1, nat
+        WRITE(20,*) atoms(:,i)
+     ENDDO
+     CLOSE(20)
+
+   END SUBROUTINE write_atoms
+
+   SUBROUTINE read_forces(nat, forces)
+     IMPLICIT NONE
+
+     INTEGER, INTENT(IN) :: nat
+     DOUBLE PRECISION, INTENT(OUT) :: forces(3, nat)
+
+     INTEGER :: i
+
+     OPEN (UNIT=20, FILE='reticolo/LagrDyn_Frp-0000.d', ACTION='READ')
+     DO i = 1, nat
+        READ(20, *) forces(:,i)
+     ENDDO
+     CLOSE(20)
+     forces(:,:) = forces(:,:) * 0.5*nat !HswfQMC output values are per atom, convert to Hartree
+
+   END SUBROUTINE read_forces
+
+
+   SUBROUTINE read_epot(nat, pot)
+     IMPLICIT NONE
+
+     INTEGER, INTENT(IN) :: nat
+     DOUBLE PRECISION, INTENT(OUT) :: pot
+
+     DOUBLE PRECISION enhelp(3)
+     INTEGER ios
+
+     ios = 0
+     OPEN (UNIT=20, FILE='ottimizzazione/SR_energies.dat', ACTION='READ')
+     DO WHILE(ios.eq.0)
+        READ(20,*,iostat=ios) enhelp
+     ENDDO
+     CLOSE(UNIT=20)
+     pot = enhelp(2) * 0.5*nat
+
+   END SUBROUTINE read_epot
+
+   LOGICAL FUNCTION notlimit(nat, forces, flimit)
+     IMPLICIT NONE
+
+     INTEGER, INTENT(IN) :: nat
+     DOUBLE PRECISION, INTENT(IN) :: forces(3, nat), flimit
+
+     INTEGER :: i
+
+     notlimit = .TRUE.
+     IF (flimit > 0) THEN
+        DO i = 1, nat
+           IF (NORM2(forces(:,i)) > flimit) THEN
+              notlimit = .FALSE.
+              RETURN
+           END IF
+        ENDDO
+     END IF
+
+   END FUNCTION notlimit
+
+   SUBROUTINE exec_hswfqmc(mpicom, nranks, nnodes)
+     IMPLICIT NONE
+
+     INTEGER, INTENT(IN) ::  mpicom, nranks, nnodes
+
+     INTEGER rpn
+     CHARACTER(LEN=1024) nrankstr, rpnstr
+
+     rpn = nranks / nnodes ! ranks per node
+
+     WRITE(nrankstr, *) nranks
+     nrankstr = trim(adjustl(nrankstr))
+
+     WRITE(rpnstr, *) rpn
+     rpnstr = trim(adjustl(rpnstr))
+
+     IF (mpicom == 1) THEN
+        CALL execute_command_line('srun -n ' // nrankstr // ' HswfQMC_exe', WAIT = .true.)
+     ELSE IF (mpicom == 2) THEN
+        CALL execute_command_line('runjob --np ' // nrankstr &
+             //' --exe HswfQMC_exe --ranks-per-node ' // rpnstr, WAIT = .true.)
+     ELSE
+        CALL execute_command_line('mpirun -np ' // nrankstr // ' HswfQMC_exe', WAIT = .true.)
+     END IF
+
+     CALL check_state()
+
+   END SUBROUTINE exec_hswfqmc
+
+   SUBROUTINE check_state()
+     IMPLICIT NONE
+
+     CHARACTER(LEN=4) state
+
+     OPEN(UNIT=20, FILE='state.out', ACTION='READ')
+     READ(20,*) state
+     IF (state /= 'done') STOP '[ipi_client] An error ocurred during execution of HswfQMC_exe.'
+     CLOSE(UNIT=20)
+
+   END SUBROUTINE check_state
 
    SUBROUTINE helpmessage
      ! Help banner
