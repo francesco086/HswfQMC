@@ -319,35 +319,15 @@
 
             IF (domshift) CALL molshift(nat, box, atoms, invindarr)
 
-            CALL write_atoms(nat, box, atoms)
-
-            IF (dowfopt) THEN
+            IF (dowfopt) THEN ! set bead's wavefunction for calculation
                CALL execute_command_line('cp ../SR_wf.dir/'//ridstr//' wf_now.d', WAIT = .true.)
             END IF
 
-            DO WHILE (.TRUE.)
+            CALL calc_pot_forces(nat, mpicom, nranks, nnodes, vstyle, flimit, 1.d-2, box, atoms, pot, forces)
 
-               CALL exec_hswfqmc(mpicom, nranks, nnodes)
-
-               CALL read_forces(nat, forces)
-
-               IF (notlimit(nat, forces, flimit)) THEN
-                  IF (vstyle == 'ffs') THEN
-                     CALL seedshift('randomseed.d', 'randomseed.new', 20, 21, .TRUE.)
-                  END IF
-                  EXIT
-               ELSE
-                  WRITE(*,*) 'Force was above limit. Recalculating with new seed...'
-                  CALL seedshift('randomseed.d', 'randomseed.new', 20, 21, .TRUE.)
-               END IF
-
-            ENDDO
-
-            IF (dowfopt) THEN
+            IF (dowfopt) THEN ! backup new wavefunction for next step
                CALL execute_command_line('cp ottimizzazione/SR_wf.d ../SR_wf.dir/'//ridstr, WAIT = .true.)
             END IF
-
-            CALL read_epot(nat, pot)
 
             IF (domshift) THEN
                CALL molshift_back(nat, atoms, invindarr)
@@ -398,81 +378,101 @@
       IF (domshift) DEALLOCATE(invindarr)
    END IF
 
+
  CONTAINS
 
-   SUBROUTINE write_atoms(nat, box, atoms)
+
+   SUBROUTINE calc_pot_forces(nat, mpicom, nranks, nnodes, vstyle, flimit, fddx, box, atoms, pot, forces)
      IMPLICIT NONE
 
-     INTEGER, INTENT(IN) :: nat
+     INTEGER, INTENT(IN) :: nat, mpicom, nranks, nnodes
+     CHARACTER(LEN=3), INTENT(IN) :: vstyle
+     DOUBLE PRECISION, INTENT(IN) :: flimit, fddx, box(3), atoms(3, nat)
+     DOUBLE PRECISION, INTENT(OUT) :: pot, forces(3, nat)
+
+     DO WHILE (.TRUE.)
+
+        !CALL calc_stocrec_all(nat, mpicom, nranks, nnodes, box, atoms, pot, forces)
+        CALL calc_findiff(nat, mpicom, nranks, nnodes, fddx, box, atoms, pot, forces)
+
+        IF (notlimit(nat, forces, flimit)) THEN
+           IF (vstyle == 'ffs') THEN
+              CALL seedshift('randomseed.d', 'randomseed.new', 20, 21, .TRUE.)
+           END IF
+           EXIT
+        ELSE
+           WRITE(*,*) 'Force was above limit. Recalculating with new seed...'
+           CALL seedshift('randomseed.d', 'randomseed.new', 20, 21, .TRUE.)
+        END IF
+
+     ENDDO
+
+   END SUBROUTINE calc_pot_forces
+
+
+   SUBROUTINE calc_stocrec_all(nat, mpicom, nranks, nnodes, box, atoms, pot, forces)
+     IMPLICIT NONE
+
+     INTEGER, INTENT(IN) :: nat, mpicom, nranks, nnodes
      DOUBLE PRECISION, INTENT(IN) :: box(3), atoms(3, nat)
+     DOUBLE PRECISION, INTENT(OUT) :: pot, forces(3, nat)
 
-     INTEGER :: i
+     CALL write_atoms(nat, box, atoms)
+     CALL exec_hswfqmc(mpicom, nranks, nnodes)
+     CALL read_forces_ld(nat, forces)
+     CALL read_epot_sr(nat, pot)
 
-     OPEN (UNIT=20, FILE='reticolo/rp_now.d', STATUS='REPLACE', ACTION='WRITE')
-     WRITE(20,*) box
-     DO i = 1, nat
-        WRITE(20,*) atoms(:,i)
-     ENDDO
-     CLOSE(20)
+   END SUBROUTINE calc_stocrec_all
 
-   END SUBROUTINE write_atoms
 
-   SUBROUTINE read_forces(nat, forces)
+   SUBROUTINE calc_stocrec_nofrc(nat, mpicom, nranks, nnodes, box, atoms, pot)
      IMPLICIT NONE
 
-     INTEGER, INTENT(IN) :: nat
-     DOUBLE PRECISION, INTENT(OUT) :: forces(3, nat)
-
-     INTEGER :: i
-
-     OPEN (UNIT=20, FILE='reticolo/LagrDyn_Frp-0000.d', ACTION='READ')
-     DO i = 1, nat
-        READ(20, *) forces(:,i)
-     ENDDO
-     CLOSE(20)
-     forces(:,:) = forces(:,:) * 0.5*nat !HswfQMC output values are per atom, convert to Hartree
-
-   END SUBROUTINE read_forces
-
-
-   SUBROUTINE read_epot(nat, pot)
-     IMPLICIT NONE
-
-     INTEGER, INTENT(IN) :: nat
+     INTEGER, INTENT(IN) :: nat, mpicom, nranks, nnodes
+     DOUBLE PRECISION, INTENT(IN) :: box(3), atoms(3, nat)
      DOUBLE PRECISION, INTENT(OUT) :: pot
 
-     DOUBLE PRECISION enhelp(3)
-     INTEGER ios
+     CALL write_atoms(nat, box, atoms)
+     CALL exec_hswfqmc(mpicom, nranks, nnodes)
+     CALL read_epot_sr(nat, pot)
 
-     ios = 0
-     OPEN (UNIT=20, FILE='ottimizzazione/SR_energies.dat', ACTION='READ')
-     DO WHILE(ios.eq.0)
-        READ(20,*,iostat=ios) enhelp
-     ENDDO
-     CLOSE(UNIT=20)
-     pot = enhelp(2) * 0.5*nat
+   END SUBROUTINE calc_stocrec_nofrc
 
-   END SUBROUTINE read_epot
 
-   LOGICAL FUNCTION notlimit(nat, forces, flimit)
+   SUBROUTINE calc_findiff(nat, mpicom, nranks, nnodes, fddx, box, atoms, pot, forces)
      IMPLICIT NONE
 
-     INTEGER, INTENT(IN) :: nat
-     DOUBLE PRECISION, INTENT(IN) :: forces(3, nat), flimit
+     INTEGER, INTENT(IN) :: nat, mpicom, nranks, nnodes
+     DOUBLE PRECISION, INTENT(IN) :: fddx, box(3), atoms(3, nat)
+     DOUBLE PRECISION, INTENT(OUT) :: pot, forces(3, nat)
 
-     INTEGER :: i
+     INTEGER i,j
+     DOUBLE PRECISION :: dforces(3, nat), datoms(3, nat), dpot(2)
 
-     notlimit = .TRUE.
-     IF (flimit > 0) THEN
-        DO i = 1, nat
-           IF (NORM2(forces(:,i)) > flimit) THEN
-              notlimit = .FALSE.
-              RETURN
-           END IF
+     datoms = atoms
+     DO i=1,nat
+        DO j=1,3
+           datoms(j,i) = atoms(j,i) + fddx
+           CALL calc_stocrec_nofrc(nat, mpicom, nranks, nnodes, box, datoms, dpot(1))
+
+           datoms(j,i) = atoms(j,i) - fddx
+           CALL calc_stocrec_nofrc(nat, mpicom, nranks, nnodes, box, datoms, dpot(2))
+
+           forces(j,i) = (dpot(2) - dpot(1)) / (2*fddx)
+           datoms(j,i) = atoms(j,i)
         ENDDO
-     END IF
+     ENDDO
 
-   END FUNCTION notlimit
+     dforces = forces
+
+     CALL calc_stocrec_all(nat, mpicom, nranks, nnodes, box, atoms, pot, forces)
+     write(*,*) dforces
+     write(*,*) forces
+     forces = dforces
+     !CALL calc_simpcal(nat, mpicom, nranks, nnodes, box, atoms, pot)
+
+   END SUBROUTINE calc_findiff
+
 
    SUBROUTINE exec_hswfqmc(mpicom, nranks, nnodes)
      IMPLICIT NONE
@@ -503,6 +503,84 @@
 
    END SUBROUTINE exec_hswfqmc
 
+
+   SUBROUTINE write_atoms(nat, box, atoms)
+     IMPLICIT NONE
+
+     INTEGER, INTENT(IN) :: nat
+     DOUBLE PRECISION, INTENT(IN) :: box(3), atoms(3, nat)
+
+     INTEGER :: i
+
+     OPEN (UNIT=20, FILE='reticolo/rp_now.d', STATUS='REPLACE', ACTION='WRITE')
+     WRITE(20,*) box
+     DO i = 1, nat
+        WRITE(20,*) atoms(:,i)
+     ENDDO
+     CLOSE(20)
+
+   END SUBROUTINE write_atoms
+
+
+   SUBROUTINE read_forces_ld(nat, forces)
+     IMPLICIT NONE
+
+     INTEGER, INTENT(IN) :: nat
+     DOUBLE PRECISION, INTENT(OUT) :: forces(3, nat)
+
+     INTEGER :: i
+
+     OPEN (UNIT=20, FILE='reticolo/LagrDyn_Frp-0000.d', ACTION='READ')
+     DO i = 1, nat
+        READ(20, *) forces(:,i)
+     ENDDO
+     CLOSE(20)
+     forces(:,:) = forces(:,:) * 0.5*nat !HswfQMC output values are per atom, convert to Hartree
+
+   END SUBROUTINE read_forces_ld
+
+
+   SUBROUTINE read_epot_sr(nat, pot)
+     IMPLICIT NONE
+
+     INTEGER, INTENT(IN) :: nat
+     DOUBLE PRECISION, INTENT(OUT) :: pot
+
+     DOUBLE PRECISION enhelp(3)
+     INTEGER ios
+
+     ios = 0
+     OPEN (UNIT=20, FILE='ottimizzazione/SR_energies.dat', ACTION='READ')
+     DO WHILE(ios.eq.0)
+        READ(20,*,iostat=ios) enhelp
+     ENDDO
+     CLOSE(UNIT=20)
+     pot = enhelp(2) * 0.5*nat
+
+   END SUBROUTINE read_epot_sr
+
+
+   LOGICAL FUNCTION notlimit(nat, forces, flimit)
+     IMPLICIT NONE
+
+     INTEGER, INTENT(IN) :: nat
+     DOUBLE PRECISION, INTENT(IN) :: forces(3, nat), flimit
+
+     INTEGER :: i
+
+     notlimit = .TRUE.
+     IF (flimit > 0) THEN
+        DO i = 1, nat
+           IF (NORM2(forces(:,i)) > flimit) THEN
+              notlimit = .FALSE.
+              RETURN
+           END IF
+        ENDDO
+     END IF
+
+   END FUNCTION notlimit
+
+
    SUBROUTINE check_state()
      IMPLICIT NONE
 
@@ -514,6 +592,7 @@
      CLOSE(UNIT=20)
 
    END SUBROUTINE check_state
+
 
    SUBROUTINE helpmessage
      ! Help banner
