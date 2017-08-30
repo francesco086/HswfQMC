@@ -62,7 +62,7 @@
    CHARACTER(LEN=1024) ridstr
    LOGICAL domshift, dowfopt
    INTEGER, ALLOCATABLE :: invindarr(:)
-   DOUBLE PRECISION :: flimit
+   DOUBLE PRECISION :: flimit, fddr
 
    ! ITERATORS
    INTEGER i
@@ -79,6 +79,7 @@
    nnodes = 1
    mpicom = 0
    flimit = 0.d0
+   fddr = 0.d0
    dowfopt = .FALSE.
 
    ! initialize control variables
@@ -115,6 +116,8 @@
          ccmd = 'mpiconf'
       ELSEIF (cmdbuffer == '-l') THEN ! reads the force amplitude limit
          ccmd = 'flimit'
+      ELSEIF (cmdbuffer == '-d') THEN ! reads the finite difference displacements (also serves as flag)
+         ccmd = 'findiff'
 
       ELSE
          IF (ccmd == 'host') THEN
@@ -166,7 +169,10 @@
             READ(cmdbuffer(commas(par_count_c)+1:),*) vpars_c(par_count_c)
 
          ELSEIF (ccmd == 'flimit') THEN
-            READ(cmdbuffer(:),*) flimit ! force amplitude limit (dirty fix)
+            READ(cmdbuffer(:),*) flimit ! force amplitude limit
+
+         ELSEIF (ccmd == 'findiff') THEN
+            READ(cmdbuffer(:),*) fddr ! finite difference displacements
 
          ELSE
             WRITE(*,*) ' Unrecognized command line argument: ', cmdbuffer
@@ -323,7 +329,7 @@
                CALL execute_command_line('cp ../SR_wf.dir/'//ridstr//' wf_now.d', WAIT = .true.)
             END IF
 
-            CALL calc_pot_forces(nat, mpicom, nranks, nnodes, vstyle, flimit, 1.d-2, box, atoms, pot, forces)
+            CALL calc_pot_forces(nat, mpicom, nranks, nnodes, vstyle, flimit, fddr, box, atoms, pot, forces)
 
             IF (dowfopt) THEN ! backup new wavefunction for next step
                CALL execute_command_line('cp ottimizzazione/SR_wf.d ../SR_wf.dir/'//ridstr, WAIT = .true.)
@@ -382,18 +388,21 @@
  CONTAINS
 
 
-   SUBROUTINE calc_pot_forces(nat, mpicom, nranks, nnodes, vstyle, flimit, fddx, box, atoms, pot, forces)
+   SUBROUTINE calc_pot_forces(nat, mpicom, nranks, nnodes, vstyle, flimit, fddr, box, atoms, pot, forces)
      IMPLICIT NONE
 
      INTEGER, INTENT(IN) :: nat, mpicom, nranks, nnodes
      CHARACTER(LEN=3), INTENT(IN) :: vstyle
-     DOUBLE PRECISION, INTENT(IN) :: flimit, fddx, box(3), atoms(3, nat)
+     DOUBLE PRECISION, INTENT(IN) :: flimit, fddr, box(3), atoms(3, nat)
      DOUBLE PRECISION, INTENT(OUT) :: pot, forces(3, nat)
 
      DO WHILE (.TRUE.)
 
-        !CALL calc_stocrec_all(nat, mpicom, nranks, nnodes, box, atoms, pot, forces)
-        CALL calc_findiff(nat, mpicom, nranks, nnodes, fddx, box, atoms, pot, forces)
+        IF (fddr > 0) THEN
+           CALL calc_findiff(nat, mpicom, nranks, nnodes, fddr, box, atoms, pot, forces)
+        ELSE
+           CALL calc_stocrec_all(nat, mpicom, nranks, nnodes, box, atoms, pot, forces)
+        END IF
 
         IF (notlimit(nat, forces, flimit)) THEN
            IF (vstyle == 'ffs') THEN
@@ -439,37 +448,36 @@
    END SUBROUTINE calc_stocrec_nofrc
 
 
-   SUBROUTINE calc_findiff(nat, mpicom, nranks, nnodes, fddx, box, atoms, pot, forces)
+   SUBROUTINE calc_findiff(nat, mpicom, nranks, nnodes, fddr, box, atoms, pot, forces)
      IMPLICIT NONE
 
      INTEGER, INTENT(IN) :: nat, mpicom, nranks, nnodes
-     DOUBLE PRECISION, INTENT(IN) :: fddx, box(3), atoms(3, nat)
+     DOUBLE PRECISION, INTENT(IN) :: fddr, box(3), atoms(3, nat)
      DOUBLE PRECISION, INTENT(OUT) :: pot, forces(3, nat)
 
      INTEGER i,j
-     DOUBLE PRECISION :: dforces(3, nat), datoms(3, nat), dpot(2)
+     DOUBLE PRECISION :: datoms(3, nat), dpot(2), hfddr !,ldforces(3, nat)
 
+     hfddr = 0.5 * fddr
      datoms = atoms
+
      DO i=1,nat
         DO j=1,3
-           datoms(j,i) = atoms(j,i) + fddx
+           datoms(j,i) = atoms(j,i) + hfddr
            CALL calc_stocrec_nofrc(nat, mpicom, nranks, nnodes, box, datoms, dpot(1))
 
-           datoms(j,i) = atoms(j,i) - fddx
+           datoms(j,i) = atoms(j,i) - hfddr
            CALL calc_stocrec_nofrc(nat, mpicom, nranks, nnodes, box, datoms, dpot(2))
 
-           forces(j,i) = (dpot(2) - dpot(1)) / (2*fddx)
+           forces(j,i) = (dpot(2) - dpot(1)) / fddr
            datoms(j,i) = atoms(j,i)
         ENDDO
      ENDDO
 
-     dforces = forces
-
-     CALL calc_stocrec_all(nat, mpicom, nranks, nnodes, box, atoms, pot, forces)
-     write(*,*) dforces
-     write(*,*) forces
-     forces = dforces
-     !CALL calc_simpcal(nat, mpicom, nranks, nnodes, box, atoms, pot)
+     !CALL calc_stocrec_all(nat, mpicom, nranks, nnodes, box, atoms, pot, ldforces)
+     !write(*,*) 'fdforces', forces
+     !write(*,*) 'ldforces', ldforces
+     CALL calc_stocrec_nofrc(nat, mpicom, nranks, nnodes, box, atoms, pot)
 
    END SUBROUTINE calc_findiff
 
