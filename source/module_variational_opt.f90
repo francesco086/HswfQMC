@@ -1648,7 +1648,7 @@ MODULE variational_opt
          !parte relativa al lambda
 
          !regolo lambda a seconda di come sono stati gli ultimi spostamenti variazionali
-         IF (SR_lambda) THEN
+         IF (SR_lambda .OR. SR_lambda_Rp) THEN
 
 			   IF ((SR_lambda).AND.(contatore>2).AND.(N-num_coord_Rp>0)) THEN       !parametri variazionali wf
 			   	flambda=(1.d0+0.1d0*DOT_PRODUCT(vec_app(1:N-num_coord_Rp),vec_app_old(1:N-num_coord_Rp)))
