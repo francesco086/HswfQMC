@@ -1619,12 +1619,7 @@ MODULE variational_opt
          !   END IF
 
          CASE("plain_SR_")
-
-         !   IF (mpi_myrank==0) THEN
-         !      CALL calcola_skn_fk()
-         !      CALL plain_SR_trova_dp(dp)
-         !   END IF
-         !   CALL MPI_BCAST(dp,num_par_var,MPI_REAL8,0,MPI_COMM_WORLD,mpi_ierr)
+            CALL plain_SR(num_par_var_eff,num_coord_L,num_coord_Rp,dp)
 
          CASE DEFAULT
             IF (mpi_myrank==0) PRINT *, "Errore: SR_kind non accettabile"
@@ -3573,13 +3568,26 @@ MODULE variational_opt
 
    END SUBROUTINE estrai_medie_SR
 
-
    SUBROUTINE calcola_skn_fk()
+     IMPLICIT NONE
+     INTEGER :: i, j
+
+!!!Costruisco s_kn e f_k
+     DO i = 1, num_par_var_eff, 1
+        f_k(i)=H*Oi_eff(i) - HOi_eff(i)
+        DO j = 1, num_par_var_eff, 1
+           s_kn(j,i)=OiOj_eff(j,i)-Oi_eff(j)*Oi_eff(i)
+        END DO
+     END DO
+
+   END SUBROUTINE calcola_skn_fk
+
+   SUBROUTINE calcola_skn_fk_beta()
       IMPLICIT NONE
       INTEGER :: i, j
       REAL(KIND=8) :: eta
       REAL(KIND=8) :: Hk(1:num_par_var_eff)
-      
+
       !!!Costruisco i termini Hk e eta
       eta=1.d0-f_SR_beta*SR_beta*H
       DO i = 1, num_par_var_eff, 1
@@ -3595,8 +3603,63 @@ MODULE variational_opt
          END DO
       END DO
 
-   END SUBROUTINE calcola_skn_fk
-   
+   END SUBROUTINE calcola_skn_fk_beta
+
+   SUBROUTINE plain_SR(N,NL,Np,dp)
+      USE dati_fisici
+      IMPLICIT NONE
+      INTEGER, PARAMETER :: LWORK=10
+      INTEGER, INTENT(IN) :: N, NL, Np !number of effective variational parameters, electronic, and protonic
+      REAL(KIND=8), INTENT(OUT) :: dp(1:num_par_var)
+      REAL(KIND=8) :: dp_eff(1:N)
+      INTEGER :: i, j, Ne
+      INTEGER :: info
+      REAL(KIND=8) :: Is_kn(1:N,1:N)
+      REAL(KIND=8) :: work(1:LWORK*N)
+      REAL(KIND=8) :: Usvd(1:N,1:N)
+      REAL(KIND=8) :: VTsvd(1:N,1:N)
+      REAL(KIND=8) :: Ssvd(1:N)
+
+      CALL calcola_skn_fk()
+
+      Is_kn=s_kn
+      CALL DGESVD('A','A',N,N,Is_kn,N,Ssvd,Usvd,N,VTsvd,N,work,LWORK*N,info)
+      IF (info /= 0) THEN
+         PRINT *, "Error in SVD [ stochastic_reconfiguration > module_variational_opt.f90 ]"
+         PRINT*, "Info=", info
+         STOP
+      END IF
+      Is_kn=0.d0
+      DO i = 1, N, 1
+         IF (Ssvd(i)>Ssvd(1)*SVD_MIN) THEN
+            Is_kn(i,i)=1.d0/Ssvd(i)
+         ELSE
+            Is_kn(i,i)=0.d0
+         END IF
+      END DO
+      Is_kn=MATMUL(Usvd,MATMUL(Is_kn,VTsvd))
+
+      dp_eff=MATMUL(f_k, Is_kn)
+
+      IF (NL>0) THEN
+          !if a 2D structure is used, then the z component is set to zero
+         IF (flag_2D) dp_eff(3)=0.d0
+      END IF
+
+      IF (Np>0) THEN
+         !if a 2D structure is used, then the z component is set to zero
+         Ne=N-NL-Np
+         IF (flag_2D) THEN
+            DO i = 1, N_part, 1
+               dp_eff(Ne+3+(i-1)*3)=0.d0
+            END DO
+         END IF
+      END IF
+
+      dp=0.d0
+      dp=UNPACK(dp_eff,used_par,dp)
+
+   END SUBROUTINE plain_SR
 
    !SUBROUTINE plain_SR_trova_dp(dp)
    !   IMPLICIT NONE
