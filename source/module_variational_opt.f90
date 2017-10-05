@@ -1488,14 +1488,22 @@ MODULE variational_opt
          !   CALL moltiplicatori_lagrange_trova_dp(num_par_var_eff,num_par_var_eff-num_coord_Rp,num_coord_Rp,dp)
          !CASE("LinMolLag")
          !   CALL lin_molt_lagr(num_par_var_eff,num_par_var_eff-num_coord_Rp,num_coord_Rp,dp)
-         CASE("LagrDynam")
-            CALL lagrangian_dynamic_forces(num_par_var_eff,num_coord_L,num_coord_Rp,dp)
+         CASE("LagrDynam", "LagrDynV1")
+            CALL lagrangian_dynamic_forces_v1(num_par_var_eff,num_coord_L,num_coord_Rp,dp)
             IF (mpi_myrank==0 .and. opt_rp) THEN
                 WRITE (istring, '(I4.4)') contatore - 1
                 CALL stampa_file_vettores3D('reticolo/LagrDyn_Frp-'//istring//'.d', &
                 RESHAPE(dp(num_par_var-num_coord_rp+1 : num_par_var),(/ 3, num_coord_rp/3 /)), num_coord_rp/3)
                 WRITE (istring, '(I4.4)') contatore
-            END IF
+             END IF
+          CASE("LagrDynV2")
+             CALL lagrangian_dynamic_forces_v2(num_par_var_eff,num_coord_L,num_coord_Rp,p0,dp)
+             IF (mpi_myrank==0 .and. opt_rp) THEN
+                WRITE (istring, '(I4.4)') contatore - 1
+                CALL stampa_file_vettores3D('reticolo/LagrDyn_Frp-'//istring//'.d', &
+                     RESHAPE(dp(num_par_var-num_coord_rp+1 : num_par_var),(/ 3, num_coord_rp/3 /)), num_coord_rp/3)
+                WRITE (istring, '(I4.4)') contatore
+             END IF
          !CASE("fast_SR__")
          !   !Determino il beta ottimale usando il principio variazionale stimando la E successiva tramite un'espansione
          !   !IF (mpi_myrank==0) OPEN(UNIT=666,FILE="ottimizzazione/SR_beta."//istring,STATUS='UNKNOWN',POSITION='ASIS')
@@ -3708,7 +3716,7 @@ MODULE variational_opt
    !END SUBROUTINE plain_SR_trova_dp
 
    !use le equazioni derivanti dalla lagrangiana scritta da Markus
-   SUBROUTINE lagrangian_dynamic_forces(N,NL,Np,dp)
+   SUBROUTINE lagrangian_dynamic_forces_v1(N,NL,Np,dp)
       USE dati_fisici
       IMPLICIT NONE
       INTEGER, PARAMETER :: LWORK=10
@@ -3790,8 +3798,94 @@ MODULE variational_opt
       DEALLOCATE(Usvd)
       DEALLOCATE(VTsvd)
       DEALLOCATE(Ssvd)
-      
-   END SUBROUTINE lagrangian_dynamic_forces
+
+    END SUBROUTINE lagrangian_dynamic_forces_v1
+
+    SUBROUTINE lagrangian_dynamic_forces_v2(N,NL,Np,p0,dp)
+      USE dati_fisici
+      IMPLICIT NONE
+      INTEGER, PARAMETER :: LWORK=10
+      INTEGER, INTENT(IN) :: N, NL, Np !number of effective variational parameters, electronic, and protonic
+      REAL(KIND=8), INTENT(IN)  :: p0(1:num_par_var)
+      REAL(KIND=8), INTENT(OUT) :: dp(1:num_par_var)
+      REAL(KIND=8) :: dp_eff(1:N)
+      INTEGER :: Ne
+      INTEGER :: i, j
+      INTEGER :: info
+      REAL(KIND=8), ALLOCATABLE :: M(:,:), v(:)
+      REAL(KIND=8), ALLOCATABLE :: IM(:,:)
+      REAL(KIND=8), ALLOCATABLE :: work(:)
+      REAL(KIND=8), ALLOCATABLE :: Usvd(:,:)
+      REAL(KIND=8), ALLOCATABLE :: VTsvd(:,:)
+      REAL(KIND=8), ALLOCATABLE :: Ssvd(:)
+
+      dp_eff=0.d0
+
+      Ne=N-NL-Np
+      ALLOCATE(M(1:Ne,1:Ne), v(1:Ne))
+      ALLOCATE(IM(1:Ne,1:Ne))
+      ALLOCATE(work(1:LWORK*(Ne)))
+      ALLOCATE(Usvd(1:Ne,1:Ne))
+      ALLOCATE(VTsvd(1:Ne,1:Ne))
+      ALLOCATE(Ssvd(1:Ne))
+
+      IF (Ne>0) THEN
+         !costruisco la matrice per la parte elettronica
+         M(1:Ne,1:Ne)=OiOj_eff(NL+1:NL+Ne,NL+1:NL+Ne)
+         v(1:Ne)=HOi_eff(NL+1:NL+Ne)-H*Oi_eff(NL+1:NL+Ne)+MATMUL(OiHOj_eff(NL+1:NL+Ne,NL+1:NL+Ne)-H*OiOj_eff(NL+1:NL+Ne,NL+1:NL+Ne),p0(1:Ne))
+
+         !inverto M
+         IM=M
+         CALL DGESVD('A','A',Ne,Ne,IM,Ne,Ssvd,Usvd,Ne,VTsvd,Ne,work,LWORK*Ne,info)
+         IF (info /= 0) THEN
+            PRINT *, "Error in SVD [ lagrangian_dynamic_forces > module_variational_opt.f90 ]"
+		    PRINT*, "Info=", info
+            STOP
+         END IF
+         IM=0.d0
+         DO i = 1, Ne, 1
+            IF (Ssvd(i)>Ssvd(1)*SVD_MIN) THEN
+               IM(i,i)=1.d0/Ssvd(i)
+            ELSE
+               IM(i,i)=0.d0
+            END IF
+         END DO
+         IM=MATMUL(Usvd,MATMUL(IM,VTsvd))
+
+         !assegno i nuovi dp elettronici
+         dp_eff(NL+1:NL+Ne)=MATMUL(IM(1:Ne,1:Ne),-v(1:Ne))
+      END IF
+
+      IF (NL>0) THEN
+         !assegno i nuovi dp protonici
+         dp_eff(1:3)=-Hi(1:3)-2.d0*HOi_eff(1:3)+2.d0*H*Oi_eff(1:3)
+         !if a 2D structure is used, then the z component is set to zero
+         IF (flag_2D) dp_eff(3)=0.d0
+      END IF
+
+      IF (Np>0) THEN
+         !assegno i nuovi dp protonici
+         dp_eff(NL+Ne+1:N)=-Hi(NL+1:NL+Np)-2.d0*HOi_eff(NL+Ne+1:N)+2.d0*H*Oi_eff(NL+Ne+1:N)
+         !if a 2D structure is used, then the z component is set to zero
+         IF (flag_2D) THEN
+            DO i = 1, N_part, 1
+               dp_eff(Ne+3+(i-1)*3)=0.d0
+            END DO
+         END IF
+      END IF
+
+      !!riporto i dp_eff al dp globale
+      dp=0.d0
+      dp=UNPACK(dp_eff,used_par,dp)
+
+      DEALLOCATE(M, v)
+      DEALLOCATE(IM)
+      DEALLOCATE(work)
+      DEALLOCATE(Usvd)
+      DEALLOCATE(VTsvd)
+      DEALLOCATE(Ssvd)
+
+   END SUBROUTINE lagrangian_dynamic_forces_v2
 
    !!risolve le quazioni risultati dalla minimizzazione di H'-H
    !SUBROUTINE gradH_trova_dp(N,Ne,Np,dp)
