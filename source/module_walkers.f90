@@ -60,7 +60,7 @@ MODULE walkers
 					re_old(1,1:N_part)=(re_old(1,1:N_part))*L(1)
 					re_old(2,1:N_part)=(re_old(2,1:N_part))*L(2)
 					re_old(3,1:N_part)=(re_old(3,1:N_part))*L(3)
-					CALL applica_pbc(re_old,N_part,L)
+     CALL applica_pbc(re_old,N_part,L, L_mat,L_mati,flag_tilted)
 				END IF
 				IF (flag_shadow) THEN
 					CALL leggi_posizioni_da_file(se1_old,N_part,'posizioni/fine'//codice//'_se1_'//istring)
@@ -68,14 +68,14 @@ MODULE walkers
 						se1_old(1,1:N_part)=(se1_old(1,1:N_part))*L(1)
 						se1_old(2,1:N_part)=(se1_old(2,1:N_part))*L(2)
 						se1_old(3,1:N_part)=(se1_old(3,1:N_part))*L(3)
-						CALL applica_pbc(se1_old,N_part,L)
+      CALL applica_pbc(se1_old,N_part,L, L_mat,L_mati,flag_tilted)
 					END IF
 					CALL leggi_posizioni_da_file(se2_old,N_part,'posizioni/fine'//codice//'_se2_'//istring)
 					IF (flag_normalizza_pos) THEN
 						se2_old(1,1:N_part)=(se2_old(1,1:N_part))*L(1)
 						se2_old(2,1:N_part)=(se2_old(2,1:N_part))*L(2)
 						se2_old(3,1:N_part)=(se2_old(3,1:N_part))*L(3)
-						CALL applica_pbc(se2_old,N_part,L)
+      CALL applica_pbc(se2_old,N_part,L, L_mat,L_mati,flag_tilted)
 					END IF
 				END IF
 			ELSE
@@ -84,8 +84,8 @@ MODULE walkers
 		ELSE
 			!!! OPT1
 			!ALLOCATE(rij_crystal(0:3,1:N_part,1:N_part))
-			!CALL valuta_distanza_ii(r_crystal,N_part,L,rij_crystal)
-			!net_dist=0.d0
+     !CALL valuta_distanza_ii(r_crystal,N_part,L,rij_crystal, L_mat,L_mati,flag_tilted)
+     !net_dist=0.d0
 			!DO j = 1, N_part-1, 1
 			!	DO i = j+1, N_part, 1
 			!		net_dist=MIN(net_dist,rij_crystal(i,j))
@@ -105,7 +105,7 @@ MODULE walkers
 				END DO
 			END DO
 			re_old=r_crystal+(re_new-0.5d0)*net_dist
-			CALL applica_pbc(re_old,N_part,L)
+   CALL applica_pbc(re_old,N_part,L, L_mat,L_mati,flag_tilted)
 			IF (flag_shadow) THEN
 				CALL RANDOM_NUMBER(se1_old)
 				se1_old=(se1_old-0.5d0)*0.01d0*net_dist
@@ -116,13 +116,13 @@ MODULE walkers
 			END IF
 		END IF
 		re_new=re_old
-		CALL valuta_distanza_ii(re_old,N_part,L,rij_ee_old)
+  CALL valuta_distanza_ii(re_old,N_part,L,rij_ee_old, L_mat,L_mati,flag_tilted)
 		rij_ee_new=rij_ee_old
 		IF (flag_shadow) THEN
 			se1_new=se1_old
 			se2_new=se2_old
-			CALL valuta_distanza_ii(se1_old,N_part,L,rij_se1_old)
-			CALL valuta_distanza_ii(se2_old,N_part,L,rij_se2_old)
+   CALL valuta_distanza_ii(se1_old,N_part,L,rij_se1_old, L_mat,L_mati,flag_tilted)
+   CALL valuta_distanza_ii(se2_old,N_part,L,rij_se2_old, L_mat,L_mati,flag_tilted)
 			rij_se1_new=rij_se1_old
 			rij_se2_new=rij_se2_old
 		END IF
@@ -138,7 +138,7 @@ MODULE walkers
 					rp_old(1,1:N_part)=(rp_old(1,1:N_part))*L(1)
 					rp_old(2,1:N_part)=(rp_old(2,1:N_part))*L(2)
 					rp_old(3,1:N_part)=(rp_old(3,1:N_part))*L(3)
-					CALL applica_pbc(rp_old,N_part,L)
+     CALL applica_pbc(rp_old,N_part,L, L_mat,L_mati,flag_tilted)
 				END IF
 			ELSE
 				STOP 'Non puoi continuare dalle posizioni precedenti, manca il file fine_p.pos [ module_walkers.f90 > inizializza_walkers ]'
@@ -148,7 +148,7 @@ MODULE walkers
 		END IF
 		rp_new=rp_old
 
-		CALL valuta_distanza_ii(rp_old,N_part,L,rij_pp_old)
+  CALL valuta_distanza_ii(rp_old,N_part,L,rij_pp_old, L_mat,L_mati,flag_tilted)
 		rij_pp_new=rij_pp_old
 		IF (flag_shadow) THEN
 			sp1_old=rp_old
@@ -162,11 +162,11 @@ MODULE walkers
 		ALLOCATE(rij_ese2_new(0:3,1:N_part,1:N_part),rij_ese2_old(0:3,1:N_part,1:N_part))
 		ALLOCATE(rij_sesp1_new(0:3,1:N_part,1:N_part),rij_sesp1_old(0:3,1:N_part,1:N_part))
 		ALLOCATE(rij_sesp2_new(0:3,1:N_part,1:N_part),rij_sesp2_old(0:3,1:N_part,1:N_part))
-		CALL valuta_distanza_ij(re_old,rp_old,N_part,L,rij_ep_old)
-		CALL valuta_distanza_ij(re_old,se1_old,N_part,L,rij_ese1_old)
-		CALL valuta_distanza_ij(re_old,se2_old,N_part,L,rij_ese2_old)
-		CALL valuta_distanza_ij(se1_old,sp1_old,N_part,L,rij_sesp1_old)
-		CALL valuta_distanza_ij(se2_old,sp2_old,N_part,L,rij_sesp2_old)
+  CALL valuta_distanza_ij(re_old,rp_old,N_part,L,rij_ep_old, L_mat,L_mati,flag_tilted)
+  CALL valuta_distanza_ij(re_old,se1_old,N_part,L,rij_ese1_old, L_mat,L_mati,flag_tilted)
+  CALL valuta_distanza_ij(re_old,se2_old,N_part,L,rij_ese2_old, L_mat,L_mati,flag_tilted)
+  CALL valuta_distanza_ij(se1_old,sp1_old,N_part,L,rij_sesp1_old, L_mat,L_mati,flag_tilted)
+  CALL valuta_distanza_ij(se2_old,sp2_old,N_part,L,rij_sesp2_old, L_mat,L_mati,flag_tilted)
 		rij_ep_new=rij_ep_old
 		rij_ese1_new=rij_ese1_old
 		rij_ese2_new=rij_ese2_old
@@ -202,35 +202,35 @@ MODULE walkers
 		IF (.NOT. iniz_pc) THEN
 			IF (flag_elettroni) THEN
 				ALLOCATE(rijpc_ee_new(0:3,1:N_part,1:N_part),rijpc_ee_old(0:3,1:N_part,1:N_part))
-				CALL valuta_distanza_pc_ii(rij_ee_old,N_part,L,rijpc_ee_old)
+    CALL valuta_distanza_pc_ii(rij_ee_old,N_part,L,rijpc_ee_old)
 				rijpc_ee_new=rijpc_ee_old
 				ALLOCATE(rijpc_ep_new(0:3,1:N_part,1:N_part),rijpc_ep_old(0:3,1:N_part,1:N_part))
-				CALL valuta_distanza_pc_ij(rij_ep_old,N_part,L,rijpc_ep_old)
+    CALL valuta_distanza_pc_ij(rij_ep_old,N_part,L,rijpc_ep_old)
 				rijpc_ep_new=rijpc_ep_old
 				IF (flag_shadow) THEN
 					ALLOCATE(rijpc_se1_new(0:3,1:N_part,1:N_part),rijpc_se1_old(0:3,1:N_part,1:N_part))
 					ALLOCATE(rijpc_se2_new(0:3,1:N_part,1:N_part),rijpc_se2_old(0:3,1:N_part,1:N_part))
-					CALL valuta_distanza_pc_ii(rij_se1_old,N_part,L,rijpc_se1_old)
+     CALL valuta_distanza_pc_ii(rij_se1_old,N_part,L,rijpc_se1_old)
 					rijpc_se1_new=rijpc_se1_old
-					CALL valuta_distanza_pc_ii(rij_se2_old,N_part,L,rijpc_se2_old)
+     CALL valuta_distanza_pc_ii(rij_se2_old,N_part,L,rijpc_se2_old)
 					rijpc_se2_new=rijpc_se2_old
 					ALLOCATE(rijpc_sesp1_new(0:3,1:N_part,1:N_part),rijpc_sesp1_old(0:3,1:N_part,1:N_part))
 					ALLOCATE(rijpc_sesp2_new(0:3,1:N_part,1:N_part),rijpc_sesp2_old(0:3,1:N_part,1:N_part))
-					CALL valuta_distanza_pc_ij(rij_sesp1_old,N_part,L,rijpc_sesp1_old)
+     CALL valuta_distanza_pc_ij(rij_sesp1_old,N_part,L,rijpc_sesp1_old)
 					rijpc_sesp1_new=rijpc_sesp1_old
-					CALL valuta_distanza_pc_ij(rij_sesp2_old,N_part,L,rijpc_sesp2_old)
+     CALL valuta_distanza_pc_ij(rij_sesp2_old,N_part,L,rijpc_sesp2_old)
 					rijpc_sesp2_new=rijpc_sesp2_old
 					ALLOCATE(rijpc_ese1_new(0:3,1:N_part,1:N_part),rijpc_ese1_old(0:3,1:N_part,1:N_part))
 					ALLOCATE(rijpc_ese2_new(0:3,1:N_part,1:N_part),rijpc_ese2_old(0:3,1:N_part,1:N_part))
-					CALL valuta_distanza_pc_ij(rij_ese1_old,N_part,L,rijpc_ese1_old)
+     CALL valuta_distanza_pc_ij(rij_ese1_old,N_part,L,rijpc_ese1_old)
 					rijpc_ese1_new=rijpc_ese1_old
-					CALL valuta_distanza_pc_ij(rij_ese2_old,N_part,L,rijpc_ese2_old)
+     CALL valuta_distanza_pc_ij(rij_ese2_old,N_part,L,rijpc_ese2_old)
 					rijpc_ese2_new=rijpc_ese2_old
 				END IF
 			END IF
 			IF (flag_protoni) THEN
 				ALLOCATE(rijpc_pp_new(0:3,1:N_part,1:N_part),rijpc_pp_old(0:3,1:N_part,1:N_part))
-				CALL valuta_distanza_pc_ii(rij_pp_old,N_part,L,rijpc_pp_old)
+    CALL valuta_distanza_pc_ii(rij_pp_old,N_part,L,rijpc_pp_old)
 				rijpc_pp_new=rijpc_pp_old
 			END IF
 		END IF
@@ -263,14 +263,14 @@ MODULE walkers
 				END SELECT
 				IF (flag_shadow) THEN
 					se1_new=se1_old+re_new
-					CALL applica_pbc(se1_new,N_part,L)
+     CALL applica_pbc(se1_new,N_part,L, L_mat,L_mati,flag_tilted)
 					se2_new=se2_old+re_new
-					CALL applica_pbc(se2_new,N_part,L)
+     CALL applica_pbc(se2_new,N_part,L, L_mat,L_mati,flag_tilted)
 					CALL calcola_nuove_distanze(tipo,num,'sese')
 					CALL calcola_nuove_distanze(tipo,num,'sesp')
 				END IF
 				re_new=re_old+re_new
-				CALL applica_pbc(re_new,N_part,L)
+    CALL applica_pbc(re_new,N_part,L, L_mat,L_mati,flag_tilted)
 			ELSE IF ((howtomove=='1ppt') .AND. (num>0) .AND. (num<=N_part)) THEN
 				SELECT CASE (propmove)
 				CASE ('flat')
@@ -282,7 +282,7 @@ MODULE walkers
 					STOP 'Il propmove non é accettabile'
 				END SELECT
 				re_new(1:3,num)=re_old(1:3,num)+re_new(1:3,num)
-				CALL applica_pbc(re_new,N_part,L)
+    CALL applica_pbc(re_new,N_part,L, L_mat,L_mati,flag_tilted)
 			END IF
 			CALL calcola_nuove_distanze(tipo,num,'e_e_')
 			CALL calcola_nuove_distanze(tipo,num,'e_p_')
@@ -302,9 +302,9 @@ MODULE walkers
 					STOP 'Il propmove non é accettabile'
 				END SELECT
 				se1_new=se1_old+se1_new
-				CALL applica_pbc(se1_new,N_part,L)
+    CALL applica_pbc(se1_new,N_part,L, L_mat,L_mati,flag_tilted)
 				se2_new=se2_old+se2_new
-				CALL applica_pbc(se2_new,N_part,L)
+    CALL applica_pbc(se2_new,N_part,L, L_mat,L_mati,flag_tilted)
 			END IF
 			CALL calcola_nuove_distanze(tipo,num,'sese')
 			CALL calcola_nuove_distanze(tipo,num,'sesp')
@@ -321,7 +321,7 @@ MODULE walkers
 					STOP 'Il propmove non é accettabile'
 				END SELECT
 				se1_new(1:3,num)=se1_old(1:3,num)+se1_new(1:3,num)
-				CALL applica_pbc(se1_new,N_part,L)
+    CALL applica_pbc(se1_new,N_part,L, L_mat,L_mati,flag_tilted)
 			END IF
 			CALL calcola_nuove_distanze(tipo,num,'sese')
 			CALL calcola_nuove_distanze(tipo,num,'sesp')
@@ -338,7 +338,7 @@ MODULE walkers
 					STOP 'Il propmove non é accettabile'
 				END SELECT
 				se2_new(1:3,num)=se2_old(1:3,num)+se2_new(1:3,num)
-				CALL applica_pbc(se2_new,N_part,L)
+    CALL applica_pbc(se2_new,N_part,L, L_mat,L_mati,flag_tilted)
 			END IF
 			CALL calcola_nuove_distanze(tipo,num,'sese')
 			CALL calcola_nuove_distanze(tipo,num,'sesp')
@@ -355,11 +355,11 @@ MODULE walkers
 					STOP 'Il propmove non é accettabile'
 				END SELECT
 				se1_new(1:3,num)=se1_old(1:3,num)+re_new(1:3,num)
-				CALL applica_pbc(se1_new,N_part,L)
+    CALL applica_pbc(se1_new,N_part,L, L_mat,L_mati,flag_tilted)
 				se2_new(1:3,num)=se2_old(1:3,num)+re_new(1:3,num)
-				CALL applica_pbc(se2_new,N_part,L)
+    CALL applica_pbc(se2_new,N_part,L, L_mat,L_mati,flag_tilted)
 				re_new(1:3,num)=re_old(1:3,num)+re_new(1:3,num)
-				CALL applica_pbc(re_new,N_part,L)
+    CALL applica_pbc(re_new,N_part,L, L_mat,L_mati,flag_tilted)
 			END IF
 			CALL calcola_nuove_distanze(tipo,num,'e_e_')
 			CALL calcola_nuove_distanze(tipo,num,'e_p_')
@@ -386,33 +386,33 @@ MODULE walkers
 		SELECT CASE (tra_chi)
 		CASE ('e_e_')
 			IF (num==-1) THEN
-				CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new)
+      CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new, L_mat,L_mati,flag_tilted)
 			ELSE IF ((num>0) .AND. (num<=N_part)) THEN
-				CALL valuta_distanza_ii_1ppt(num,re_new,N_part,L,rij_ee_new)
+      CALL valuta_distanza_ii_1ppt(num,re_new,N_part,L,rij_ee_new, L_mat,L_mati,flag_tilted)
 			END IF
 		CASE ('p_p_')
 			IF (num==-1) THEN
-				CALL valuta_distanza_ii(rp_new,N_part,L,rij_pp_new)
+      CALL valuta_distanza_ii(rp_new,N_part,L,rij_pp_new, L_mat,L_mati,flag_tilted)
 			ELSE IF ((num>0) .AND. (num<=N_part)) THEN
-				CALL valuta_distanza_ii_1ppt(num,rp_new,N_part,L,rij_pp_new)
+      CALL valuta_distanza_ii_1ppt(num,rp_new,N_part,L,rij_pp_new, L_mat,L_mati,flag_tilted)
 			END IF
 		CASE ('e_p_')
 			IF (num==-1) THEN
-				CALL valuta_distanza_ij(re_new,rp_new,N_part,L,rij_ep_new)
+      CALL valuta_distanza_ij(re_new,rp_new,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
 			ELSE IF ((num>0) .AND. (num<=N_part)) THEN
 				SELECT CASE (tipo)
 				CASE ('e__')
-					CALL valuta_distanza_ij_1ppt(num,1,re_new,rp_new,N_part,L,rij_ep_new)
+       CALL valuta_distanza_ij_1ppt(num,1,re_new,rp_new,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
 				CASE ('p__')
-					CALL valuta_distanza_ij_1ppt(num,2,re_new,rp_new,N_part,L,rij_ep_new)
+       CALL valuta_distanza_ij_1ppt(num,2,re_new,rp_new,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
 				CASE ('tre')
-					CALL valuta_distanza_ij_1ppt(num,1,re_new,rp_new,N_part,L,rij_ep_new)
+       CALL valuta_distanza_ij_1ppt(num,1,re_new,rp_new,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
 				END SELECT
 			END IF
 		CASE ('sese')
 			IF (num==-1) THEN
-				CALL valuta_distanza_ii(se1_new,N_part,L,rij_se1_new)
-				CALL valuta_distanza_ii(se2_new,N_part,L,rij_se2_new)
+      CALL valuta_distanza_ii(se1_new,N_part,L,rij_se1_new, L_mat,L_mati,flag_tilted)
+      CALL valuta_distanza_ii(se2_new,N_part,L,rij_se2_new, L_mat,L_mati,flag_tilted)
 				IF ( flag_traccia_coppie_mol_ss ) THEN
 					CALL coppie_minima_distanza_stoc(N_part,rij_se1_new(0,1:N_part,1:N_part),index_mol_ss1,dist_mol_ss1_new)
 					CALL coppie_minima_distanza_stoc(N_part,rij_se2_new(0,1:N_part,1:N_part),index_mol_ss2,dist_mol_ss2_new)
@@ -421,26 +421,26 @@ MODULE walkers
 			ELSE IF ((num>0) .AND. (num<=N_part)) THEN
 				SELECT CASE (tipo)
 				CASE ('se1')
-					CALL valuta_distanza_ii_1ppt(num,se1_new,N_part,L,rij_se1_new)
+       CALL valuta_distanza_ii_1ppt(num,se1_new,N_part,L,rij_se1_new, L_mat,L_mati,flag_tilted)
 					IF (flag_traccia_coppie_mol_ss) THEN
 					 	CALL aggiorna_coppie_minima_distanza_stoc_1ppt(num,N_part,&
 					         rij_se1_new(0,1:N_part,1:N_part),index_mol_ss1,dist_mol_ss1_new,index_mol_num)
 					END IF
 				CASE ('se2')
-					CALL valuta_distanza_ii_1ppt(num,se2_new,N_part,L,rij_se2_new)
+       CALL valuta_distanza_ii_1ppt(num,se2_new,N_part,L,rij_se2_new, L_mat,L_mati,flag_tilted)
 					IF (flag_traccia_coppie_mol_ss) THEN
 					 	CALL aggiorna_coppie_minima_distanza_stoc_1ppt(num,N_part,&
 							rij_se2_new(0,1:N_part,1:N_part),index_mol_ss2,dist_mol_ss2_new,index_mol_num)
 					END IF
 				CASE ('tre')
 					!se1
-					CALL valuta_distanza_ii_1ppt(num,se1_new,N_part,L,rij_se1_new)
+       CALL valuta_distanza_ii_1ppt(num,se1_new,N_part,L,rij_se1_new, L_mat,L_mati,flag_tilted)
 					IF (flag_traccia_coppie_mol_ss) THEN
 					 	CALL aggiorna_coppie_minima_distanza_stoc_1ppt(num,N_part,&
 					         rij_se1_new(0,1:N_part,1:N_part),index_mol_ss1,dist_mol_ss1_new,index_mol_num)
 					END IF
 					!se2
-					CALL valuta_distanza_ii_1ppt(num,se2_new,N_part,L,rij_se2_new)
+     CALL valuta_distanza_ii_1ppt(num,se2_new,N_part,L,rij_se2_new, L_mat,L_mati,flag_tilted)
 					IF (flag_traccia_coppie_mol_ss) THEN
 					 	CALL aggiorna_coppie_minima_distanza_stoc_1ppt(num,N_part,&
 							rij_se2_new(0,1:N_part,1:N_part),index_mol_ss2,dist_mol_ss2_new,index_mol_num)
@@ -449,42 +449,42 @@ MODULE walkers
 			END IF
 		CASE ('e_se')
 			IF (num==-1) THEN
-				CALL valuta_distanza_ij(re_new,se1_new,N_part,L,rij_ese1_new)
-				CALL valuta_distanza_ij(re_new,se2_new,N_part,L,rij_ese2_new)
+      CALL valuta_distanza_ij(re_new,se1_new,N_part,L,rij_ese1_new, L_mat,L_mati,flag_tilted)
+      CALL valuta_distanza_ij(re_new,se2_new,N_part,L,rij_ese2_new, L_mat,L_mati,flag_tilted)
 			ELSE IF ((num>0) .AND. (num<=N_part)) THEN
 				SELECT CASE (tipo)
 				CASE ('e__')
-					CALL valuta_distanza_ij_1ppt(num,1,re_new,se1_new,N_part,L,rij_ese1_new)
-					CALL valuta_distanza_ij_1ppt(num,1,re_new,se2_new,N_part,L,rij_ese2_new)
+       CALL valuta_distanza_ij_1ppt(num,1,re_new,se1_new,N_part,L,rij_ese1_new, L_mat,L_mati,flag_tilted)
+       CALL valuta_distanza_ij_1ppt(num,1,re_new,se2_new,N_part,L,rij_ese2_new, L_mat,L_mati,flag_tilted)
 				CASE ('se1')
-					CALL valuta_distanza_ij_1ppt(num,2,re_new,se1_new,N_part,L,rij_ese1_new)
+       CALL valuta_distanza_ij_1ppt(num,2,re_new,se1_new,N_part,L,rij_ese1_new, L_mat,L_mati,flag_tilted)
 				CASE ('se2')
-					CALL valuta_distanza_ij_1ppt(num,2,re_new,se2_new,N_part,L,rij_ese2_new)
+       CALL valuta_distanza_ij_1ppt(num,2,re_new,se2_new,N_part,L,rij_ese2_new, L_mat,L_mati,flag_tilted)
 				CASE ('tre')
 					!re
-					CALL valuta_distanza_ij_1ppt(num,1,re_new,se1_new,N_part,L,rij_ese1_new)
-					CALL valuta_distanza_ij_1ppt(num,1,re_new,se2_new,N_part,L,rij_ese2_new)
+       CALL valuta_distanza_ij_1ppt(num,1,re_new,se1_new,N_part,L,rij_ese1_new, L_mat,L_mati,flag_tilted)
+       CALL valuta_distanza_ij_1ppt(num,1,re_new,se2_new,N_part,L,rij_ese2_new, L_mat,L_mati,flag_tilted)
 					!se1
-					CALL valuta_distanza_ij_1ppt(num,2,re_new,se1_new,N_part,L,rij_ese1_new)
+       CALL valuta_distanza_ij_1ppt(num,2,re_new,se1_new,N_part,L,rij_ese1_new, L_mat,L_mati,flag_tilted)
 					!se2
-					CALL valuta_distanza_ij_1ppt(num,2,re_new,se2_new,N_part,L,rij_ese2_new)
+       CALL valuta_distanza_ij_1ppt(num,2,re_new,se2_new,N_part,L,rij_ese2_new, L_mat,L_mati,flag_tilted)
 				END SELECT
 			END IF
 		CASE ('sesp')
 			IF (num==-1) THEN
-				CALL valuta_distanza_ij(se1_new,sp1_new,N_part,L,rij_sesp1_new)
-				CALL valuta_distanza_ij(se2_new,sp2_new,N_part,L,rij_sesp2_new)
+      CALL valuta_distanza_ij(se1_new,sp1_new,N_part,L,rij_sesp1_new, L_mat,L_mati,flag_tilted)
+      CALL valuta_distanza_ij(se2_new,sp2_new,N_part,L,rij_sesp2_new, L_mat,L_mati,flag_tilted)
 			ELSE IF ((num>0) .AND. (num<=N_part)) THEN
 				SELECT CASE (tipo)
 				CASE ('se1')
-					CALL valuta_distanza_ij_1ppt(num,1,se1_new,sp1_new,N_part,L,rij_sesp1_new)
+       CALL valuta_distanza_ij_1ppt(num,1,se1_new,sp1_new,N_part,L,rij_sesp1_new, L_mat,L_mati,flag_tilted)
 				CASE ('se2')
-					CALL valuta_distanza_ij_1ppt(num,1,se2_new,sp2_new,N_part,L,rij_sesp2_new)
+       CALL valuta_distanza_ij_1ppt(num,1,se2_new,sp2_new,N_part,L,rij_sesp2_new, L_mat,L_mati,flag_tilted)
 				CASE ('tre')
 					!se1
-					CALL valuta_distanza_ij_1ppt(num,1,se1_new,sp1_new,N_part,L,rij_sesp1_new)
+       CALL valuta_distanza_ij_1ppt(num,1,se1_new,sp1_new,N_part,L,rij_sesp1_new, L_mat,L_mati,flag_tilted)
 					!se2
-					CALL valuta_distanza_ij_1ppt(num,1,se2_new,sp2_new,N_part,L,rij_sesp2_new)
+       CALL valuta_distanza_ij_1ppt(num,1,se2_new,sp2_new,N_part,L,rij_sesp2_new, L_mat,L_mati,flag_tilted)
 				END SELECT
 			END IF			
 		END SELECT
@@ -1112,12 +1112,12 @@ MODULE walkers
 			r_crystal_new(1:3,i)=vett(cont:cont+2)
 			cont=cont+3
 		END DO
-		CALL applica_pbc(r_crystal_new,N_part,L)
+  CALL applica_pbc(r_crystal_new,N_part,L, L_mat,L_mati,flag_tilted)
 		
 		!!! OPT1
 		!ALLOCATE(rij_crystal(0:3,1:N_part,1:N_part))
-		!CALL valuta_distanza_ii(r_crystal,N_part,L,rij_crystal)
-		!net_dist=0.d0
+  !CALL valuta_distanza_ii(r_crystal,N_part,L,rij_crystal, L_mat,L_mati,flag_tilted)
+  !net_dist=0.d0
 		!DO j = 1, N_part-1, 1
 		!	DO i = j+1, N_part, 1
 		!		net_dist=MIN(net_dist,rij_crystal(i,j))
@@ -1138,7 +1138,7 @@ MODULE walkers
 			END DO
 		END DO
 		re_old=r_crystal_new+(re_new-0.5d0)*net_dist
-		CALL applica_pbc(re_old,N_part,L)
+  CALL applica_pbc(re_old,N_part,L, L_mat,L_mati,flag_tilted)
 		IF (flag_shadow) THEN
 			CALL RANDOM_NUMBER(se1_old)
 			se1_old=(se1_old-0.5d0)*0.01d0*net_dist
@@ -1148,13 +1148,13 @@ MODULE walkers
 			se2_old=re_old+se2_old
 		END IF
 		re_new=re_old
-		CALL valuta_distanza_ii(re_old,N_part,L,rij_ee_old)
+  CALL valuta_distanza_ii(re_old,N_part,L,rij_ee_old, L_mat,L_mati,flag_tilted)
 		rij_ee_new=rij_ee_old
 		IF (flag_shadow) THEN
 			se1_new=se1_old
 			se2_new=se2_old
-			CALL valuta_distanza_ii(se1_old,N_part,L,rij_se1_old)
-			CALL valuta_distanza_ii(se2_old,N_part,L,rij_se2_old)
+   CALL valuta_distanza_ii(se1_old,N_part,L,rij_se1_old, L_mat,L_mati,flag_tilted)
+   CALL valuta_distanza_ii(se2_old,N_part,L,rij_se2_old, L_mat,L_mati,flag_tilted)
 			rij_se1_new=rij_se1_old
 			rij_se2_new=rij_se2_old
 		END IF
@@ -1162,10 +1162,10 @@ MODULE walkers
 		rp_old=r_crystal_new
 		rp_new=rp_old
 
-		CALL valuta_distanza_ii(rp_old,N_part,L,rij_pp_old)
+  CALL valuta_distanza_ii(rp_old,N_part,L,rij_pp_old, L_mat,L_mati,flag_tilted)
 		rij_pp_new=rij_pp_old
 		
-		CALL valuta_distanza_ij(re_old,rp_old,N_part,L,rij_ep_old)
+  CALL valuta_distanza_ij(re_old,rp_old,N_part,L,rij_ep_old, L_mat,L_mati,flag_tilted)
 		rij_ep_new=rij_ep_old
 		
 		IF ( flag_shadow ) THEN
@@ -1173,10 +1173,10 @@ MODULE walkers
 			sp2_old=rp_old
 			sp1_new=sp1_old
 			sp2_new=sp2_old
-			CALL valuta_distanza_ij(re_old,se1_old,N_part,L,rij_ese1_old)
-			CALL valuta_distanza_ij(re_old,se2_old,N_part,L,rij_ese2_old)
-			CALL valuta_distanza_ij(se1_old,sp1_old,N_part,L,rij_sesp1_old)
-			CALL valuta_distanza_ij(se2_old,sp2_old,N_part,L,rij_sesp2_old)
+   CALL valuta_distanza_ij(re_old,se1_old,N_part,L,rij_ese1_old, L_mat,L_mati,flag_tilted)
+   CALL valuta_distanza_ij(re_old,se2_old,N_part,L,rij_ese2_old, L_mat,L_mati,flag_tilted)
+   CALL valuta_distanza_ij(se1_old,sp1_old,N_part,L,rij_sesp1_old, L_mat,L_mati,flag_tilted)
+   CALL valuta_distanza_ij(se2_old,sp2_old,N_part,L,rij_sesp2_old, L_mat,L_mati,flag_tilted)
 			rij_ese1_new=rij_ese1_old
 			rij_ese2_new=rij_ese2_old
 			rij_sesp1_new=rij_sesp1_old

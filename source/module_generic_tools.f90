@@ -381,22 +381,70 @@ MODULE generic_tools
 			STOP 'Manca il file [leggi_gkvectors_xml]'
 		END IF
 
-	END SUBROUTINE leggi_gkvectors_xml
+END SUBROUTINE leggi_gkvectors_xml
+!-----------------------------------------------------------------------
+!applica_pbc wrapper
+SUBROUTINE applica_pbc(v,N,L,L_mat,L_mati,flag_tilted)
+  IMPLICIT NONE
+  INTEGER, INTENT(IN) :: N
+  REAL (KIND=8), INTENT(IN) :: L(1:3), L_mat(1:3,1:3), L_mati(1:3,1:3)
+  LOGICAL, INTENT(IN) :: flag_tilted
+  REAL (KIND=8), INTENT(INOUT) :: v(1:3,1:N)
+
+  IF(flag_tilted) THEN
+     CALL applica_pbc_tilted(v,N,L_mat,L_mati)
+  ELSE
+     CALL applica_pbc_ortho(v,N,L)
+  END IF
+END SUBROUTINE applica_pbc
 !-----------------------------------------------------------------------
 	!dato il vettore con il numero di particelle e le tre dimensioni della scatola di simulazione, usa le PBC per eventualmente rimettere il vettore dentro la scatola
-	SUBROUTINE applica_pbc(v,N,L)
+	SUBROUTINE applica_pbc_ortho(v,N,L)
 		IMPLICIT NONE
-		INTEGER :: N, i, j
-		REAL (KIND=8) :: L(1:3), v(1:3,1:N)
+		INTEGER, INTENT(IN) :: N
+    REAL (KIND=8), INTENT(IN) :: L(1:3)
+    REAL (KIND=8), INTENT(INOUT) :: v(1:3,1:N)
+    INTEGER :: i,j
 		DO j = 1, N, 1
 			DO i = 1, 3, 1
 				v(i,j)=v(i,j)-L(i)*DNINT(v(i,j)/L(i))
 			END DO
 		END DO
-	END SUBROUTINE applica_pbc
+  END SUBROUTINE applica_pbc_ortho
+!-----------------------------------------------------------------------
+  !like applica_pbc_ortho, but for tilted lattice systems
+  SUBROUTINE applica_pbc_tilted(v,N,L_mat,L_mati)
+    IMPLICIT NONE
+    INTEGER,INTENT(IN) :: N
+    REAL (KIND=8), INTENT(IN) :: L_mat(1:3,1:3), L_mati(1:3,1:3)
+    REAL (KIND=8), INTENT(INOUT) :: v(1:3,1:N)
+    INTEGER :: i,j
+    DO j = 1, N, 1
+       v(1:3,j) = MATMUL(L_mati, v(1:3,j))
+       DO i = 1, 3, 1
+          v(i,j) = v(i,j) - FLOOR(v(i,j))
+       ENDDO
+       v(1:3,j) = MATMUL(L_mat, v(1:3,j))
+    END DO
+  END SUBROUTINE applica_pbc_tilted
+  !-----------------------------------------------------------------------
+  !valuta_distanza_ii wrapper
+  SUBROUTINE valuta_distanza_ii(r,N,L,rij, L_mat,L_mati,flag_tilted)
+    IMPLICIT NONE
+    INTEGER, INTENT(IN) :: N
+    REAL (KIND=8), INTENT(IN) :: r(1:3,1:N), L(1:3), L_mat(1:3,1:3), L_mati(1:3,1:3)
+    LOGICAL, INTENT(IN) :: flag_tilted
+    REAL (KIND=8), INTENT(OUT) :: rij(0:3,1:N,1:N)
+
+    IF(flag_tilted) THEN
+       CALL valuta_distanza_ii_tilted(r,N,L_mat,L_mati,rij)
+    ELSE
+       CALL valuta_distanza_ii_ortho(r,N,L,rij)
+    END IF
+  END SUBROUTINE valuta_distanza_ii
 !-----------------------------------------------------------------------
 	!calcola la matrice delle distanze fra un set di particelle
-	SUBROUTINE valuta_distanza_ii(r,N,L,rij)
+	SUBROUTINE valuta_distanza_ii_ortho(r,N,L,rij)
 		IMPLICIT NONE
 		INTEGER, INTENT(IN) :: N
 		REAL (KIND=8), INTENT(IN) :: r(1:3,1:N), L(1:3)
@@ -414,14 +462,52 @@ MODULE generic_tools
 			END DO
 			rij(0:3,j,j)=0.d0
 		END DO
-	END SUBROUTINE valuta_distanza_ii
+  END SUBROUTINE valuta_distanza_ii_ortho
+!-----------------------------------------------------------------------
+  !like valuta_distanza_ii, but for tilted lattice systems
+  SUBROUTINE valuta_distanza_ii_tilted(r,N,L_mat,L_mati,rij)
+    IMPLICIT NONE
+    INTEGER, INTENT(IN) :: N
+    REAL (KIND=8), INTENT(IN) :: r(1:3,1:N), L_mat(1:3,1:3), L_mati(1:3,1:3)
+    INTEGER :: i, j
+    REAL (KIND=8) :: frf1, r_tilted(1:3,1:N)
+    REAL (KIND=8), INTENT(OUT) :: rij(0:3,1:N,1:N)
+    DO j = 1, N, 1
+      r_tilted(1:3,j) = MATMUL(L_mati, r(1:3,j))
+    ENDDO
+    DO j = 1, N-1, 1
+       DO i = j+1, N, 1
+          rij(1:3,i,j)=r_tilted(1:3,j)-r_tilted(1:3,i)
+          rij(1:3,i,j)=rij(1:3,i,j)-DNINT(rij(1:3,i,j))
+          rij(1:3,i,j)=MATMUL(L_mat, rij(1:3,i,j))
+          rij(0,i,j)=DSQRT(DOT_PRODUCT(rij(1:3,i,j),rij(1:3,i,j)))
+          rij(0,j,i)=rij(0,i,j)
+          rij(1:3,j,i)=-rij(1:3,i,j)
+       END DO
+       rij(0:3,j,j)=0.d0
+    END DO
+  END SUBROUTINE valuta_distanza_ii_tilted
+  !-----------------------------------------------------------------------
+  !valuta_distanza_ii_1ppt wrapper
+  SUBROUTINE valuta_distanza_ii_1ppt(num,r,N,L,rij, L_mat,L_mati,flag_tilted)
+    IMPLICIT NONE
+    INTEGER, INTENT(IN) :: num,N
+    REAL (KIND=8), INTENT(IN) :: r(1:3,1:N), L(1:3), L_mat(1:3,1:3), L_mati(1:3,1:3)
+    LOGICAL, INTENT(IN) :: flag_tilted
+    REAL (KIND=8), INTENT(OUT) :: rij(0:3,1:N,1:N)
+
+    IF(flag_tilted) THEN
+       CALL valuta_distanza_ii_1ppt_tilted(num,r,N,L_mat,L_mati,rij)
+    ELSE
+       CALL valuta_distanza_ii_1ppt_ortho(num,r,N,L,rij)
+    END IF
+  END SUBROUTINE valuta_distanza_ii_1ppt
 !-----------------------------------------------------------------------
 	!calcola la matrice delle distanze fra un set di particelle, quando ne é stata spostata solo una
-	SUBROUTINE valuta_distanza_ii_1ppt(num,r,N,L,rij)
+	SUBROUTINE valuta_distanza_ii_1ppt_ortho(num,r,N,L,rij)
 		IMPLICIT NONE
 		INTEGER, INTENT(IN) :: N, num
 		REAL (KIND=8), INTENT(IN) :: r(1:3,1:N), L(1:3)
-		LOGICAL :: flag_rpa
 		INTEGER :: i
 		REAL (KIND=8), INTENT(OUT) :: rij(0:3,1:N,1:N)
 		DO i = 1, num-1, 1
@@ -439,7 +525,37 @@ MODULE generic_tools
 			rij(0,num,i)=rij(0,i,num)
 			rij(1:3,num,i)=-rij(1:3,i,num)
 		END DO
-	END SUBROUTINE valuta_distanza_ii_1ppt
+  END SUBROUTINE valuta_distanza_ii_1ppt_ortho
+!-----------------------------------------------------------------------
+  !like valuta_distanza_ii_1ppt, but for tilted lattice systems
+  SUBROUTINE valuta_distanza_ii_1ppt_tilted(num,r,N,L_mat,L_mati,rij)
+    IMPLICIT NONE
+    INTEGER, INTENT(IN) :: N, num
+    REAL (KIND=8), INTENT(IN) :: r(1:3,1:N), L_mat(1:3,1:3), L_mati(1:3,1:3)
+    INTEGER :: i
+    REAL (KIND=8), INTENT(OUT) :: rij(0:3,1:N,1:N)
+    REAL (KIND=8) :: r_tilted(1:3,1:N)
+    DO i = 1, N, 1
+       r_tilted(1:3,i) = MATMUL(L_mati, r(1:3,i))
+    ENDDO
+    DO i = 1, num-1, 1
+      rij(1:3,i,num)=r_tilted(1:3,num)-r_tilted(1:3,i)
+      rij(1:3,i,num)=rij(1:3,i,num)-DNINT(rij(1:3,i,num))
+      rij(1:3,i,num)=MATMUL(L_mat, rij(1:3,i,num))
+      rij(0,i,num)=DSQRT(DOT_PRODUCT(rij(1:3,i,num),rij(1:3,i,num)))
+      rij(0,num,i)=rij(0,i,num)
+      rij(1:3,num,i)=-rij(1:3,i,num)
+    END DO
+    rij(0:3,num,num)=0.d0
+    DO i = num+1, N, 1
+      rij(1:3,i,num)=r_tilted(1:3,num)-r_tilted(1:3,i)
+      rij(1:3,i,num)=rij(1:3,i,num)-DNINT(rij(1:3,i,num))
+      rij(1:3,i,num)=MATMUL(L_mat, rij(1:3,i,num))
+      rij(0,i,num)=DSQRT(DOT_PRODUCT(rij(1:3,i,num),rij(1:3,i,num)))
+      rij(0,num,i)=rij(0,i,num)
+      rij(1:3,num,i)=-rij(1:3,i,num)
+    END DO
+  END SUBROUTINE valuta_distanza_ii_1ppt_tilted
 !-----------------------------------------------------------------------
 	!calcola il corrispondente periodico della matrice delle distanze fra un set di particelle
 	SUBROUTINE valuta_distanza_pc_ii(rij,N,L,rij_pc)
@@ -484,10 +600,25 @@ MODULE generic_tools
 			rij_pc(0,num,i)=rij_pc(0,i,num)
 			rij_pc(1:3,num,i)=-rij_pc(1:3,i,num)
 		END DO
-	END SUBROUTINE valuta_distanza_pc_ii_1ppt
+END SUBROUTINE valuta_distanza_pc_ii_1ppt
+!-----------------------------------------------------------------------
+!valuta_distanza_ij wrapper
+SUBROUTINE valuta_distanza_ij(re,rp,N,L,rij, L_mat,L_mati,flag_tilted)
+  IMPLICIT NONE
+  INTEGER, INTENT(IN) :: N
+  REAL (KIND=8), INTENT(IN) :: re(1:3,1:N), rp(1:3,1:N), L(1:3), L_mat(1:3,1:3), L_mati(1:3,1:3)
+  LOGICAL, INTENT(IN) :: flag_tilted
+  REAL (KIND=8), INTENT(OUT) :: rij(0:3,1:N,1:N)
+
+  IF(flag_tilted) THEN
+     CALL valuta_distanza_ij_tilted(re,rp,N,L_mat,L_mati,rij)
+  ELSE
+     CALL valuta_distanza_ij_ortho(re,rp,N,L,rij)
+  END IF
+END SUBROUTINE valuta_distanza_ij
 !-----------------------------------------------------------------------
 	!calcola la matrice delle distanze fra due set di particelle
-	SUBROUTINE valuta_distanza_ij(re,rp,N,L,rij)
+	SUBROUTINE valuta_distanza_ij_ortho(re,rp,N,L,rij)
 		IMPLICIT NONE
 		INTEGER, INTENT(IN) :: N
 		REAL (KIND=8), INTENT(IN) :: re(1:3,1:N), rp(1:3,1:N), L(1:3)
@@ -501,10 +632,48 @@ MODULE generic_tools
 				rij(0,i,j)=DSQRT(DOT_PRODUCT(rij(1:3,i,j),rij(1:3,i,j)))
 			END DO
 		END DO
-	END SUBROUTINE valuta_distanza_ij
+END SUBROUTINE valuta_distanza_ij_ortho
+!-----------------------------------------------------------------------
+!valuta_distanza_ij tilted version
+SUBROUTINE valuta_distanza_ij_tilted(re,rp,N,L_mat,L_mati,rij)
+  IMPLICIT NONE
+  INTEGER, INTENT(IN) :: N
+  REAL (KIND=8), INTENT(IN) :: re(1:3,1:N), rp(1:3,1:N), L_mat(1:3,1:3), L_mati(1:3,1:3)
+  LOGICAL :: flag_rpa
+  INTEGER :: i, j
+  REAL (KIND=8), INTENT(OUT) :: rij(0:3,1:N,1:N)
+  REAL (KIND=8) :: re_tilted(1:3,1:N), rp_tilted(1:3,1:N)
+  DO j = 1, N, 1
+     re_tilted(1:3,j) = MATMUL(L_mati, re(1:3,j))
+     rp_tilted(1:3,j) = MATMUL(L_mati, rp(1:3,j))
+  ENDDO
+  DO j = 1, N, 1
+     DO i = 1, N, 1
+				rij(1:3,i,j)=re_tilted(1:3,i)-rp_tilted(1:3,j)
+        rij(1:3,i,j)=rij(1:3,i,j)-DNINT(rij(1:3,i,j))
+        rij(1:3,i,j)=MATMUL(L_mat,rij(1:3,i,j))
+				rij(0,i,j)=DSQRT(DOT_PRODUCT(rij(1:3,i,j),rij(1:3,i,j)))
+     END DO
+  END DO
+END SUBROUTINE valuta_distanza_ij_tilted
+!-----------------------------------------------------------------------
+!valuta_distanza_ij_1ppt wrapper
+SUBROUTINE valuta_distanza_ij_1ppt(num,eop,re,rp,N,L,rij, L_mat,L_mati,flag_tilted)
+  IMPLICIT NONE
+  INTEGER, INTENT(IN) :: num,N,eop
+  REAL (KIND=8), INTENT(IN) :: re(1:3,1:N), rp(1:3,1:N), L(1:3), L_mat(1:3,1:3), L_mati(1:3,1:3)
+  LOGICAL, INTENT(IN) :: flag_tilted
+  REAL (KIND=8), INTENT(OUT) :: rij(0:3,1:N,1:N)
+
+  IF(flag_tilted) THEN
+     CALL valuta_distanza_ij_1ppt_tilted(num,eop,re,rp,N,L_mat,L_mati,rij)
+  ELSE
+     CALL valuta_distanza_ij_1ppt_ortho(num,eop,re,rp,N,L,rij)
+  END IF
+END SUBROUTINE valuta_distanza_ij_1ppt
 !-----------------------------------------------------------------------
 	!calcola la matrice delle distanze fra due set di particelle
-	SUBROUTINE valuta_distanza_ij_1ppt(num,eop,re,rp,N,L,rij)
+	SUBROUTINE valuta_distanza_ij_1ppt_ortho(num,eop,re,rp,N,L,rij)
 		IMPLICIT NONE
 		INTEGER, INTENT(IN) :: N, num, eop
 		REAL (KIND=8), INTENT(IN) :: re(1:3,1:N), rp(1:3,1:N), L(1:3)
@@ -524,10 +693,55 @@ MODULE generic_tools
 				rij(0,i,num)=DSQRT(DOT_PRODUCT(rij(1:3,i,num),rij(1:3,i,num)))
 			END DO
 		END IF
-	END SUBROUTINE valuta_distanza_ij_1ppt
+END SUBROUTINE valuta_distanza_ij_1ppt_ortho
+!-----------------------------------------------------------------------
+!valuta_distanza_ij_1ppt tilted version
+SUBROUTINE valuta_distanza_ij_1ppt_tilted(num,eop,re,rp,N,L_mat,L_mati,rij)
+  IMPLICIT NONE
+  INTEGER, INTENT(IN) :: N, num, eop
+  REAL (KIND=8), INTENT(IN) :: re(1:3,1:N), rp(1:3,1:N), L_mat(1:3,1:3), L_mati(1:3,1:3)
+  LOGICAL :: flag_rpa
+  INTEGER :: i
+  REAL (KIND=8), INTENT(OUT) :: rij(0:3,1:N,1:N)
+  REAL (KIND=8) :: re_tilted(1:3,1:N), rp_tilted(1:3,1:N)
+  DO i = 1, N, 1
+     re_tilted(1:3,i) = MATMUL(L_mati, re(1:3,i))
+     rp_tilted(1:3,i) = MATMUL(L_mati, rp(1:3,i))
+  ENDDO
+  IF (eop==1) THEN
+     DO i = 1, N, 1
+				rij(1:3,num,i)=re_tilted(1:3,num)-rp_tilted(1:3,i)
+        rij(1:3,num,i)=rij(1:3,num,i)-DNINT(rij(1:3,num,i))
+        rij(1:3,num,i)=MATMUL(L_mat,rij(1:3,num,i))
+				rij(0,num,i)=DSQRT(DOT_PRODUCT(rij(1:3,num,i),rij(1:3,num,i)))
+     END DO
+  ELSE IF (eop==2) THEN
+     DO i = 1, N, 1
+				rij(1:3,i,num)=re_tilted(1:3,i)-rp_tilted(1:3,num)
+        rij(1:3,i,num)=rij(1:3,i,num)-DNINT(rij(1:3,i,num))
+        rij(1:3,i,num)=MATMUL(L_mat,rij(1:3,i,num))
+				rij(0,i,num)=DSQRT(DOT_PRODUCT(rij(1:3,i,num),rij(1:3,i,num)))
+     END DO
+  END IF
+END SUBROUTINE valuta_distanza_ij_1ppt_tilted
+!-----------------------------------------------------------------------
+!valuta_distanza_diagonale_ij wrapper
+SUBROUTINE valuta_distanza_diagonale_ij(re,rp,N,L,rij, L_mat,L_mati,flag_tilted)
+  IMPLICIT NONE
+  INTEGER, INTENT(IN) :: N
+  REAL (KIND=8), INTENT(IN) :: re(1:3,1:N), rp(1:3,1:N), L(1:3), L_mat(1:3,1:3), L_mati(1:3,1:3)
+  LOGICAL, INTENT(IN) :: flag_tilted
+  REAL (KIND=8), INTENT(OUT) :: rij(0:3,1:N)
+
+  IF(flag_tilted) THEN
+     CALL valuta_distanza_diagonale_ij_tilted(re,rp,N,L_mat,L_mati,rij)
+  ELSE
+     CALL valuta_distanza_diagonale_ij_ortho(re,rp,N,L,rij)
+  END IF
+END SUBROUTINE valuta_distanza_diagonale_ij
 !-----------------------------------------------------------------------
 	!calcola la matrice delle distanze fra due set di particelle
-	SUBROUTINE valuta_distanza_diagonale_ij(re,rp,N,L,rij)
+	SUBROUTINE valuta_distanza_diagonale_ij_ortho(re,rp,N,L,rij)
 		IMPLICIT NONE
 		INTEGER, INTENT(IN) :: N
 		REAL (KIND=8), INTENT(IN) :: re(1:3,1:N), rp(1:3,1:N), L(1:3)
@@ -539,7 +753,28 @@ MODULE generic_tools
 			rij(1:3,i)=rij(1:3,i)-L(1:3)*DNINT(rij(1:3,i)/L(1:3))
 			rij(0,i)=DSQRT(DOT_PRODUCT(rij(1:3,i),rij(1:3,i)))
 		END DO
-	END SUBROUTINE valuta_distanza_diagonale_ij
+END SUBROUTINE valuta_distanza_diagonale_ij_ortho
+!-----------------------------------------------------------------------
+!valuta_distanza_diagonale_ij tilted version
+SUBROUTINE valuta_distanza_diagonale_ij_tilted(re,rp,N,L_mat,L_mati,rij)
+  IMPLICIT NONE
+  INTEGER, INTENT(IN) :: N
+  REAL (KIND=8), INTENT(IN) :: re(1:3,1:N), rp(1:3,1:N),  L_mat(1:3,1:3), L_mati(1:3,1:3)
+  LOGICAL :: flag_rpa
+  INTEGER :: i
+  REAL (KIND=8), INTENT(OUT) :: rij(0:3,1:N)
+  REAL (KIND=8) :: re_tilted(1:3,1:N), rp_tilted(1:3,1:N)
+  DO i = 1, N, 1
+     re_tilted(1:3,i) = MATMUL(L_mati, re(1:3,i))
+     rp_tilted(1:3,i) = MATMUL(L_mati, rp(1:3,i))
+  ENDDO
+  DO i = 1, N, 1
+     rij(1:3,i)=re_tilted(1:3,i)-rp_tilted(1:3,i)
+     rij(1:3,i)=rij(1:3,i)-DNINT(rij(1:3,i))
+     rij(1:3,i)=MATMUL(L_mat,rij(1:3,i))
+     rij(0,i)=DSQRT(DOT_PRODUCT(rij(1:3,i),rij(1:3,i)))
+  END DO
+END SUBROUTINE valuta_distanza_diagonale_ij_tilted
 !-----------------------------------------------------------------------
 	!calcola il corrispondente periodico della matrice delle distanze fra due set di particelle
 	SUBROUTINE valuta_distanza_pc_ij(rij,N,L,rij_pc)

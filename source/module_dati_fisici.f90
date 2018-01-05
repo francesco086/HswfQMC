@@ -1,12 +1,12 @@
 MODULE dati_fisici
 	USE lattice
 	IMPLICIT NONE
-	LOGICAL, PROTECTED, SAVE :: iniz_dati_fisici=.FALSE., flag_molecular, flag_2D=.FALSE.
+	LOGICAL, PROTECTED, SAVE :: iniz_dati_fisici=.FALSE., flag_molecular=.FALSE., flag_2D=.FALSE., flag_tilted=.FALSE.
 	CHARACTER(LEN=5), PROTECTED, SAVE :: crystal_cell
 	INTEGER, PROTECTED, SAVE :: N_part, H_N_part, N_cell_side
 	REAL (KIND=8), PARAMETER, PRIVATE :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
 	REAL (KIND=8), PARAMETER :: MASS_e=0.0005485899094d0, MASS_p=1.00727646677d0   !in uma
-	REAL (KIND=8), PROTECTED, SAVE :: r_s, L(1:3), H_L(1:3), L_cov_bond
+	REAL (KIND=8), PROTECTED, SAVE :: r_s, L(1:3), H_L(1:3), L_cov_bond, L_mat(1:3,1:3), L_mati(1:3,1:3)
 	REAL (KIND=8), PROTECTED, SAVE :: hbar, K_coulomb, strecthing_cov_bond
 	REAL (KIND=8), ALLOCATABLE, PROTECTED, SAVE :: r_crystal(:,:)
 	
@@ -22,7 +22,7 @@ MODULE dati_fisici
 		REAL (KIND=8) :: vect(1:3), sigma_w, eta_w(1:1,1:1), L_w, dist(0:3)
 		REAL (KIND=8), ALLOCATABLE :: app(:,:)
 		
-		NAMELIST /dati_fisici/ r_s, crystal_cell, flag_2D, file_reticolo, flag_molecular, &
+		NAMELIST /dati_fisici/ r_s, crystal_cell, flag_2D, flag_tilted, file_reticolo, flag_molecular, &
 		  strecthing_cov_bond, N_cell_side
 		OPEN (2, FILE='dati_fisici.d',STATUS='OLD')
 		READ (2,NML=dati_fisici)
@@ -35,30 +35,22 @@ MODULE dati_fisici
 		
 		IF ( crystal_cell=='bcc__' ) THEN
 			N_part=2*N_cell_side**3
-         flag_2D=.FALSE.
 		ELSE IF ( crystal_cell=='fcc__' ) THEN
 			N_part=4*N_cell_side**3
-         flag_2D=.FALSE.
 		ELSE IF ( (crystal_cell=='hcp__') .AND. (.NOT. flag_molecular) ) THEN
 			N_part=8*N_cell_side**3
-         flag_2D=.FALSE.
 		ELSE IF ( (crystal_cell=='hcp__') .AND. (flag_molecular) ) THEN
 			N_part=16*N_cell_side**3
-         flag_2D=.FALSE.
 		ELSE IF ( (crystal_cell=='hcp_w') .AND. (flag_molecular) ) THEN
 			N_part=16*N_cell_side**3
-         flag_2D=.FALSE.
 		ELSE IF ( (crystal_cell=='mhcpo') .AND. (.NOT. flag_molecular) ) THEN
 			STOP 'mhcpo deve essere associato ad una fase molecolare'
 		ELSE IF ( (crystal_cell=='mhcpo') .AND. (flag_molecular) ) THEN
 			N_part=16*N_cell_side**3
-         flag_2D=.FALSE.
 		ELSE IF ( crystal_cell=='sc___' ) THEN
 			N_part=N_cell_side**3
-         flag_2D=.FALSE.
 		ELSE IF ( crystal_cell=='mol__' ) THEN
 			N_part=2
-         flag_2D=.FALSE.
 		ELSE IF ( crystal_cell=='dat__' ) THEN
 			N_part=N_cell_side
 		ELSE IF ( crystal_cell=='datex' ) THEN
@@ -67,23 +59,26 @@ MODULE dati_fisici
 			N_part=6
 		ELSE IF ( crystal_cell=='grp__' ) THEN
 			N_part=4*(N_cell_side**2)
-         flag_2D=.TRUE.
-      ELSE IF ( crystal_cell=='quadr' ) THEN
-         N_part=N_cell_side**2
-         flag_2D=.TRUE.
-      ELSE IF ( crystal_cell=='trian' ) THEN
-         N_part=2*(N_cell_side**2)
-         flag_2D=.TRUE.
-		ELSE
+      flag_2D=.TRUE.
+    ELSE IF ( crystal_cell=='quadr' ) THEN
+      N_part=N_cell_side**2
+      flag_2D=.TRUE.
+    ELSE IF ( crystal_cell=='trian' ) THEN
+      N_part=2*(N_cell_side**2)
+      flag_2D=.TRUE.
+    ELSE IF ( crystal_cell=='tilt_') THEN
+      N_part=N_cell_side
+      flag_tilted=.TRUE.
+    ELSE
 			STOP "DATI_FISICI: scegli un reticolo accettabile"
 		END IF
 		H_N_part=N_part/2
-		
+
 		IF (PRESENT(file_reticolo_opt)) THEN
 			crystal_cell='datex'
 			file_reticolo=file_reticolo_opt
 		END IF
-		
+
       !3D structures
 		L(1:3)=r_s*(4.d0*PI*N_part/3.d0)**(1.d0/3.d0)            !in bohr units
 		IF ((crystal_cell=='hcp__').OR.(crystal_cell=='mhcpo').OR.(crystal_cell=='hcp_w')) THEN
@@ -109,7 +104,7 @@ MODULE dati_fisici
          L(3)=100.d0 !very large number, so that the layer can be considered isolated
       END IF
 		H_L=0.5d0*L
-		
+
 		ALLOCATE(r_crystal(1:3,1:N_part),app(1:3,1:N_part))
 		IF ( crystal_cell=='bcc__' ) THEN
 			!posiziono i protoni in modo che la prima metà e la seconda metà siano ben equidistribuiti nel box di simulazione (conviene per via dello spin)
@@ -311,7 +306,7 @@ MODULE dati_fisici
          ELSE
             STOP "crystal_cell='quad' con flag_molecular non ancora implementato"
          END IF
-         CALL applica_pbc(r_crystal,N_part,L)
+         CALL applica_pbc(r_crystal,N_part,L, L_mat,L_mati,flag_tilted)
       ELSE IF ( crystal_cell=='trian' ) THEN
          IF (.NOT. flag_molecular) THEN
             i1=1
@@ -327,12 +322,27 @@ MODULE dati_fisici
          ELSE
             STOP "crystal_cell='trian' con flag_molecular non ancora implementato"
          END IF
-         CALL applica_pbc(r_crystal,N_part,L)
+         CALL applica_pbc(r_crystal,N_part,L, L_mat,L_mati,flag_tilted)
+      ELSE IF ( crystal_cell=='tilt_' ) THEN
+         OPEN (UNIT=2, FILE=TRIM(file_reticolo), STATUS='OLD')
+         READ (2, *) L(1:3)
+         H_L=0.5d0*L
+         DO i = 1, N_part, 1
+            READ (2, *) r_crystal(1:3,i)
+         END DO
+         CLOSE (2)
+         L_mat(:,:) = 0.d0
+         L_mat(1,1) = L(1)
+         L_mat(2,2) = L(2)
+         L_mat(3,3) = L(3)
+         L_mati(1,1) = 1.d0/L(1)
+         L_mati(2,2) = 1.d0/L(2)
+         L_mati(3,3) = 1.d0/L(3)
 		ELSE
 			STOP "scegli un reticolo accettabile"
 		END IF
 		
-		CALL applica_pbc(r_crystal,N_part,L)
+  CALL applica_pbc(r_crystal,N_part,L, L_mat,L_mati,flag_tilted)
 		
 		IF (MOD(N_part,2)/=0) STOP 'Stai lavorando con un numero di particelle non pari!!! [ module_funzione_onda.f90 > inizializza_funzione_onda ]'
 		

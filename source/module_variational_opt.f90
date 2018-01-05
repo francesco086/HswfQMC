@@ -908,7 +908,7 @@ MODULE variational_opt
 		END DO
 		
 		!calcolo le distanze fra le coordinate r_lattice (considenrando le boundary conditions)
-		CALL valuta_distanza_ii(r_lattice,N_part,L,rij_lattice)
+  CALL valuta_distanza_ii(r_lattice,N_part,L,rij_lattice, L_mat,L_mati,flag_tilted)
 		
 		!trovo la g(r) corrispondente
 		CALL g_ii_correlation(rij_lattice,N_part,L,r_s,N_hist,guu_Rp,gud_Rp)

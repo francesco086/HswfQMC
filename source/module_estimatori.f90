@@ -483,7 +483,7 @@ MODULE estimatori
          !DO i = 1, 3, 1
          !   re_new=re_old
          !   re_new(i,1)=re_old(i,1)+frf6
-         !   CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
+         !   CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
          !   CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
          !   frf1(i)=detSDe_up_new
          !END DO
@@ -495,7 +495,7 @@ MODULE estimatori
          !DO i = 1, 3, 1
          !   re_new=re_old
          !   re_new(i,2)=re_old(i,2)+frf6
-         !   CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
+         !   CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
          !   CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
          !   frf2(i)=detSDe_up_new
          !END DO
@@ -507,14 +507,14 @@ MODULE estimatori
          !DO i = 1, 3, 1
          !   re_new=re_old
          !   re_new(i,1)=re_old(i,1)-frf6
-         !   CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
+         !   CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
          !   CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
          !   frfs1(i)=detSDe_up_new
          !END DO
          !DO i = 1, 3, 1
          !   re_new=re_old
          !   re_new(i,2)=re_old(i,2)-frf6
-         !   CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
+         !   CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
          !   CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
          !   frfs2(i)=detSDe_up_new
          !END DO
@@ -668,7 +668,7 @@ MODULE estimatori
                END DO
             END DO
             CALL valuta_distanza_ij(re_old(1:3,1+iadd:H_N_part+iadd),q(1:3,1:H_N_part),&
-               H_N_part,L(1:3),rq(0:3,1:H_N_part,1:H_N_part))
+                 H_N_part,L(1:3),rq(0:3,1:H_N_part,1:H_N_part), L_mat,L_mati,flag_tilted)
 
             DO il = 1, H_N_part, 1
             DO j = 1, H_N_part, 1
@@ -802,8 +802,8 @@ MODULE estimatori
 			!!!frf3=q(0,1)
 			!!!
          !!!re_new(1:3,il)=re_old(1:3,il)+(/ frf6, 0.d0, 0.d0 /)
-         !!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
-         !!!q(1:3,1)=re_new(1:3,il)
+!!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
+!!!q(1:3,1)=re_new(1:3,il)
          !!!DO ik = 1, N_part, 1
          !!!   q(1:3,1)=q(1:3,1)-rp_new(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_new(0,il,ik)-D_POT_se)))
          !!!END DO
@@ -813,8 +813,8 @@ MODULE estimatori
 			!!!frf2(1)=q(0,1)
 
          !!!re_new(1:3,il)=re_old(1:3,il)+(/ 0.d0, frf6, 0.d0 /)
-         !!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
-         !!!q(1:3,1)=re_new(1:3,il)
+!!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
+!!!q(1:3,1)=re_new(1:3,il)
          !!!DO ik = 1, N_part, 1
          !!!   q(1:3,1)=q(1:3,1)-rp_new(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_new(0,il,ik)-D_POT_se)))
          !!!END DO
@@ -824,8 +824,8 @@ MODULE estimatori
 			!!!frf2(2)=q(0,1)
 
          !!!re_new(1:3,il)=re_old(1:3,il)+(/ 0.d0, 0.d0, frf6 /)
-         !!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
-         !!!q(1:3,1)=re_new(1:3,il)
+!!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
+!!!q(1:3,1)=re_new(1:3,il)
          !!!DO ik = 1, N_part, 1
          !!!   q(1:3,1)=q(1:3,1)-rp_new(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_new(0,il,ik)-D_POT_se)))
          !!!END DO
@@ -849,8 +849,8 @@ MODULE estimatori
          !!!PRINT *, 
 
          !!!re_new(1:3,il)=re_old(1:3,il)-(/ frf6, 0.d0, 0.d0 /)
-         !!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
-         !!!q(1:3,1)=re_new(1:3,il)
+!!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
+!!!q(1:3,1)=re_new(1:3,il)
          !!!DO ik = 1, N_part, 1
          !!!   q(1:3,1)=q(1:3,1)-rp_new(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_new(0,il,ik)-D_POT_se)))
          !!!END DO
@@ -860,8 +860,8 @@ MODULE estimatori
 			!!!frf1(1)=q(0,1)
 
          !!!re_new(1:3,il)=re_old(1:3,il)-(/ 0.d0, frf6, 0.d0 /)
-         !!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
-         !!!q(1:3,1)=re_new(1:3,il)
+!!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
+!!!q(1:3,1)=re_new(1:3,il)
          !!!DO ik = 1, N_part, 1
          !!!   q(1:3,1)=q(1:3,1)-rp_new(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_new(0,il,ik)-D_POT_se)))
          !!!END DO
@@ -871,8 +871,8 @@ MODULE estimatori
 			!!!frf1(2)=q(0,1)
 
          !!!re_new(1:3,il)=re_old(1:3,il)-(/ 0.d0, 0.d0, frf6 /)
-         !!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
-         !!!q(1:3,1)=re_new(1:3,il)
+!!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
+!!!q(1:3,1)=re_new(1:3,il)
          !!!DO ik = 1, N_part, 1
          !!!   q(1:3,1)=q(1:3,1)-rp_new(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_new(0,il,ik)-D_POT_se)))
          !!!END DO
@@ -924,7 +924,7 @@ MODULE estimatori
                END DO
             END DO
             CALL valuta_distanza_ij(re_old(1:3,1+iadd:H_N_part+iadd),q(1:3,1:H_N_part),&
-               H_N_part,L(1:3),rq(0:3,1:H_N_part,1:H_N_part))
+                 H_N_part,L(1:3),rq(0:3,1:H_N_part,1:H_N_part), L_mat,L_mati,flag_tilted)
             DO j = 1, H_N_part, 1
             DO i = 1, H_N_part, 1
                CALL MSPL_compute(SPL=Bsplep, DERIV=1, R=rq(0,i,j), VAL=Bspl1(i,j))
@@ -1063,8 +1063,8 @@ MODULE estimatori
 			!!!frf3=q(0,1)
 			!!!
          !!!re_new(1:3,il)=re_old(1:3,il)+(/ frf6, 0.d0, 0.d0 /)
-         !!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
-         !!!q(1:3,1)=re_new(1:3,il)
+!!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
+!!!q(1:3,1)=re_new(1:3,il)
          !!!DO ik = 1, N_part, 1
          !!!   q(1:3,1)=q(1:3,1)-rp_new(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_new(0,il,ik)-D_POT_se)))
          !!!END DO
@@ -1073,8 +1073,8 @@ MODULE estimatori
 			!!!frf2(1)=q(0,1)
 
          !!!re_new(1:3,il)=re_old(1:3,il)+(/ 0.d0, frf6, 0.d0 /)
-         !!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
-         !!!q(1:3,1)=re_new(1:3,il)
+!!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
+!!!q(1:3,1)=re_new(1:3,il)
          !!!DO ik = 1, N_part, 1
          !!!   q(1:3,1)=q(1:3,1)-rp_new(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_new(0,il,ik)-D_POT_se)))
          !!!END DO
@@ -1083,8 +1083,8 @@ MODULE estimatori
 			!!!frf2(2)=q(0,1)
 
          !!!re_new(1:3,il)=re_old(1:3,il)+(/ 0.d0, 0.d0, frf6 /)
-         !!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
-         !!!q(1:3,1)=re_new(1:3,il)
+!!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
+!!!q(1:3,1)=re_new(1:3,il)
          !!!DO ik = 1, N_part, 1
          !!!   q(1:3,1)=q(1:3,1)-rp_new(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_new(0,il,ik)-D_POT_se)))
          !!!END DO
@@ -1111,8 +1111,8 @@ MODULE estimatori
          !!!PRINT *, 
 
          !!!re_new(1:3,il)=re_old(1:3,il)-(/ frf6, 0.d0, 0.d0 /)
-         !!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
-         !!!q(1:3,1)=re_new(1:3,il)
+!!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
+!!!q(1:3,1)=re_new(1:3,il)
          !!!DO ik = 1, N_part, 1
          !!!   q(1:3,1)=q(1:3,1)-rp_new(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_new(0,il,ik)-D_POT_se)))
          !!!END DO
@@ -1122,8 +1122,8 @@ MODULE estimatori
 			!!!frf1(1)=q(0,1)
 
          !!!re_new(1:3,il)=re_old(1:3,il)-(/ 0.d0, frf6, 0.d0 /)
-         !!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
-         !!!q(1:3,1)=re_new(1:3,il)
+!!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
+!!!q(1:3,1)=re_new(1:3,il)
          !!!DO ik = 1, N_part, 1
          !!!   q(1:3,1)=q(1:3,1)-rp_new(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_new(0,il,ik)-D_POT_se)))
          !!!END DO
@@ -1133,8 +1133,8 @@ MODULE estimatori
 			!!!frf1(2)=q(0,1)
 
          !!!re_new(1:3,il)=re_old(1:3,il)-(/ 0.d0, 0.d0, frf6 /)
-         !!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new)
-         !!!q(1:3,1)=re_new(1:3,il)
+!!!CALL valuta_distanza_ij(re_new,rp_old,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
+!!!q(1:3,1)=re_new(1:3,il)
          !!!DO ik = 1, N_part, 1
          !!!   q(1:3,1)=q(1:3,1)-rp_new(1:3,ik)/(1.d0+DEXP(A_POT_se*(rij_ep_new(0,il,ik)-D_POT_se)))
          !!!END DO
@@ -1328,8 +1328,8 @@ MODULE estimatori
          !DO i = 1, 3, 1
          !   re_new=re_old
          !   re_new(i,j)=re_old(i,j)+frf3
-         !   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new)
-         !   CALL valuta_Uee_YUK(-1,rij_ee_new,N_part,u_ee_new,Uee_new)
+   !   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new, L_mat,L_mati,flag_tilted)
+   !   CALL valuta_Uee_YUK(-1,rij_ee_new,N_part,u_ee_new,Uee_new)
          !   frf1(i)=DEXP(-0.5d0*Uee_new)
          !END DO
          !PRINT *, "GRAD ANALITICO: ", gee(1:3,j)
@@ -1337,8 +1337,8 @@ MODULE estimatori
          !DO i = 1, 3, 1
          !   re_new=re_old
          !   re_new(i,j)=re_old(i,j)-frf3
-         !   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new)
-         !   CALL valuta_Uee_YUK(-1,rij_ee_new,N_part,u_ee_new,Uee_new)
+   !   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new, L_mat,L_mati,flag_tilted)
+   !   CALL valuta_Uee_YUK(-1,rij_ee_new,N_part,u_ee_new,Uee_new)
          !   frf2(i)=DEXP(-0.5d0*Uee_new)
          !END DO
          !PRINT *, "LAPL ANALITICO: ", lapl_Jee(1:3,j,0)
@@ -1437,18 +1437,18 @@ MODULE estimatori
             !!!   re_new=re_old
 
             !!!   re_new(1:3,j)=re_old(1:3,j)+(/ frf6, 0.d0, 0.d0/)
-            !!!   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new)
-            !!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_new(0,i,j), VAL=frf2(1), RESET=.FALSE.)
+!!!   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new, L_mat,L_mati,flag_tilted)
+!!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_new(0,i,j), VAL=frf2(1), RESET=.FALSE.)
             !!!   re_new(1:3,j)=re_old(1:3,j)
 
             !!!   re_new(1:3,j)=re_old(1:3,j)+(/ 0.d0, frf6, 0.d0/)
-            !!!   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new)
-            !!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_new(0,i,j), VAL=frf2(2), RESET=.FALSE.)
+!!!   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new, L_mat,L_mati,flag_tilted)
+!!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_new(0,i,j), VAL=frf2(2), RESET=.FALSE.)
             !!!   re_new(1:3,j)=re_old(1:3,j)
 
             !!!   re_new(1:3,j)=re_old(1:3,j)+(/ 0.d0, 0.d0, frf6/)
-            !!!   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new)
-            !!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_new(0,i,j), VAL=frf2(3), RESET=.FALSE.)
+!!!   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new, L_mat,L_mati,flag_tilted)
+!!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_new(0,i,j), VAL=frf2(3), RESET=.FALSE.)
             !!!   re_new(1:3,j)=re_old(1:3,j)
             !!!END IF
             !!!END DO
@@ -1464,18 +1464,18 @@ MODULE estimatori
             !!!DO i = 1, N_part, 1
             !!!IF (i/=j) THEN
             !!!   re_new(1:3,j)=re_old(1:3,j)-(/ frf6, 0.d0, 0.d0/)
-            !!!   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new)
-            !!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_new(0,i,j), VAL=frf1(1), RESET=.FALSE.)
+!!!   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new, L_mat,L_mati,flag_tilted)
+!!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_new(0,i,j), VAL=frf1(1), RESET=.FALSE.)
             !!!   re_new(1:3,j)=re_old(1:3,j)
 
             !!!   re_new(1:3,j)=re_old(1:3,j)-(/ 0.d0, frf6, 0.d0/)
-            !!!   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new)
-            !!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_new(0,i,j), VAL=frf1(2), RESET=.FALSE.)
+!!!   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new, L_mat,L_mati,flag_tilted)
+!!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_new(0,i,j), VAL=frf1(2), RESET=.FALSE.)
             !!!   re_new(1:3,j)=re_old(1:3,j)
 
             !!!   re_new(1:3,j)=re_old(1:3,j)-(/ 0.d0, 0.d0, frf6/)
-            !!!   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new)
-            !!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_new(0,i,j), VAL=frf1(3), RESET=.FALSE.)
+!!!   CALL valuta_distanza_ii(re_new,N_part,L,rij_ee_new, L_mat,L_mati,flag_tilted)
+!!!   CALL MSPL_compute(SPL=Jsplee, DERIV=0, R=rij_ee_new(0,i,j), VAL=frf1(3), RESET=.FALSE.)
             !!!   re_new(1:3,j)=re_old(1:3,j)
             !!!END IF
             !!!END DO
@@ -4341,8 +4341,8 @@ END SUBROUTINE derivata_Jep_ATM
          !DO i = 1, 3, 1
          !   rp_new=rp_old
          !   rp_new(i,1)=rp_old(i,1)+frf3
-         !   CALL valuta_distanza_ij(re_old,rp_new,N_part,L,rij_ep_new)
-         !   CALL valuta_Uep_YUK(-1,0,rij_ep_new,N_part,u_ep_new,Uep_new)
+     !   CALL valuta_distanza_ij(re_old,rp_new,N_part,L,rij_ep_new, L_mat,L_mati,flag_tilted)
+     !   CALL valuta_Uep_YUK(-1,0,rij_ep_new,N_part,u_ep_new,Uep_new)
          !   frf2(i)=Uep_new
          !   rp_new=rp_old
          !END DO
@@ -4532,7 +4532,7 @@ END SUBROUTINE derivata_Jep_ATM
                END DO
             END DO
             CALL valuta_distanza_ij(re_old(1:3,1+iadd:H_N_part+iadd),q(1:3,1:H_N_part),&
-               H_N_part,L(1:3),rq(0:3,1:H_N_part,1:H_N_part))
+                 H_N_part,L(1:3),rq(0:3,1:H_N_part,1:H_N_part), L_mat,L_mati,flag_tilted)
 
             DO il = 1, H_N_part, 1
             DO j = 1, H_N_part, 1
@@ -4602,7 +4602,7 @@ END SUBROUTINE derivata_Jep_ATM
                END DO
             END DO
             CALL valuta_distanza_ij(re_old(1:3,1+iadd:H_N_part+iadd),q(1:3,1:H_N_part),&
-               H_N_part,L(1:3),rq(0:3,1:H_N_part,1:H_N_part))
+                 H_N_part,L(1:3),rq(0:3,1:H_N_part,1:H_N_part), L_mat,L_mati,flag_tilted)
             DO j = 1, H_N_part, 1
             DO i = 1, H_N_part, 1
                CALL MSPL_compute(SPL=Bsplep, DERIV=1, R=rq(0,i,j), VAL=Bspl1(i,j))
@@ -4660,7 +4660,7 @@ END SUBROUTINE derivata_Jep_ATM
          !frf1(1)=detSDe_up_old*detSDe_dw_old
          !DO i = 1, 3, 1
          !   rp(i,1)=rp(i,1)+frf3
-         !   CALL valuta_distanza_ij(re,rp,N_part,L,rep)
+         !   CALL valuta_distanza_ij(re,rp,N_part,L,rep, L_mat,L_mati,flag_tilted)
          !   CALL valuta_SD_bat(-1,'up',rep(0,1:N_part,1:N_part),H_N_part,SDe_up_new,detSDe_up_new,&
          !      ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
          !   CALL valuta_SD_bat(-1,'dw',rep(0,1:N_part,1:N_part),H_N_part,SDe_dw_new,detSDe_dw_new,&
@@ -4683,7 +4683,7 @@ END SUBROUTINE derivata_Jep_ATM
          !PRINT *, "analytical 2: ", O(4:6)
          !DO i = 1, 3, 1
          !   rp(i,2)=rp(i,2)+frf3
-         !   CALL valuta_distanza_ij(re,rp,N_part,L,rep)
+         !   CALL valuta_distanza_ij(re,rp,N_part,L,rep, L_mat,L_mati,flag_tilted)
          !   CALL valuta_SD_bat(-1,'up',rep(0,1:N_part,1:N_part),H_N_part,SDe_up_new,detSDe_up_new,&
          !      ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
          !   CALL valuta_SD_bat(-1,'dw',rep(0,1:N_part,1:N_part),H_N_part,SDe_dw_new,detSDe_dw_new,&
@@ -4780,13 +4780,13 @@ END SUBROUTINE derivata_Jep_ATM
          !DO j = 1, 2, 1
          !DO i = 1, 3, 1
          !   rp_old(i,j)=rp_old(i,j)+dx
-         !   CALL valuta_distanza_ii(rp_old,N_part,L,rij_pp_old)
-         !   CALL valuta_distanza_ij(re_old,rp_old,N_part,L,rij_ep_old)
-         !   CALL energia_potenziale(Epotnew(i))
+   !   CALL valuta_distanza_ii(rp_old,N_part,L,rij_pp_old, L_mat,L_mati,flag_tilted)
+   !   CALL valuta_distanza_ij(re_old,rp_old,N_part,L,rij_ep_old, L_mat,L_mati,flag_tilted)
+   !   CALL energia_potenziale(Epotnew(i))
          !   rp_old(i,j)=rp_new(i,j)
-         !   CALL valuta_distanza_ii(rp_old,N_part,L,rij_pp_old)
-         !   CALL valuta_distanza_ij(re_old,rp_old,N_part,L,rij_ep_old)
-         !END DO
+   !   CALL valuta_distanza_ii(rp_old,N_part,L,rij_pp_old, L_mat,L_mati,flag_tilted)
+   !   CALL valuta_distanza_ij(re_old,rp_old,N_part,L,rij_ep_old, L_mat,L_mati,flag_tilted)
+   !END DO
          !PRINT *, "Analytical : ", gradpV((j-1)*3+1:j*3)
          !PRINT *, "Numerical  : ", (Epotnew(1:3)-Epotold)/dx
          !END DO
