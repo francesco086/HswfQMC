@@ -19,15 +19,15 @@ MODULE dati_fisici
 		INTEGER :: i, j, i1, i_seed
 		INTEGER, ALLOCATABLE :: seed(:), seed_provv(:)
 		CHARACTER(LEN=100) :: file_reticolo
-		REAL (KIND=8) :: vect(1:3), sigma_w, eta_w(1:1,1:1), L_w, dist(0:3)
+		REAL (KIND=8) :: vect(1:3), sigma_w, eta_w(1:1,1:1), L_w, dist(0:3), tilt_angle(1:3), box_angle(1:3)
 		REAL (KIND=8), ALLOCATABLE :: app(:,:)
 		
-		NAMELIST /dati_fisici/ r_s, crystal_cell, flag_2D, flag_tilted, file_reticolo, flag_molecular, &
+  NAMELIST /dati_fisici/ r_s, crystal_cell, tilt_angle, flag_2D, file_reticolo, flag_molecular, &
 		  strecthing_cov_bond, N_cell_side
 		OPEN (2, FILE='dati_fisici.d',STATUS='OLD')
 		READ (2,NML=dati_fisici)
 		CLOSE (2)
-		
+
 		hbar=DSQRT(10.9748d-4)   !definisco la costante di plank riscalata per avere l'energia in Rydberg
 		K_coulomb=2.0d0    !definisco la costante di Coulomb riscalata per avere l'energia in Rydberg
 		
@@ -331,13 +331,28 @@ MODULE dati_fisici
             READ (2, *) r_crystal(1:3,i)
          END DO
          CLOSE (2)
+         !write(6,*) L
+         !write(6,*) r_crystal
+         box_angle(:) = (0.5d0+tilt_angle(:)/180.d0)*PI
+
          L_mat(:,:) = 0.d0
          L_mat(1,1) = L(1)
-         L_mat(2,2) = L(2)
-         L_mat(3,3) = L(3)
-         L_mati(1,1) = 1.d0/L(1)
-         L_mati(2,2) = 1.d0/L(2)
-         L_mati(3,3) = 1.d0/L(3)
+         L_mat(1,2) = L(2)*cos(box_angle(3))
+         L_mat(2,2) = L(2)*sin(box_angle(3))
+         L_mat(1,3) = L(3)*cos(box_angle(2))
+         L_mat(2,3) = L(3)*cos(box_angle(1))
+         L_mat(3,3) = sqrt(L(3)**2-L_mat(1,3)**2-L_mat(2,3)**2)
+
+         L_mati(:,:) = 0.d0
+         L_mati(3,3) = 1.d0/L_mat(3,3)
+         L_mati(2,3) = -L_mati(3,3)*L_mat(2,3)/L_mat(2,2)
+         L_mati(2,2) = 1.d0/L_mat(2,2)
+         L_mati(1,3) = -L_mati(3,3)*L_mat(1,3)/L_mat(1,1)
+         L_mati(1,2) = -L_mati(2,2)*L_mat(1,2)/L_mat(1,1)
+         L_mati(1,1) = 1.d0/L_mat(1,1)
+         !write(6,*) L_mat
+         !write(6,*) L_mati
+         !write(6,*) MATMUL(L_mati,L_mat)
 		ELSE
 			STOP "scegli un reticolo accettabile"
 		END IF
