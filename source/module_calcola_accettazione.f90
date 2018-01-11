@@ -442,9 +442,9 @@ mODULE calcola_accettazione
 				STOP
 			END IF
       CASE ('1sb')
-         CALL valuta_SD_1s_backflow(-1,'up',L,re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
+         CALL valuta_SD_1s_backflow(-1,'up',re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
             SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,ISDe_up_new,detSDe_up_new)
-         CALL valuta_SD_1s_backflow(-1,'dw',L,re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
+         CALL valuta_SD_1s_backflow(-1,'dw',re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
             SDe_dw_old,detSDe_dw_old,ISDe_dw_old,pvte_dw_old,ISDe_dw_new,detSDe_dw_new)
 			CALL ZGETRI( H_N_part, ISDe_up_old, H_N_part, pvte_up_old, work, 3*H_N_part, info )
 			IF (info/=0) THEN
@@ -457,9 +457,9 @@ mODULE calcola_accettazione
 				STOP
 			END IF
       CASE ('spb')
-         CALL valuta_SD_spl_backflow(-1,'up',L,re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
+         CALL valuta_SD_spl_backflow(-1,'up',re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
             SDe_up_old,detSDe_up_old,ISDe_up_old,pvte_up_old,ISDe_up_new,detSDe_up_new)
-         CALL valuta_SD_spl_backflow(-1,'dw',L,re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
+         CALL valuta_SD_spl_backflow(-1,'dw',re_old,rp_old,rij_ep_old(0,:,:),H_N_part, &
             SDe_dw_old,detSDe_dw_old,ISDe_dw_old,pvte_dw_old,ISDe_dw_new,detSDe_dw_new)
 			CALL ZGETRI( H_N_part, ISDe_up_old, H_N_part, pvte_up_old, work, 3*H_N_part, info )
 			IF (info/=0) THEN
@@ -1299,14 +1299,14 @@ mODULE calcola_accettazione
 	  				CALL valuta_SD_bat(num,'dw',rijpc_ep_new(0,:,:),H_N_part, &
 	  				  SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
             CASE ('1sb')
-               CALL valuta_SD_1s_backflow(num,'up',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+               CALL valuta_SD_1s_backflow(num,'up',re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
                   SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
-               CALL valuta_SD_1s_backflow(num,'dw',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+               CALL valuta_SD_1s_backflow(num,'dw',re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
                   SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
             CASE ('spb')
-               CALL valuta_SD_SPL_backflow(num,'up',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+               CALL valuta_SD_SPL_backflow(num,'up',re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
                   SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
-               CALL valuta_SD_SPL_backflow(num,'dw',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+               CALL valuta_SD_SPL_backflow(num,'dw',re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
                   SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
             CASE ('hl_')
                CALL valuta_SD_HL(rij_ep_new(0,1:2,1:2),SDe_up_new,detSDe_up_new,ISDe_up_new)
@@ -1704,28 +1704,28 @@ mODULE calcola_accettazione
 					END IF
             CASE ('1sb')
                IF (num==-1) THEN
-                  CALL valuta_SD_1s_backflow(num,'up',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                  CALL valuta_SD_1s_backflow(num,'up',re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
                      SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
-                  CALL valuta_SD_1s_backflow(num-H_N_part,'dw',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                  CALL valuta_SD_1s_backflow(num-H_N_part,'dw',re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
                      SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
                ELSE IF ((num>0) .AND. (num<=H_N_part)) THEN
-                  CALL valuta_SD_1s_backflow(num,'up',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                  CALL valuta_SD_1s_backflow(num,'up',re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
                      SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
                ELSE IF ((num>H_N_part) .AND. (num<=N_part)) THEN
-                  CALL valuta_SD_1s_backflow(num-H_N_part,'dw',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                  CALL valuta_SD_1s_backflow(num-H_N_part,'dw',re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
                      SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
                END IF
             CASE ('spb')
                IF (num==-1) THEN
-                  CALL valuta_SD_SPL_backflow(num,'up',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                  CALL valuta_SD_SPL_backflow(num,'up',re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
                      SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
-                  CALL valuta_SD_SPL_backflow(num-H_N_part,'dw',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                  CALL valuta_SD_SPL_backflow(num-H_N_part,'dw',re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
                      SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
                ELSE IF ((num>0) .AND. (num<=H_N_part)) THEN
-                  CALL valuta_SD_SPL_backflow(num,'up',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                  CALL valuta_SD_SPL_backflow(num,'up',re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
                      SDe_up_new,detSDe_up_new,ISDe_up_new,pvte_up_new,ISDe_up_old,detSDe_up_old)
                ELSE IF ((num>H_N_part) .AND. (num<=N_part)) THEN
-                  CALL valuta_SD_SPL_backflow(num-H_N_part,'dw',L,re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
+                  CALL valuta_SD_SPL_backflow(num-H_N_part,'dw',re_new,rp_new,rij_ep_new(0,:,:),H_N_part,&
                      SDe_dw_new,detSDe_dw_new,ISDe_dw_new,pvte_dw_new,ISDe_dw_old,detSDe_dw_old)
                END IF
             CASE('hl_')

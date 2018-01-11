@@ -1971,13 +1971,13 @@ MODULE funzione_onda
 
    !-----------------------------------------------------------------------
 
-		SUBROUTINE valuta_SD_1s_backflow(num,updw,L,re,rp,rij,N,SD,detSD,ISD,pvt,ISD_old,detSD_old)
-			USE generic_tools
+		SUBROUTINE valuta_SD_1s_backflow(num,updw,re,rp,rij,N,SD,detSD,ISD,pvt,ISD_old,detSD_old)
+      USE generic_tools
+      USE dati_fisici
 			IMPLICIT NONE
 			REAL (KIND=8), PARAMETER :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
          CHARACTER (LEN=2) :: updw
 			INTEGER, INTENT(IN) :: N, num   !num e' compreso fra 1 e 2*N
-         REAL(KIND=8), INTENT(IN) :: L(1:3)
 			REAL (KIND=8), INTENT(IN) :: re(1:3,1:N+N), rp(1:3,1:N+N), rij(1:N+N,1:N+N)
 			COMPLEX (KIND=8), INTENT(IN) :: ISD_old(1:N,1:N), detSD_old
 			INTEGER :: i, j, ip, info, perm, iadd
@@ -2002,7 +2002,7 @@ MODULE funzione_onda
                   DO ip = 1, N+N, 1
                   	q(1:3)=q(1:3)-rp(1:3,ip)/(1.d0+DEXP(A_POT_se*(rij(j+iadd,ip)-D_POT_se)))
                   END DO
-                  q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
+                  CALL applica_pbc_1vec(q(1:3),L,L_mat,L_mati,flag_tilted)
                   q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
 						SD(i,j)=(1.d0,0.d0)*norm*DEXP(-C_atm*q(0))
 						ISD(i,j)=SD(i,j)
@@ -2026,7 +2026,7 @@ MODULE funzione_onda
                DO ip = 1, N+N, 1
                   q(1:3)=q(1:3)-rp(1:3,ip)/(1.d0+DEXP(A_POT_se*(rij(i,ip)-D_POT_se)))
                END DO
-               q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
+               CALL applica_pbc_1vec(q(1:3),L,L_mat,L_mati,flag_tilted)
                q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
 					SD(num,i-iadd)=(1.d0,0.d0)*norm*DEXP(-C_atm*q(0))
 				END DO
@@ -2037,7 +2037,7 @@ MODULE funzione_onda
                DO ip = 1, N+N, 1
                   q(1:3)=q(1:3)-rp(1:3,ip)/(1.d0+DEXP(A_POT_se*(rij(num+iadd,ip)-D_POT_se)))
                END DO
-               q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
+               CALL applica_pbc_1vec(q(1:3),L,L_mat,L_mati,flag_tilted)
                q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
 					SD(i-iadd,num)=(1.d0,0.d0)*norm*DEXP(-C_atm*q(0))
 				END DO
@@ -2052,13 +2052,13 @@ MODULE funzione_onda
 	
 !-----------------------------------------------------------------------
 
-	SUBROUTINE valuta_SD_spl_backflow(num,updw,L,re,rp,rij,N,SD,detSD,ISD,pvt,ISD_old,detSD_old)
-		USE generic_tools
+	SUBROUTINE valuta_SD_spl_backflow(num,updw,re,rp,rij,N,SD,detSD,ISD,pvt,ISD_old,detSD_old)
+    USE generic_tools
+    USE dati_fisici
 		IMPLICIT NONE
 		REAL (KIND=8), PARAMETER :: PI=3.141592653589793238462643383279502884197169399375105820974944592d0
       CHARACTER (LEN=2) :: updw
 		INTEGER, INTENT(IN) :: N, num   !num e' compreso fra 1 e 2*N
-      REAL(KIND=8), INTENT(IN) :: L(1:3)
 		REAL (KIND=8), INTENT(IN) :: re(1:3,1:N+N), rp(1:3,1:N+N), rij(1:N+N,1:N+N)
 		COMPLEX (KIND=8), INTENT(IN) :: ISD_old(1:N,1:N), detSD_old
 		INTEGER :: i, j, ip, info, perm, iadd
@@ -2083,7 +2083,7 @@ MODULE funzione_onda
                DO ip = 1, N+N, 1
                	q(1:3)=q(1:3)-rp(1:3,ip)/(1.d0+DEXP(A_POT_se*(rij(j+iadd,ip)-D_POT_se)))
                END DO
-               q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
+               CALL applica_pbc_1vec(q(1:3),L,L_mat,L_mati,flag_tilted)
                q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
                CALL MSPL_compute(SPL=Bsplep, DERIV=0, R=q(0), VAL=cspl)
 					SD(i,j)=(1.d0,0.d0)*norm*DEXP(-cspl)
@@ -2108,7 +2108,7 @@ MODULE funzione_onda
             DO ip = 1, N+N, 1
                q(1:3)=q(1:3)-rp(1:3,ip)/(1.d0+DEXP(A_POT_se*(rij(i,ip)-D_POT_se)))
             END DO
-            q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
+            CALL applica_pbc_1vec(q(1:3),L,L_mat,L_mati,flag_tilted)
             q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
             CALL MSPL_compute(SPL=Bsplep, DERIV=0, R=q(0), VAL=cspl)
 				SD(num,i-iadd)=(1.d0,0.d0)*norm*DEXP(-cspl)
@@ -2120,7 +2120,7 @@ MODULE funzione_onda
             DO ip = 1, N+N, 1
                q(1:3)=q(1:3)-rp(1:3,ip)/(1.d0+DEXP(A_POT_se*(rij(num+iadd,ip)-D_POT_se)))
             END DO
-            q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
+            CALL applica_pbc_1vec(q(1:3),L,L_mat,L_mati,flag_tilted)
             q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
             CALL MSPL_compute(SPL=Bsplep, DERIV=0, R=q(0), VAL=cspl)
 				SD(i-iadd,num)=(1.d0,0.d0)*norm*DEXP(-cspl)

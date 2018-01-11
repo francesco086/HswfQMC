@@ -428,6 +428,44 @@ END SUBROUTINE applica_pbc
     END DO
   END SUBROUTINE applica_pbc_tilted
   !-----------------------------------------------------------------------
+  !applica_pbc_1vec wrapper
+  SUBROUTINE applica_pbc_1vec(v,L,L_mat,L_mati,flag_tilted)
+    IMPLICIT NONE
+    REAL (KIND=8), INTENT(IN) :: L(1:3), L_mat(1:3,1:3), L_mati(1:3,1:3)
+    LOGICAL, INTENT(IN) :: flag_tilted
+    REAL (KIND=8), INTENT(INOUT) :: v(1:3)
+
+    IF(flag_tilted) THEN
+       CALL applica_pbc_1vec_tilted(v,L_mat,L_mati)
+    ELSE
+       CALL applica_pbc_1vec_ortho(v,L)
+    END IF
+  END SUBROUTINE applica_pbc_1vec
+  !-----------------------------------------------------------------------
+	!dato il vettore con il numero di particelle e le tre dimensioni della scatola di simulazione, usa le PBC per eventualmente rimettere il vettore dentro la scatola
+	SUBROUTINE applica_pbc_1vec_ortho(v,L)
+		IMPLICIT NONE
+    REAL (KIND=8), INTENT(IN) :: L(1:3)
+    REAL (KIND=8), INTENT(INOUT) :: v(1:3)
+    INTEGER :: i
+    DO i = 1, 3, 1
+       v(i)=v(i)-L(i)*DNINT(v(i)/L(i))
+    END DO
+  END SUBROUTINE applica_pbc_1vec_ortho
+!-----------------------------------------------------------------------
+  !like applica_pbc_ortho, but for tilted lattice systems
+  SUBROUTINE applica_pbc_1vec_tilted(v,L_mat,L_mati)
+    IMPLICIT NONE
+    REAL (KIND=8), INTENT(IN) :: L_mat(1:3,1:3), L_mati(1:3,1:3)
+    REAL (KIND=8), INTENT(INOUT) :: v(1:3)
+    INTEGER :: i
+    v(1:3) = MATMUL(L_mati, v(1:3))
+    DO i = 1, 3, 1
+       v(i) = v(i) - FLOOR(v(i))
+    ENDDO
+    v(1:3) = MATMUL(L_mat, v(1:3))
+  END SUBROUTINE applica_pbc_1vec_tilted
+  !-----------------------------------------------------------------------
   !valuta_distanza_ii wrapper
   SUBROUTINE valuta_distanza_ii(r,N,L,rij, L_mat,L_mati,flag_tilted)
     IMPLICIT NONE

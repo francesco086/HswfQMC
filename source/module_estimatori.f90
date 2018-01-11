@@ -2324,8 +2324,8 @@ MODULE estimatori
 	             DO ip = 1, N_part, 1
 	                sigm=1.d0/(1.d0+DEXP(A_POT_se*(rij_ep_old(0,j+iadd,ip)-D_POT_se)))
 	                q(1:3)=q(1:3)-rp_old(1:3,ip)*sigm
-	             END DO
-	             q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
+               END DO
+               CALL applica_pbc_1vec(q(1:3),L,L_mat,L_mati,flag_tilted)
 	             q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
                 IF (opt_orbital) THEN
 	               !derivata di C_atm
@@ -2408,8 +2408,8 @@ MODULE estimatori
 	             DO ip = 1, N_part, 1
 	                sigm=1.d0/(1.d0+DEXP(A_POT_se*(rij_ep_old(0,j+iadd,ip)-D_POT_se)))
 	                q(1:3)=q(1:3)-rp_old(1:3,ip)*sigm
-	             END DO
-	             q(1:3)=q(1:3)-L(1:3)*DNINT(q(1:3)/L(1:3))
+               END DO
+               CALL applica_pbc_1vec(q(1:3),L,L_mat,L_mati,flag_tilted)
 	             q(0)=DSQRT(DOT_PRODUCT(q(1:3),q(1:3)))
                 IF (opt_orbital) THEN
 	               !derivata della spline
