@@ -2521,7 +2521,19 @@ mODULE calcola_accettazione
 			!  DABS( REAL((detSDse1_up_new/detSDse1_up_old)*(DCONJG(detSDse2_up_new)/DCONJG(detSDse2_up_old))* &
 			!  (detSDse1_dw_new/detSDse1_dw_old)*(DCONJG(detSDse2_dw_new)/DCONJG(detSDse2_dw_old)),8) )  &
 			!   ,8)
-			!PRINT * , 'PROB_ACC_SENZA_GD=', prob_acc
+      !PRINT * , 'PROB_ACC_SENZA_GD=', prob_acc
+   write(1337,*) 're:', re_new, 'sqrt(f):', DSQRT( REAL( DEXP(-Uee_new-Uep_new-0.5*Use1_new-0.5*Use2_new&
+        -Bse1_new-Bse2_new-Uese1_new-Uese2_new-&
+        0.5*Usesp1_new-0.5*Usesp2_new) * &
+        ( (detSDe_up_new*DCONJG(detSDe_up_new)* &
+        detSDe_dw_new*DCONJG(detSDe_dw_new) )* &
+        DABS( REAL(detSDse1_up_new*DCONJG(detSDse2_up_new)* &
+        detSDse1_dw_new*DCONJG(detSDse2_dw_new) ,8) ) * &
+        DABS( detGDse1_up_new*detGDse2_up_new* &
+        detGDse1_dw_new*detGDse2_dw_new )* &
+        DABS( detGDsp1_up_new*detGDsp2_up_new* &
+        detGDsp1_dw_new*detGDsp2_dw_new) ) ,8) )
+
 			CALL aggiorna_funzione_onda(tipo,num)
 		ELSE
 			accettazione=.FALSE.

@@ -14,6 +14,8 @@ PROGRAM main
    WRITE(8,*) 'exec'
    CLOSE(UNIT=8)
 
+   OPEN(UNIT=1337, FILE='wf.out', STATUS='REPLACE', ACTION='WRITE')
+
 	!initialize MPI (in module_dati_mc.f90)
 	CALL inizializza_MPI()
 	
@@ -98,6 +100,8 @@ PROGRAM main
 	IF (mpi_myrank==0 .AND. flag_output) CLOSE (7)
 	
 	CALL termina_MPI()
+
+    CLOSE(UNIT=1337)
 
     OPEN(UNIT=8, FILE='state.out', STATUS='REPLACE', ACTION='WRITE')
     WRITE(8,*) 'done'
