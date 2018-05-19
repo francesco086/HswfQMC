@@ -2510,9 +2510,37 @@ mODULE calcola_accettazione
 		!END IF
 		
 		CALL RANDOM_NUMBER(random)
+  accettazione = prob_acc>random
+  write(1337,*) &
+       'acc:', prob_acc>random, &
+       'r:', re_new, &
+       '|Psi|:', DSQRT( REAL( DEXP(-Uee_new-Uep_new-0.5*Use1_new-0.5*Use2_new&
+       -Bse1_new-Bse2_new-Uese1_new-Uese2_new-&
+       0.5*Usesp1_new-0.5*Usesp2_new) * &
+       ( (detSDe_up_new*DCONJG(detSDe_up_new)* &
+       detSDe_dw_new*DCONJG(detSDe_dw_new) )* &
+       DABS( REAL(detSDse1_up_new*DCONJG(detSDse2_up_new)* &
+       detSDse1_dw_new*DCONJG(detSDse2_dw_new) ,8) ) * &
+       DABS( detGDse1_up_new*detGDse2_up_new* &
+       detGDse1_dw_new*detGDse2_dw_new )* &
+       DABS( detGDsp1_up_new*detGDsp2_up_new* &
+       detGDsp1_dw_new*detGDsp2_dw_new) ) ,8) ), &
+       'J:', DEXP(-0.5*(Uee_new+Uep_new+0.5*Use1_new+0.5*Use2_new&
+       +Bse1_new+Bse2_new+Uese1_new+Uese2_new+&
+       0.5*Usesp1_new+0.5*Usesp2_new)), &
+       'Je:', DEXP(-0.5*(Uee_new+0.5*Use1_new+0.5*Use2_new&
+       +Bse1_new+Bse2_new+Uese1_new+Uese2_new)), &
+       'Jp:', DEXP(-0.5*(Uep_new+0.5*Usesp1_new+0.5*Usesp2_new)), &
+       '|SD|', DSQRT( REAL( ( (detSDe_up_new*DCONJG(detSDe_up_new)* &
+       detSDe_dw_new*DCONJG(detSDe_dw_new) )* &
+       DABS( REAL(detSDse1_up_new*DCONJG(detSDse2_up_new)* &
+       detSDse1_dw_new*DCONJG(detSDse2_dw_new) ,8) ) * &
+       DABS( detGDse1_up_new*detGDse2_up_new* &
+       detGDse1_dw_new*detGDse2_dw_new )* &
+       DABS( detGDsp1_up_new*detGDsp2_up_new* &
+       detGDsp1_dw_new*detGDsp2_dw_new) ) ,8) )
 
-		IF (prob_acc>random) THEN
-			accettazione=.TRUE.
+		IF (accettazione) THEN
 			!PRINT * , 'PROB_ACC=', prob_acc, '     random=', random, '     ACCETTATO'
 			!prob_acc=REAL( DEXP(-(Uee_new-Uee_old)-(Uep_new-Uep_old)-(Use1_new-Use1_old)-(Use2_new-Use2_old)-(Bse1_new-Bse1_old)- &
 			!  (Bse2_new-Bse2_old)-(Uese1_new-Uese1_old)-(Uese2_new-Uese2_old)-(Usesp1_new-Usesp1_old)-(Usesp2_new-Usesp2_old)) * &
@@ -2522,21 +2550,9 @@ mODULE calcola_accettazione
 			!  (detSDse1_dw_new/detSDse1_dw_old)*(DCONJG(detSDse2_dw_new)/DCONJG(detSDse2_dw_old)),8) )  &
 			!   ,8)
       !PRINT * , 'PROB_ACC_SENZA_GD=', prob_acc
-   write(1337,*) 're:', re_new, 'sqrt(f):', DSQRT( REAL( DEXP(-Uee_new-Uep_new-0.5*Use1_new-0.5*Use2_new&
-        -Bse1_new-Bse2_new-Uese1_new-Uese2_new-&
-        0.5*Usesp1_new-0.5*Usesp2_new) * &
-        ( (detSDe_up_new*DCONJG(detSDe_up_new)* &
-        detSDe_dw_new*DCONJG(detSDe_dw_new) )* &
-        DABS( REAL(detSDse1_up_new*DCONJG(detSDse2_up_new)* &
-        detSDse1_dw_new*DCONJG(detSDse2_dw_new) ,8) ) * &
-        DABS( detGDse1_up_new*detGDse2_up_new* &
-        detGDse1_dw_new*detGDse2_dw_new )* &
-        DABS( detGDsp1_up_new*detGDsp2_up_new* &
-        detGDsp1_dw_new*detGDsp2_dw_new) ) ,8) )
 
-			CALL aggiorna_funzione_onda(tipo,num)
+   CALL aggiorna_funzione_onda(tipo,num)
 		ELSE
-			accettazione=.FALSE.
 			!PRINT * , 'PROB_ACC=', prob_acc, '     random=', random, '     RIFIUTATO'
 			!prob_acc=REAL( DEXP(-(Uee_new-Uee_old)-(Uep_new-Uep_old)-(Use1_new-Use1_old)-(Use2_new-Use2_old)-(Bse1_new-Bse1_old)- &
 			!  (Bse2_new-Bse2_old)-(Uese1_new-Uese1_old)-(Uese2_new-Uese2_old)-(Usesp1_new-Usesp1_old)-(Usesp2_new-Usesp2_old)) * &
@@ -2548,8 +2564,9 @@ mODULE calcola_accettazione
 			!PRINT * , 'PROB_ACC_SENZA_GD=', prob_acc
 			CALL roll_back(tipo,num)
 		END IF
-				
-		!IF (verbose_mode) PRINT *, 'calcola_accettazione: Ho calcolato l accettazione, ', accettazione
+
+
+  !IF (verbose_mode) PRINT *, 'calcola_accettazione: Ho calcolato l accettazione, ', accettazione
 				
 	END SUBROUTINE valuta_accettazione
 !-----------------------------------------------------------------------
