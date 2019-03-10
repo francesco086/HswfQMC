@@ -2099,6 +2099,8 @@ MODULE estimatori
                E_pot=E_pot+frf3*DEXP(-k_fermi(0,k)*frf2)
             END DO
             E_pot=-E_pot*2.d0
+			
+			E_pot=E_pot/(L(1)*L(2))
          ELSE
 			   rho_k=0.d0
 			   DO k = 2, num_k_ewald, 1
@@ -2115,8 +2117,10 @@ MODULE estimatori
 			   DO k = 2, num_k_ewald, 1
 			   	E_pot=E_pot+rho_k(k)*DEXP(-k_fermi(0,k)*0.25d0/(alpha_ewald*alpha_ewald))/k_fermi(0,k)
 			   END DO
+			   
+			   E_pot=E_pot*2.d0*PI/(L(1)*L(2)*L(3))
          END IF
-			E_pot=E_pot*2.d0*PI/(L(1)*L(2)*L(3))
+			
 
          ! parte short-range
          !ee
